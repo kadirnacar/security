@@ -7,7 +7,7 @@ import * as express from 'express';
 
 const app = express();
 
-app.get('/api', (req, res) => {
+app.get('/api', async (req, res) => {
   res.send({ message: 'Welcome to server!' });
 });
 
