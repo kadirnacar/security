@@ -59,14 +59,6 @@
       "options": {
         "lintFilePatterns": ["packages/viewer/**/*.{ts,tsx,js,jsx}"]
       }
-    },
-    "test": {
-      "executor": "@nrwl/jest:jest",
-      "outputs": ["coverage/packages/viewer"],
-      "options": {
-        "jestConfig": "packages/viewer/jest.config.js",
-        "passWithNoTests": true
-      }
     }
   },
   "tags": []

@@ -3,7 +3,6 @@
   "projects": {
     "models": "packages/models",
     "server": "packages/server",
-    "viewer": "packages/viewer",
-    "viewer-e2e": "packages/viewer-e2e"
+    "viewer": "packages/viewer"
   }
 }
