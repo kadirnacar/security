@@ -20,6 +20,9 @@ export function App() {
           <li>
             <Link to="/page-2">Page 2</Link>
           </li>
+          <li>
+            <Link to="/demo">demo </Link>
+          </li>
         </ul>
       </div>
       <Routes>

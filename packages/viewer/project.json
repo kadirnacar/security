@@ -44,6 +44,7 @@
       "executor": "@nrwl/web:dev-server",
       "options": {
         "buildTarget": "viewer:build",
+        "proxyConfig": "packages/viewer/proxy.conf.json",
         "hmr": true
       },
       "configurations": {

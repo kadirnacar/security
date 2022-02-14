@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "server": "npx nx serve server",
+    "server": "npx nx serve server --watch=true",
     "server-build": "npx nx build server --prod",
-    "viewer": "npx nx serve viewer",
+    "viewer": "npx nx serve viewer --watch=true",
     "viewer-build": "npx nx build viewer --prod"
   },
   "private": true,
