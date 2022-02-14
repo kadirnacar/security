@@ -16,6 +16,7 @@
     "noImplicitAny": false,
     "baseUrl": ".",
     "paths": {
+      "@security/database": ["packages/database/src/index.ts"],
       "@security/models": ["packages/models/src/index.ts"]
     }
   },

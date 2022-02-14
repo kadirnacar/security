@@ -1,6 +1,7 @@
 {
   "version": 2,
   "projects": {
+    "database": "packages/database",
     "models": "packages/models",
     "server": "packages/server",
     "viewer": "packages/viewer"

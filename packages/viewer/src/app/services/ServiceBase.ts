@@ -30,7 +30,7 @@ export abstract class ServiceBase {
    */
   public static async requestJson<T>(
     opts: IRequestOptions,
-    setAuthHeader = true
+    setAuthHeader = false
   ): Promise<Result<T>> {
     let axiosResult: any = null;
     let result: any;
@@ -106,9 +106,9 @@ export abstract class ServiceBase {
       );
     }
 
-    if (result.hasErrors()) {
-      console.error(result.errors);
-    }
+    // if (result.hasErrors()) {
+    //   console.error(result.errors);
+    // }
     return result;
   }
 

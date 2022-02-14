@@ -21,7 +21,7 @@ import {
 } from './state';
 
 const unloadedState: DataState = {
-  Message: {
+  User: {
     List: [],
     operationLoading: false,
   },
@@ -65,7 +65,8 @@ export const reducer: Reducer<DataState> = (
 
     case Actions.ReceiveItemData:
       currentState[action.entityName].operationLoading = false;
-      if (action.payload) currentState[action.entityName].CurrentItem = action.payload;
+      if (action.payload)
+        currentState[action.entityName].CurrentItem = action.payload;
       return { ...currentState };
     case Actions.RequestItemData:
       currentState[action.entityName].operationLoading = true;
@@ -92,7 +93,9 @@ export const reducer: Reducer<DataState> = (
       return { ...currentState };
     case Actions.ReceiveDeleteData:
       currentState[action.entityName].operationLoading = false;
-      const index = currentState[action.entityName].List.findIndex((itm) => itm.id === action.id);
+      const index = currentState[action.entityName].List.findIndex(
+        (itm) => itm.id === action.id
+      );
       currentState[action.entityName].List.splice(index, 1);
       return { ...currentState };
     case Actions.RequestDeleteData:

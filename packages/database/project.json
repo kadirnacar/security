@@ -1,0 +1,15 @@
+{
+  "root": "packages/database",
+  "sourceRoot": "packages/database/src",
+  "projectType": "library",
+  "targets": {
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/database/**/*.ts"]
+      }
+    }
+  },
+  "tags": []
+}

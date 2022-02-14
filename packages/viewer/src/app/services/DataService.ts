@@ -193,7 +193,7 @@ export class DataService extends ServiceBase {
   public static async create<T>(entity: string, item: T): Promise<Result<T>> {
     const result = await this.requestJson<T>(
       {
-        url: `/api/${entity}/save`,
+        url: `/api/${entity}`,
         method: 'POST',
         data: { ...item },
       },
@@ -204,8 +204,8 @@ export class DataService extends ServiceBase {
   public static async update<T>(entity: string, item: any): Promise<Result<T>> {
     const result = await this.requestJson<T>(
       {
-        url: `/api/${entity}/save`,
-        method: 'POST',
+        url: `/api/${entity}`,
+        method: 'PATCH',
         data: { ...item },
       },
       true
@@ -233,8 +233,8 @@ export class DataService extends ServiceBase {
   ): Promise<Result<T>> {
     const result = await this.requestJson<T>(
       {
-        url: `/api/${entity}/delete/${id}`,
-        method: 'POST',
+        url: `/api/${entity}/${id}`,
+        method: 'DELETE',
         data: {},
       },
       true

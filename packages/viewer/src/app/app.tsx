@@ -1,5 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Link, Route, Routes } from 'react-router-dom';
+import UserComp from './components/user/user';
 
 export function App() {
   return (
@@ -35,14 +36,7 @@ export function App() {
             </div>
           }
         />
-        <Route
-          path="/page-2"
-          element={
-            <div>
-              <Link to="/">Click here to go back to root page.</Link>
-            </div>
-          }
-        />
+        <Route path="/page-2" element={<UserComp />} />
       </Routes>
       {/* END: routes */}
     </>
