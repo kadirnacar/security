@@ -1,0 +1,28 @@
+{
+  "root": "packages/viewer-e2e",
+  "sourceRoot": "packages/viewer-e2e/src",
+  "projectType": "application",
+  "targets": {
+    "e2e": {
+      "executor": "@nrwl/cypress:cypress",
+      "options": {
+        "cypressConfig": "packages/viewer-e2e/cypress.json",
+        "devServerTarget": "viewer:serve"
+      },
+      "configurations": {
+        "production": {
+          "devServerTarget": "viewer:serve:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/viewer-e2e/**/*.{js,ts}"]
+      }
+    }
+  },
+  "tags": [],
+  "implicitDependencies": ["viewer"]
+}

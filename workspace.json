@@ -2,6 +2,8 @@
   "version": 2,
   "projects": {
     "models": "packages/models",
-    "server": "packages/server"
+    "server": "packages/server",
+    "viewer": "packages/viewer",
+    "viewer-e2e": "packages/viewer-e2e"
   }
 }
