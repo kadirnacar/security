@@ -25,6 +25,7 @@
     "@types/react": "17.0.39",
     "@types/react-dom": "17.0.11",
     "@types/react-router-dom": "5.3.3",
+    "@types/react-router-redux": "^5.0.21",
     "@typescript-eslint/eslint-plugin": "~5.11.0",
     "eslint": "~8.9.0",
     "eslint-config-prettier": "8.3.0",
@@ -36,14 +37,20 @@
     "typescript": "~4.5.5"
   },
   "dependencies": {
+    "axios": "^0.26.0",
     "bson": "^4.6.1",
     "core-js": "^3.21.0",
     "express": "4.17.2",
+    "json-to-url": "^1.0.5",
     "lowdb": "^1.0.0",
     "react": "17.0.2",
     "react-dom": "17.0.2",
+    "react-redux": "^7.2.6",
     "react-router-dom": "6.2.1",
+    "react-router-redux": "^4.0.8",
     "realm": "^10.13.0",
+    "redux": "^4.1.2",
+    "redux-thunk": "^2.4.1",
     "reflect-metadata": "^0.1.13",
     "regenerator-runtime": "0.13.9",
     "tslib": "^2.3.1"
