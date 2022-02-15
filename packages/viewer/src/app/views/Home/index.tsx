@@ -1,6 +1,5 @@
 import { Layout, Model } from 'flexlayout-react';
 import React, { Component } from 'react';
-import { connect } from 'react-redux';
 import CameraList from './CameraList';
 import data from './flexlayout';
 
@@ -32,9 +31,7 @@ class Home extends Component<any, HomeState> {
     return (
       <Layout
         model={this.state.model}
-        onModelChange={(model) => {
-          console.log(model.toJson());
-        }}
+        onModelChange={(model) => {}}
         factory={this.factory}
       />
     );
@@ -45,5 +42,4 @@ const mapStateToProps = (state) => ({});
 
 const mapDispatchToProps = {};
 
-// export default connect(mapStateToProps, mapDispatchToProps)(Home);
 export default Home;

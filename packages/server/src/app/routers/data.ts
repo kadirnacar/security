@@ -1,10 +1,12 @@
 import { Services } from '@security/database';
 import { Request, Response, Router } from 'express';
+import Camera = require('../../onvif-nvt/camera');
+import { createUuidV4 } from '../../onvif-nvt/utils/util';
 
 export class DataRouter {
   router: Router;
   entityName: string;
-  camera: any;
+  camera: Camera;
 
   constructor() {
     this.router = Router();
@@ -66,10 +68,10 @@ export class DataRouter {
 
   public async createItem(req: Request, res: Response, next) {
     try {
-      console.log(req.body);
       const body = req.body;
       const entity = req.params.entity;
       const dataRepo = Services[entity];
+      body.id = createUuidV4();
       const data = dataRepo.save(body);
       res.status(200).send({});
     } catch (err) {

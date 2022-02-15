@@ -11,11 +11,11 @@ interface Props {
 
 type State = {};
 
-export class CameraList extends Component<Props, State> {
+export class CameraList extends Component<Props & ApplicationState, State> {
   state = {};
-  componentDidMount() {
-    console.log('Camera List');
-    this.props.DataActions.getList('Camera');
+  async componentDidMount() {
+    await this.props.DataActions.getList('Camera');
+    console.log(this.props.Data.Camera.List);
   }
   componentDidUpdate() {
     console.log('Camera List Update');
@@ -25,7 +25,7 @@ export class CameraList extends Component<Props, State> {
   }
 }
 
-const mapStateToProps = (state: ApplicationState) => state.Data;
+const mapStateToProps = (state: ApplicationState) => state;
 
 const mapDispatchToProps = (dispatch) => {
   return {

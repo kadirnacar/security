@@ -1,0 +1,37 @@
+.sub-menu {
+  transform: inherit !important;
+  position: inherit !important;
+  inset: inherit !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 10px !important;
+}
+
+.dropdown-item.nav-link {
+  border-radius: 0px !important;
+}
+.nav-pills .nav-link {
+  color: inherit;
+}
+.nav-pills .nav-link:hover {
+  background-color: #464646 !important;
+}
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+  background-color: inherit;
+}
+
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+  background-color: inherit;
+}
+
+.drop-icon {
+  position: absolute;
+  right: 0px;
+  margin: auto;
+  padding: 3px;
+}
+
+.drop-icon::before {
+}

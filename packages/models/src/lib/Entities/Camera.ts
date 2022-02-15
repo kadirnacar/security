@@ -1,4 +1,7 @@
 export class Camera {
-  Name?: string;
-  Url?: string;
+  id?: string;
+  url?: string;
+  port?: number;
+  username?: string;
+  password?: string;
 }

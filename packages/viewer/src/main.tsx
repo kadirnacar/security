@@ -1,3 +1,8 @@
+import { library } from '@fortawesome/fontawesome-svg-core';
+import '@fortawesome/fontawesome-svg-core/styles.css';
+import { fas } from '@fortawesome/free-solid-svg-icons';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'flexlayout-react/style/dark.css';
 import { StrictMode } from 'react';
 import * as ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
@@ -5,11 +10,11 @@ import { BrowserRouter } from 'react-router-dom';
 import { Main } from './app/container/main';
 import { loadState } from './app/store/localStorage';
 import { StoreHelper } from './app/store/StoreHelper';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'flexlayout-react/style/dark.css';
 
 const initialState = loadState();
 const store = StoreHelper.initStore(history, initialState);
+
+library.add(fas);
 
 ReactDOM.render(
   <Provider store={store}>

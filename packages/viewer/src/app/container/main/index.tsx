@@ -45,7 +45,7 @@ export class Main extends Component<Props, State> {
         >
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/settings" element={<Settings />} />
+            <Route path="/settings/*" element={<Settings />} />
           </Routes>
         </Row>
       </Container>
