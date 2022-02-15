@@ -32,7 +32,6 @@ const json: IJsonModel = {
         children: [
           {
             type: 'tab',
-            id: '#42de7e18-02cb-4fa4-873d-718c03cdaabc',
             name: 'One',
             component: 'CameraList',
           },

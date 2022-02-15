@@ -29,7 +29,15 @@ class Home extends Component<any, HomeState> {
     }
   }
   render() {
-    return <Layout model={this.state.model} factory={this.factory} />;
+    return (
+      <Layout
+        model={this.state.model}
+        onModelChange={(model) => {
+          console.log(model.toJson());
+        }}
+        factory={this.factory}
+      />
+    );
   }
 }
 

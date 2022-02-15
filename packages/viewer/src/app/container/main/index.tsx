@@ -15,8 +15,8 @@ export class Main extends Component<Props, State> {
 
   render() {
     return (
-      <Container fluid>
-        <Row>
+      <Container>
+        <Row style={{ position: 'absolute', left: 0, right: 0, top: 0 }}>
           <Navbar bg="dark" variant="dark">
             <Container>
               <Navbar.Brand href="#home">Şahin</Navbar.Brand>
@@ -31,13 +31,22 @@ export class Main extends Component<Props, State> {
             </Container>
           </Navbar>
         </Row>
-        <Row>
-          <div className="routes">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/settings" element={<Settings />} />
-            </Routes>
-          </div>
+        <Row
+          style={{
+            margin: 0,
+            marginRight: 0,
+            padding: 0,
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            top: 56,
+          }}
+        >
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
         </Row>
       </Container>
     );

@@ -50,7 +50,6 @@ export class DataActions<T> {
         await dispatch({ type: Actions.RequestListData, entityName: entity });
         const getData = async function () {
           const result = await DataService.getList<T>(entity, options);
-          console.log('getData',result)
           await dispatch({
             type: Actions.ReceiveListData,
             entityName: entity,
