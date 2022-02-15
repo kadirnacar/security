@@ -2,50 +2,56 @@ import { IJsonModel } from 'flexlayout-react';
 
 const json: IJsonModel = {
   global: {
-    tabEnableFloat: true,
-    tabSetMinHeight: 100,
-    tabSetMinWidth: 100,
-    borderMinSize: 100,
-    enableEdgeDock: true,
-    borderEnableDrop: false,
-    tabSetEnableDrag: true,
-    tabSetEnableDivide: true,
+    tabSetEnableClose: true,
   },
+  borders: [
+    {
+      type: 'border',
+      selected: 0,
+      enableDrop: false,
+      size: 300,
+      location: 'left',
+      children: [
+        {
+          type: 'tab',
+          id: 'explorer',
+          name: 'Kameralar',
+          component: 'CameraList',
+          enableClose: false,
+          enableDrag: false,
+        },
+      ],
+    },
+  ],
   layout: {
     type: 'row',
     children: [
       {
         type: 'tabset',
-        id: '#windows',
+        weight: 50,
         children: [
           {
+            type: 'tab',
+            id: '#42de7e18-02cb-4fa4-873d-718c03cdaabc',
             name: 'One',
-            component: 'button',
+            component: 'CameraList',
           },
+        ],
+        active: true,
+      },
+      {
+        type: 'tabset',
+        weight: 50,
+        children: [
           {
+            type: 'tab',
             name: 'Two',
-            component: 'text',
+            component: 'CameraList',
           },
         ],
       },
     ],
   },
-  borders: [
-    {
-      type: 'border',
-      location: 'left',
-      selected: 0,
-      size: 300,
-      children: [
-        {
-          id: 'explorer',
-          name: 'Kameralar',
-          component: 'CameraList',
-          enableClose: false,
-        },
-      ],
-    },
-  ],
 };
 
 export default json;
