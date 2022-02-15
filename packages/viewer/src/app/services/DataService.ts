@@ -132,7 +132,7 @@ export class DataService extends ServiceBase {
   }
   public static async getByIdTreeParent<T>(
     entity: string,
-    id: number,
+    id: string,
     options?: DataOptions<T>
   ): Promise<Result<T>> {
     const result = await this.requestJson<T>(
@@ -163,7 +163,7 @@ export class DataService extends ServiceBase {
 
   public static async getById<T>(
     entity: string,
-    id: number,
+    id: string,
     options?: DataOptions<T>
   ): Promise<Result<T>> {
     const result = await this.requestJson<T>(
@@ -229,7 +229,7 @@ export class DataService extends ServiceBase {
   }
   public static async delete<T>(
     entity: string,
-    id: number
+    id: string
   ): Promise<Result<T>> {
     const result = await this.requestJson<T>(
       {

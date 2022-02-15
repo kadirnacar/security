@@ -55,11 +55,9 @@ export class DataRouter {
   public async updateItem(req: Request, res: Response, next) {
     try {
       const body = req.body;
-      const item = body.item;
-      const id = req.params['id'];
       const entity = req.params.entity;
       const dataRepo = Services[entity];
-      const data = dataRepo.save(item);
+      const data = dataRepo.save(body);
       res.status(200).send(data);
     } catch (err) {
       next(err);

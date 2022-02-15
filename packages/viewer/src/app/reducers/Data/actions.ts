@@ -4,7 +4,7 @@ import { ApplicationState } from '../../store';
 import { Actions } from './state';
 
 export class DataActions<T> {
-  getByIdTreeParent = (entity: string, id: number, options?: DataOptions<T>) =>
+  getByIdTreeParent = (entity: string, id: string, options?: DataOptions<T>) =>
     async function (dispatch, getState: () => ApplicationState) {
       await batch(async function () {
         await dispatch({ type: Actions.RequestItemData, entityName: entity });
@@ -20,7 +20,7 @@ export class DataActions<T> {
         });
       });
     };
-  getById = (entity: string, id: number, options?: DataOptions<T>) =>
+  getById = (entity: string, id: string, options?: DataOptions<T>) =>
     async function (dispatch, getState: () => ApplicationState) {
       await batch(async function () {
         await dispatch({ type: Actions.RequestItemData, entityName: entity });
@@ -30,6 +30,7 @@ export class DataActions<T> {
           entityName: entity,
           payload: result.value,
         });
+        return result;
       });
     };
   getItem = (entity: string, options?: DataOptions<T>) =>
@@ -98,7 +99,7 @@ export class DataActions<T> {
         });
       });
     };
-  deleteItem = (entity: string, id: number) =>
+  deleteItem = (entity: string, id: string) =>
     async function (dispatch, getState: () => ApplicationState) {
       await batch(async function () {
         await dispatch({ type: Actions.RequestDeleteData, entityName: entity });
