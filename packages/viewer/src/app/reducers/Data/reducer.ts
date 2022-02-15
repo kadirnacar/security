@@ -21,7 +21,7 @@ import {
 } from './state';
 
 const unloadedState: DataState = {
-  User: {
+  Camera: {
     List: [],
     operationLoading: false,
   },

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Users } from '@security/models';
+import { Camera, Users } from '@security/models';
 import { BaseState } from '../Base';
 
 export enum Actions {
@@ -25,7 +25,7 @@ export interface DataItemState<T> extends BaseState {
 }
 
 export interface DataState {
-  User: DataItemState<Users>;
+  Camera: DataItemState<Camera>;
 }
 
 export interface ISetItemDataAction {

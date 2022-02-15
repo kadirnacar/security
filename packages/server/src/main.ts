@@ -6,8 +6,18 @@
 import * as express from 'express';
 import { DataRouter } from './app/routers/data';
 import * as bodyParser from 'body-parser';
+import * as OnvifManager from 'onvif-nvt';
 
 const app = express();
+let camera: any;
+const dataRouter = new DataRouter();
+
+OnvifManager.connect('78.189.93.133', 91, 'admin', 'admin123').then(
+  (results) => {
+    camera = results;
+    dataRouter.initCamera(camera);
+  }
+);
 
 function corsPrefetch(req: Request, res: express.Response, next: Function) {
   res.header('Access-Control-Allow-Origin', '*');
@@ -27,7 +37,7 @@ app.use(corsPrefetch as any);
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: false }));
 
-app.use('/api', new DataRouter().router);
+app.use('/api', dataRouter.router);
 
 // app.get('/api', async (req, res) => {
 //   res.send({ message: 'Welcome to server!' });
