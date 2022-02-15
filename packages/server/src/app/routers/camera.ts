@@ -1,8 +1,7 @@
 import { Services } from '@security/database';
 import { Request, Response, Router } from 'express';
-import Camera = require('../../onvif-nvt/camera');
-import { createUuidV4 } from '../../onvif-nvt/utils/util';
 import { CameraService } from '../services/CameraService';
+import Camera = require('../../onvif-nvt/camera');
 
 export class CameraRouter {
   router: Router;
@@ -18,7 +17,7 @@ export class CameraRouter {
       const dataRepo = Services.Camera;
       const data = await dataRepo.get(id);
       await CameraService.connect(data);
-      res.status(200);
+      res.status(200).send({});
     } catch (err) {
       next(err);
     }
@@ -41,6 +40,6 @@ export class CameraRouter {
 
   async init() {
     this.router.post('/connect/:id', this.connect.bind(this));
-    this.router.post('/pos/:id', this.setPos.bind(this));
+    // this.router.post('/pos/:id', this.setPos.bind(this));
   }
 }

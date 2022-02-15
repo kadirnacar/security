@@ -50,7 +50,7 @@ export class LowdbBase {
     }
   }
 
-  public getDb(parentId?: string): any {
+  public async getDb(parentId?: string) {
     if (this.parentEntityName == null || this.parentEntityName.length == 0) {
       return this.db.get(this.entityName);
     } else if (parentId) {
@@ -82,19 +82,19 @@ export class LowdbBase {
     }
   }
 
-  public all(parentId?: string): any[] {
-    const result = this.getDb(parentId)?.value();
-    return result;
+  public async all(parentId?: string) {
+    const result = await this.getDb(parentId);
+    return result.value();
   }
 
-  public get(id: string, parentId?: string): Promise<any> {
-    const db = this.getDb(parentId);
+  public async get(id: string, parentId?: string): Promise<any> {
+    const db = await this.getDb(parentId);
     const data = this.multi ? db?.find({ id: id }).value() : db?.value();
     return data;
   }
 
-  public save(model: any, parentId?: string): void {
-    var db = this.getDb(parentId);
+  public async save(model: any, parentId?: string) {
+    var db = await this.getDb(parentId);
     var data = this.multi ? db?.find({ id: model.id }).value() : db?.value();
     if (data) {
       this.multi
@@ -108,7 +108,7 @@ export class LowdbBase {
   public async delete(id: string, parentId?: string): Promise<void> {
     const item = await this.get(id, parentId);
     if (item) {
-      const db = this.getDb(parentId);
+      const db = await this.getDb(parentId);
 
       this.multi ? db?.remove({ id: id }).write() : db?.assign({}).write();
 

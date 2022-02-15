@@ -25,31 +25,8 @@ const json: IJsonModel = {
   ],
   layout: {
     type: 'row',
-    children: [
-      {
-        type: 'tabset',
-        weight: 50,
-        children: [
-          {
-            type: 'tab',
-            name: 'One',
-            component: 'CameraList',
-          },
-        ],
-        active: true,
-      },
-      {
-        type: 'tabset',
-        weight: 50,
-        children: [
-          {
-            type: 'tab',
-            name: 'Two',
-            component: 'CameraList',
-          },
-        ],
-      },
-    ],
+    id: 'cameras',
+    children: [],
   },
 };
 

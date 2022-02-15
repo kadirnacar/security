@@ -5,7 +5,7 @@ export class CameraService extends ServiceBase {
   public static async connect(id: string): Promise<Result<any>> {
     const result = await this.requestJson(
       {
-        url: `/camera/connect/${id}`,
+        url: `/api/camera/connect/${id}`,
         method: 'POST',
       },
       true
@@ -18,7 +18,7 @@ export class CameraService extends ServiceBase {
   ): Promise<Result<any>> {
     const result = await this.requestJson(
       {
-        url: `/camera/pos/${id}`,
+        url: `/api/camera/pos/${id}`,
         method: 'POST',
         data: { ...velocity },
       },

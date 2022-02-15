@@ -21,7 +21,7 @@ export class DataRouter {
     try {
       const entity = req.params.entity;
       const dataRepo = Services[entity];
-      const data = dataRepo.all();
+      const data =await  dataRepo.all();
       res.status(200).send(data);
     } catch (err) {
       next(err);
@@ -80,7 +80,6 @@ export class DataRouter {
   public async setPos(req: Request, res: Response, next) {
     try {
       const body = req.body;
-      console.log(body);
       if (this.camera.ptz) {
         // PTZ is supported on this device
         let velocity = { x: -0.6, y: 1, z: 0 };

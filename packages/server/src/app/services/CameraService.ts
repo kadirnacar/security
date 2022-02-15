@@ -9,8 +9,7 @@ export class CameraService {
     const connected = this.cameraModels.find(
       (x) => x.model && x.model.id == cameraModel.id
     );
-
-    if (connected) {
+    if (!connected) {
       try {
         const cam = await OnvifManager.connect(
           cameraModel.url,

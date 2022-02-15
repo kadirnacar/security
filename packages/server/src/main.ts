@@ -41,7 +41,7 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use('/api', dataRouter.router);
-app.use('/camera', cameraRouter.router);
+app.use('/api/camera', cameraRouter.router);
 
 // app.get('/api', async (req, res) => {
 //   res.send({ message: 'Welcome to server!' });
