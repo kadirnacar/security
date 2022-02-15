@@ -21,9 +21,12 @@ export class CameraService {
         if (cam) {
           this.cameraModels.push({ model: cameraModel, camera: cam });
         }
+        return cam;
       } catch (ex) {
         throw ex;
       }
+    } else {
+      return connected.camera;
     }
   }
 

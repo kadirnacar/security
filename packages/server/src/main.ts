@@ -3,24 +3,14 @@
  * This is only a minimal backend to get started.
  */
 
-import * as express from 'express';
-import { DataRouter } from './app/routers/data';
 import * as bodyParser from 'body-parser';
-// import * as OnvifManager from 'onvif-nvt';
-import * as OnvifManager from './onvif-nvt/onvif-nvt';
+import * as express from 'express';
 import { CameraRouter } from './app/routers/camera';
+import { DataRouter } from './app/routers/data';
 
 const app = express();
-let camera: any;
 const dataRouter = new DataRouter();
 const cameraRouter = new CameraRouter();
-
-OnvifManager.connect('78.189.93.133', 91, 'admin', 'admin123').then(
-  (results) => {
-    camera = results;
-    dataRouter.initCamera(camera);
-  }
-);
 
 function corsPrefetch(req: Request, res: express.Response, next: Function) {
   res.header('Access-Control-Allow-Origin', '*');

@@ -41,16 +41,17 @@ class CameraForm extends Component<Props & WithRouter, State> {
   }
 
   async componentDidUpdate(prevProps, prevState) {
-    if (this.props.params && this.props.params['id']) {
-      await this.props.DataActions?.getById('Camera', this.props.params['id']);
-      this.setState({
-        data: this.props.Camera?.CurrentItem || { name: '' },
-      });
-    } else if (this.state.data.id) {
-      this.setState({
-        data: { name: '' },
-      });
-    }
+    console.log(this.state,prevState)
+    // if (this.props.params && this.props.params['id']) {
+    //   await this.props.DataActions?.getById('Camera', this.props.params['id']);
+    //   this.setState({
+    //     data: this.props.Camera?.CurrentItem || { name: '' },
+    //   });
+    // } else if (this.state.data.id) {
+    //   this.setState({
+    //     data: { name: '' },
+    //   });
+    // }
   }
 
   async save() {

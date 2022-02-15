@@ -1,27 +1,21 @@
 import { Services } from '@security/database';
 import { Request, Response, Router } from 'express';
-import Camera = require('../../onvif-nvt/camera');
 import { createUuidV4 } from '../../onvif-nvt/utils/util';
 
 export class DataRouter {
   router: Router;
   entityName: string;
-  camera: Camera;
 
   constructor() {
     this.router = Router();
     this.init();
   }
 
-  public initCamera(camera) {
-    this.camera = camera;
-  }
-
   public async getList(req: Request, res: Response, next) {
     try {
       const entity = req.params.entity;
       const dataRepo = Services[entity];
-      const data =await  dataRepo.all();
+      const data = await dataRepo.all();
       res.status(200).send(data);
     } catch (err) {
       next(err);
@@ -33,7 +27,7 @@ export class DataRouter {
       const id = req.params['id'];
       const entity = req.params.entity;
       const dataRepo = Services[entity];
-      const data = dataRepo.get(id);
+      const data = await dataRepo.get(id);
       res.status(200).send(data);
     } catch (err) {
       next(err);
@@ -45,7 +39,7 @@ export class DataRouter {
       const id = req.params['id'];
       const entity = req.params.entity;
       const dataRepo = Services[entity];
-      const data = dataRepo.delete(id);
+      const data = await dataRepo.delete(id);
       res.status(200).send(data);
     } catch (err) {
       next(err);
@@ -57,7 +51,7 @@ export class DataRouter {
       const body = req.body;
       const entity = req.params.entity;
       const dataRepo = Services[entity];
-      const data = dataRepo.save(body);
+      const data = await dataRepo.save(body);
       res.status(200).send(data);
     } catch (err) {
       next(err);
@@ -70,23 +64,8 @@ export class DataRouter {
       const entity = req.params.entity;
       const dataRepo = Services[entity];
       body.id = createUuidV4();
-      const data = dataRepo.save(body);
+      const data = await dataRepo.save(body);
       res.status(200).send({});
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  public async setPos(req: Request, res: Response, next) {
-    try {
-      const body = req.body;
-      if (this.camera.ptz) {
-        // PTZ is supported on this device
-        let velocity = { x: -0.6, y: 1, z: 0 };
-        this.camera.ptz.absoluteMove(null, velocity, null, (a, b) => {
-          res.status(200).send({});
-        });
-      }
     } catch (err) {
       next(err);
     }
@@ -98,6 +77,5 @@ export class DataRouter {
     this.router.delete('/:entity/:id', this.deleteItem.bind(this));
     this.router.patch('/:entity', this.updateItem.bind(this));
     this.router.post('/:entity', this.createItem.bind(this));
-    this.router.post('/set-pos', this.setPos.bind(this));
   }
 }

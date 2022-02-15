@@ -1,7 +1,7 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Camera } from '@security/models';
 import React, { Component } from 'react';
-import { Col, ListGroup, Row } from 'react-bootstrap';
+import { Button, ButtonGroup, Col, ListGroup, Row } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { DataActions } from '../../reducers/Data/actions';
@@ -24,7 +24,13 @@ export class CameraView extends Component<Props & ApplicationState, State> {
   render() {
     return (
       <Row>
-        <Col xs={12}>{this.props.id}</Col>
+        <Col xs={12}>
+          <ButtonGroup>
+            <Button>
+              <FontAwesomeIcon icon={'up'}></FontAwesomeIcon>
+            </Button>
+          </ButtonGroup>
+        </Col>
       </Row>
     );
   }

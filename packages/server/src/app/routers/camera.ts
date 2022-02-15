@@ -16,8 +16,8 @@ export class CameraRouter {
       const id = req.params['id'];
       const dataRepo = Services.Camera;
       const data = await dataRepo.get(id);
-      await CameraService.connect(data);
-      res.status(200).send({});
+      const cam = await CameraService.connect(data);
+      res.status(200).send({ ...cam });
     } catch (err) {
       next(err);
     }
