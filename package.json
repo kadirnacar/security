@@ -20,6 +20,7 @@
     "@nrwl/web": "13.8.1",
     "@nrwl/workspace": "13.8.1",
     "@types/express": "4.17.13",
+    "@types/ffmpeg.js": "^3.1.2",
     "@types/lowdb": "^1.0.11",
     "@types/node": "^17.0.17",
     "@types/react": "17.0.39",
@@ -51,6 +52,7 @@
     "json-to-url": "^1.0.5",
     "lowdb": "^1.0.0",
     "onvif-nvt": "^0.3.3",
+    "query-string": "^7.1.1",
     "react": "17.0.2",
     "react-bootstrap": "^2.1.2",
     "react-dom": "17.0.2",
@@ -62,6 +64,7 @@
     "redux-thunk": "^2.4.1",
     "reflect-metadata": "^0.1.13",
     "regenerator-runtime": "0.13.9",
-    "tslib": "^2.3.1"
+    "tslib": "^2.3.1",
+    "ws": "^8.5.0"
   }
 }

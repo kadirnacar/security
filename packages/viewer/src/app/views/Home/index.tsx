@@ -26,6 +26,11 @@ class Home extends Component<any, HomeState> {
     };
   }
 
+  componentDidMount() {
+    
+    console.log(this.context);
+  }
+
   onSelectCamera(camera: Camera) {
     const node = this.state.model.getNodeById(camera.id || '');
     if (!node) {

@@ -7,6 +7,7 @@ import * as bodyParser from 'body-parser';
 import * as express from 'express';
 import { CameraRouter } from './app/routers/camera';
 import { DataRouter } from './app/routers/data';
+import { CameraService } from './app/services/CameraService';
 
 const app = express();
 const dataRouter = new DataRouter();
@@ -33,17 +34,11 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use('/api', dataRouter.router);
 app.use('/api/camera', cameraRouter.router);
 
-// app.get('/api', async (req, res) => {
-//   res.send({ message: 'Welcome to server!' });
-// });
-
-// app.post('/api/:entity/list', async (req, res) => {
-//   const userRepo = Services[req.params.entity];
-//   res.send({ message: 'Welcome to server!', data: userRepo.all() });
-// });
-
 const port = process.env.port || 3333;
 const server = app.listen(port, () => {
   console.log(`Listening at http://localhost:${port}/api`);
 });
+
 server.on('error', console.error);
+
+CameraService.initWebSocket(server);
