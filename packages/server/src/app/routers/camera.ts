@@ -17,7 +17,19 @@ export class CameraRouter {
       const dataRepo = Services.Camera;
       const data = await dataRepo.get(id);
       const cam = await CameraService.connect(data);
-      res.status(200).send({ ...cam });
+
+      res.status(200).send({});
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  public async startRtsp(req: Request, res: Response, next) {
+    try {
+      const id = req.params['id'];
+      const camera = await CameraService.startStream(id);
+
+      res.status(200).send({});
     } catch (err) {
       next(err);
     }
@@ -26,13 +38,16 @@ export class CameraRouter {
   public async setPos(req: Request, res: Response, next) {
     try {
       const id = req.params['id'];
-      const velocity = req.body;
-      const camera = CameraService.getCamera(id);
+      const data = req.body;
+      const camera = CameraService.getCamera(id)?.camera;
       if (camera) {
-        camera.ptz.absoluteMove(null, velocity, null, (a, b) => {
-          res.status(200);
-        });
+        if (data.action === 'home') {
+          await camera.ptz.gotoHomePosition();
+        } else if (data.velocity && camera.ptz) {
+          await camera.ptz.absoluteMove(null, data.velocity, data.speed);
+        }
       }
+      res.status(200).send({});
     } catch (err) {
       next(err);
     }
@@ -40,6 +55,7 @@ export class CameraRouter {
 
   async init() {
     this.router.post('/connect/:id', this.connect.bind(this));
-    // this.router.post('/pos/:id', this.setPos.bind(this));
+    this.router.post('/pos/:id', this.setPos.bind(this));
+    this.router.post('/start/:id', this.startRtsp.bind(this));
   }
 }

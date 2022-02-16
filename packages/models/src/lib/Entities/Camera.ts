@@ -3,6 +3,7 @@ export interface Camera {
   name: string;
   url?: string;
   port?: number;
+  rtspPort?: number;
   username?: string;
   password?: string;
 }

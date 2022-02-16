@@ -41,17 +41,20 @@ class CameraForm extends Component<Props & WithRouter, State> {
   }
 
   async componentDidUpdate(prevProps, prevState) {
-    console.log(this.state,prevState)
-    // if (this.props.params && this.props.params['id']) {
-    //   await this.props.DataActions?.getById('Camera', this.props.params['id']);
-    //   this.setState({
-    //     data: this.props.Camera?.CurrentItem || { name: '' },
-    //   });
-    // } else if (this.state.data.id) {
-    //   this.setState({
-    //     data: { name: '' },
-    //   });
-    // }
+    if (
+      this.props.params &&
+      this.props.params['id'] &&
+      prevProps.Camera.CurrentItem?.id != this.props.params['id']
+    ) {
+      await this.props.DataActions?.getById('Camera', this.props.params['id']);
+      this.setState({
+        data: this.props.Camera?.CurrentItem || { name: '' },
+      });
+    } else if (this.state.data.id) {
+      // this.setState({
+      //   data: { name: '' },
+      // });
+    }
   }
 
   async save() {
@@ -125,6 +128,19 @@ class CameraForm extends Component<Props & WithRouter, State> {
               onChange={(ev) => {
                 const { data } = this.state;
                 data.port = ev.target.value as any;
+                this.setState({ data });
+              }}
+            />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Rtsp Port</Form.Label>
+            <Form.Control
+              type="number"
+              value={this.state.data.rtspPort || ''}
+              placeholder="Port"
+              onChange={(ev) => {
+                const { data } = this.state;
+                data.rtspPort = ev.target.value as any;
                 this.setState({ data });
               }}
             />
