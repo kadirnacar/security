@@ -12,16 +12,7 @@ export class CameraService extends ServiceBase {
     );
     return result;
   }
-  public static async start(id: string): Promise<Result<any>> {
-    const result = await this.requestJson(
-      {
-        url: `/api/camera/start/${id}`,
-        method: 'POST',
-      },
-      true
-    );
-    return result;
-  }
+
   public static async pos(
     id: string,
     velocity?: { x?: any; y?: any; z?: any },

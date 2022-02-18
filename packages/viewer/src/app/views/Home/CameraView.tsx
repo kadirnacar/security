@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import { Button, Col, Container, Form, InputGroup, Row } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
+import { AppCtx, AppContextInterface } from '../../reducers/Base';
 import { DataActions } from '../../reducers/Data/actions';
 import { CameraService } from '../../services/CameraService';
 import { ApplicationState } from '../../store';
@@ -18,21 +19,51 @@ interface State {
   range: { min: any; max: any; step: any; speed: any };
   velocity?: { x?: any; y?: any; z?: any };
   action?: 'home';
+  streamSource?: any;
 }
 
-export class CameraView extends Component<Props & ApplicationState, State> {
+export class CameraView extends Component<
+  Props & ApplicationState,
+  State,
+  AppContextInterface
+> {
   constructor(props) {
     super(props);
+    this.startStream = this.startStream.bind(this);
     this.state = {
       range: { min: -1, max: 1, step: 0.1, speed: 0.8 },
       velocity: { x: 0, y: 1, z: 0 },
       action: undefined,
     };
   }
+
+  context: AppContextInterface | undefined;
+
+  static contextType = AppCtx;
+
   async componentDidMount() {
-    console.log(this.props.id);
     if (this.props.id) {
       await CameraService.connect(this.props.id);
+    }
+  }
+
+  componentWillUnmount() {
+    console.log('unmount', this.props.id);
+    if (this.props.id) this.context?.socket?.stopStream(this.props.id);
+  }
+
+  async startStream() {
+    if (this.props.id) {
+      this.context?.socket?.removeEventListener(this.props.id, null);
+
+      this.context?.socket?.addEventListener(
+        this.props.id,
+        async (evt: any) => {
+          console.log(evt);
+        }
+      );
+
+      this.context?.socket?.connectCamera(this.props.id);
     }
   }
 
@@ -63,15 +94,7 @@ export class CameraView extends Component<Props & ApplicationState, State> {
                 >
                   Git
                 </Button>
-                <Button
-                  onClick={async (ev) => {
-                    if (this.props.id) {
-                      await CameraService.start(this.props.id);
-                    }
-                  }}
-                >
-                  Görüntü
-                </Button>
+                <Button onClick={this.startStream}>Görüntü</Button>
               </Col>
             </Row>
             <Row>
@@ -134,6 +157,11 @@ export class CameraView extends Component<Props & ApplicationState, State> {
                     }}
                   />
                 </Form>
+              </Col>
+            </Row>
+            <Row>
+              <Col xs={12}>
+                <video src={this.state.streamSource}></video>
               </Col>
             </Row>
           </Container>

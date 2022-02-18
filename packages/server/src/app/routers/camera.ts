@@ -24,17 +24,6 @@ export class CameraRouter {
     }
   }
 
-  public async startRtsp(req: Request, res: Response, next) {
-    try {
-      const id = req.params['id'];
-      const camera = await CameraService.startStream(id);
-
-      res.status(200).send({});
-    } catch (err) {
-      next(err);
-    }
-  }
-
   public async setPos(req: Request, res: Response, next) {
     try {
       const id = req.params['id'];
@@ -56,6 +45,5 @@ export class CameraRouter {
   async init() {
     this.router.post('/connect/:id', this.connect.bind(this));
     this.router.post('/pos/:id', this.setPos.bind(this));
-    this.router.post('/start/:id', this.startRtsp.bind(this));
   }
 }

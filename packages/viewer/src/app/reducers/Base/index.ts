@@ -6,9 +6,9 @@ export interface AppContextInterface {
   socket?: SocketClient;
 }
 
-export const AppCtx = React.createContext<AppContextInterface>({
-  socket: new SocketClient(),
-});
+export const socket = new SocketClient();
+console.log('create socket')
+export const AppCtx = React.createContext<AppContextInterface>({ socket });
 
 export enum BaseActions {
   IndicatorStart = 'INDICATOR_START',

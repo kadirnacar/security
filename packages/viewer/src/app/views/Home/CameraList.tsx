@@ -20,7 +20,6 @@ export class CameraList extends Component<Props & ApplicationState, State> {
 
   async componentDidMount() {
     await this.props.DataActions?.getList('Camera');
-    console.log(this.context);
   }
 
   render() {

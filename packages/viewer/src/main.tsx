@@ -9,7 +9,7 @@ import * as ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { Main } from './app/container/main';
-import { AppCtx } from './app/reducers/Base';
+import { AppCtx, socket } from './app/reducers/Base';
 import { loadState } from './app/store/localStorage';
 import { StoreHelper } from './app/store/StoreHelper';
 
@@ -22,7 +22,7 @@ ReactDOM.render(
   <Provider store={store}>
     <StrictMode>
       <BrowserRouter>
-        <AppCtx.Provider value={{}}>
+        <AppCtx.Provider value={{ socket }}>
           <Main />
         </AppCtx.Provider>
       </BrowserRouter>

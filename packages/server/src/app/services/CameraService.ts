@@ -1,17 +1,24 @@
 import * as ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import { Camera as CameraModel } from '@security/models';
-import { spawn } from 'child_process';
+import { ChildProcess, spawn } from 'child_process';
 import { URL } from 'url';
 import * as OnvifManager from '../../onvif-nvt/onvif-nvt';
 import Camera = require('../../onvif-nvt/camera');
 import * as queryString from 'query-string';
 import * as WebSocket from 'ws';
 import { createUuidV4 } from '../../onvif-nvt/utils/util';
+import EventEmitter = require('events');
 
+export interface IServiceCamera {
+  model: CameraModel;
+  camera: Camera;
+}
 export class CameraService {
-  static cameraModels: { model: CameraModel; camera: Camera }[] = [];
+  static cameraModels: IServiceCamera[] = [];
 
-  static socketUsers: { [key: string]: { socket: WebSocket } } = {};
+  static socketUsers: { [key: string]: { socket: WebSocket; streams: any[] } } =
+    {};
+  static camStreams: { [key: string]: { reader: RtspReader } } = {};
 
   public static initWebSocket(server) {
     const websocketServer = new WebSocket.Server({
@@ -39,7 +46,11 @@ export class CameraService {
           delete this.socketUsers[userId];
         });
 
-        websocketConnection.on('message', function (message, isBinary) {
+        websocketConnection.on('error', () => {
+          delete this.socketUsers[userId];
+        });
+
+        websocketConnection.on('message', async (message, isBinary) => {
           let dataString = '';
 
           if (isBinary) {
@@ -48,14 +59,60 @@ export class CameraService {
             dataString = message?.toString();
           }
 
-          let parsedMessage = {};
+          let parsedMessage: any = {};
           try {
             parsedMessage = JSON.parse(dataString);
           } catch (err) {
             parsedMessage = dataString;
           }
+          console.log(parsedMessage);
+
+          if (parsedMessage && parsedMessage.type) {
+            switch (parsedMessage.type) {
+              case 'stop':
+                if (this.camStreams[parsedMessage.camId]) {
+                  this.camStreams[parsedMessage.camId].reader.stopStream();
+                  delete this.camStreams[parsedMessage.camId];
+                }
+                break;
+              case 'connect':
+                if (!this.camStreams[parsedMessage.camId]) {
+                  const rtspReader = new RtspReader();
+                  const camItem = this.getCamera(parsedMessage.camId);
+                  rtspReader.addListener('data', (ev) => {
+                    if (this.socketUsers[userId]) {
+                      this.socketUsers[userId].socket.send(
+                        JSON.stringify({
+                          camId: parsedMessage.camId,
+                          data: ev.data,
+                        })
+                      );
+                    }
+                  });
+                  await rtspReader.startStream(camItem);
+                  this.camStreams[parsedMessage.camId] = { reader: rtspReader };
+                } else {
+                  this.camStreams[parsedMessage.camId].reader.addListener(
+                    'data',
+                    (ev) => {
+                      if (this.socketUsers[userId])
+                        this.socketUsers[userId].socket.send({
+                          camId: parsedMessage.camId,
+                          data: ev.data,
+                        });
+                    }
+                  );
+                }
+
+                this.socketUsers[userId].streams.push(parsedMessage.camId);
+
+                break;
+              default:
+                break;
+            }
+          }
         });
-        this.socketUsers[userId] = { socket: websocketConnection };
+        this.socketUsers[userId] = { socket: websocketConnection, streams: [] };
       }
     );
   }
@@ -89,16 +146,28 @@ export class CameraService {
     const camItem = this.cameraModels.find((x) => x.model && x.model.id == id);
     return camItem;
   }
+}
 
-  public static async startStream(id: string) {
-    const camItem = this.getCamera(id);
+export class RtspReader extends EventEmitter {
+  constructor() {
+    super();
+  }
+
+  process: ChildProcess;
+
+  stopStream() {
+    console.log('killl');
+    this.process.kill();
+  }
+
+  async startStream(camItem: IServiceCamera) {
     if (camItem && camItem.camera) {
       const rtspUrl = new URL(camItem.camera.defaultProfile.StreamUri.Uri);
       const connectionUrl = `rtsp://${camItem.model.username}:${camItem.model.password}@${camItem.model.url}:${camItem.model.rtspPort}${rtspUrl.pathname}${rtspUrl.search}`;
 
       //Add -vf format=yuv420p (or the alias -pix_fmt yuv420p) to make the output use a widely compatible pixel format.
 
-      const proc = spawn(ffmpegInstaller.path, [
+      this.process = spawn(ffmpegInstaller.path, [
         '-rtsp_transport',
         'tcp',
         '-i',
@@ -117,19 +186,16 @@ export class CameraService {
         '-',
       ]);
 
-      // const outStream = fs.createWriteStream('output.mp4');
-      // proc.stdout.pipe(outStream);
-
-      proc.stdout.on('data', function (chunk) {
-        // console.log('stdout:', chunk);
+      this.process.stdout.on('data', (chunk) => {
+        this.emit('data', { data: chunk });
       });
 
-      proc.stderr.on('data', function (chunk) {
+      this.process.stderr.on('data', function (chunk) {
         var textChunk = chunk.toString('utf8');
         console.error('stderr', textChunk);
       });
 
-      proc.on('close', function () {
+      this.process.on('close', function () {
         console.log('finished');
       });
     }
