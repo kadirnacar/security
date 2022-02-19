@@ -9,12 +9,13 @@ export type SocketEvent = ReadyEvent | DataEvent;
 export class SocketClient extends EventTarget {
   constructor() {
     super();
-    this.socket = new WebSocket(`ws://${location.host}/watch`);
-    this.socket.onopen = this.handleOpen.bind(this);
-    this.socket.onmessage = this.handleMessage.bind(this);
+    // this.socket = new WebSocket(`ws://${location.host}/watch`);
+    // this.socket.binaryType = 'arraybuffer';
+    // this.socket.onopen = this.handleOpen.bind(this);
+    // this.socket.onmessage = this.handleMessage.bind(this);
   }
 
-  socket: WebSocket;
+  socket?: WebSocket;
   userId?: string;
 
   handleOpen = (ev: Event) => {};
@@ -30,26 +31,27 @@ export class SocketClient extends EventTarget {
         this.userId = data.serId;
         break;
       case 'data':
-        super.dispatchEvent(
-          new CustomEvent(data.camId, { detail: { data: data.data } })
-        );
+        super.dispatchEvent(new CustomEvent(data.camId, { detail: data }));
         break;
       default:
+        // console.log(data)
+        super.dispatchEvent(new CustomEvent(this.camId, { detail: data }));
         break;
     }
   };
-
+  camId: string = '';
   public connectCamera(camId: string) {
-    this.socket.send(JSON.stringify({ type: 'connect', camId: camId }));
+    this.camId = camId;
+    this.socket?.send(JSON.stringify({ type: 'connect', camId: camId }));
     // this.socket.addEventListener
   }
 
   public stopStream(camId: string) {
-    this.socket.send(JSON.stringify({ type: 'stop', camId: camId }));
+    this.socket?.send(JSON.stringify({ type: 'stop', camId: camId }));
     // this.socket.addEventListener
   }
 
   public isOpen() {
-    return this.socket.readyState == this.socket.OPEN;
+    return this.socket?.readyState == this.socket?.OPEN;
   }
 }

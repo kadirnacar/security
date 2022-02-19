@@ -7,8 +7,6 @@
     "target": "ws://localhost:3333/watch",
     "secure": false,
     "ws": true,
-    "logLevel": "debug",
-    "changeOrigin": true,
     "pathRewrite": {
       "^/watch": ""
     }

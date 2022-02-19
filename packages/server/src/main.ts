@@ -41,4 +41,4 @@ const server = app.listen(port, () => {
 
 server.on('error', console.error);
 
-CameraService.initWebSocket(server);
+// CameraService.initWebSocket(server);

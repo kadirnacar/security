@@ -20,6 +20,7 @@ interface State {
   velocity?: { x?: any; y?: any; z?: any };
   action?: 'home';
   streamSource?: any;
+  isLoaded?: boolean;
 }
 
 export class CameraView extends Component<
@@ -30,6 +31,8 @@ export class CameraView extends Component<
   constructor(props) {
     super(props);
     this.startStream = this.startStream.bind(this);
+    this.video = React.createRef<HTMLVideoElement>();
+    this.canvas = React.createRef<HTMLCanvasElement>();
     this.state = {
       range: { min: -1, max: 1, step: 0.1, speed: 0.8 },
       velocity: { x: 0, y: 1, z: 0 },
@@ -38,35 +41,46 @@ export class CameraView extends Component<
   }
 
   context: AppContextInterface | undefined;
+  video: React.RefObject<HTMLVideoElement>;
+  canvas: React.RefObject<HTMLCanvasElement>;
+  socket?: WebSocket;
 
   static contextType = AppCtx;
 
   async componentDidMount() {
     if (this.props.id) {
       await CameraService.connect(this.props.id);
+      this.setState({ isLoaded: true });
     }
   }
 
   componentWillUnmount() {
-    console.log('unmount', this.props.id);
-    if (this.props.id) this.context?.socket?.stopStream(this.props.id);
-  }
-
-  async startStream() {
-    if (this.props.id) {
-      this.context?.socket?.removeEventListener(this.props.id, null);
-
-      this.context?.socket?.addEventListener(
-        this.props.id,
-        async (evt: any) => {
-          console.log(evt);
-        }
-      );
-
-      this.context?.socket?.connectCamera(this.props.id);
+    if (this.props.id && this.socket) {
+      this.socket.close();
     }
   }
-
+  async startStream() {
+    if (this.props.id) {
+      this.setState({
+        streamSource: `http://${location.host}/api/camera/watch/${this.props.id}`,
+      });
+      // this.socket = new WebSocket(
+      //   `ws://${location.host}/watch?camId=${this.props.id}`
+      // );
+      // const player = new JSMpeg.Player(`ws://${location.host}/watch?camId=${this.props.id}`, {
+      //   canvas: this.canvas.current,
+      //   autoplay: true,
+      // });
+    }
+  }
+  toArrayBuffer(buf) {
+    const ab = new ArrayBuffer(buf.length);
+    const view = new Uint8Array(ab);
+    for (let i = 0; i < buf.length; ++i) {
+      view[i] = buf[i];
+    }
+    return ab;
+  }
   render() {
     const inputGroupStyle = {
       width: 100,
@@ -94,7 +108,12 @@ export class CameraView extends Component<
                 >
                   Git
                 </Button>
-                <Button onClick={this.startStream}>Görüntü</Button>
+                <Button
+                  disabled={!this.state.isLoaded}
+                  onClick={this.startStream}
+                >
+                  Görüntü
+                </Button>
               </Col>
             </Row>
             <Row>
@@ -161,7 +180,14 @@ export class CameraView extends Component<
             </Row>
             <Row>
               <Col xs={12}>
-                <video src={this.state.streamSource}></video>
+                <video
+                  style={{ width: '100%' }}
+                  ref={this.video}
+                  controls
+                  autoPlay
+                  muted
+                  src={this.state.streamSource}
+                ></video>
               </Col>
             </Row>
           </Container>
