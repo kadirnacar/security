@@ -6,4 +6,6 @@ export interface Camera {
   rtspPort?: number;
   username?: string;
   password?: string;
+  position?: any;
+  isPtz?: boolean;
 }

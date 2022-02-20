@@ -7,7 +7,7 @@ export interface AppContextInterface {
 }
 
 export const socket = new SocketClient();
-console.log('create socket')
+
 export const AppCtx = React.createContext<AppContextInterface>({ socket });
 
 export enum BaseActions {

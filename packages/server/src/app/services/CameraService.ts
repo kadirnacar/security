@@ -21,21 +21,23 @@ export class CameraService {
 
   static socketUsers: { [key: string]: { socket: WebSocket; streams: any[] } } =
     {};
-  static camStreams: { [camId: string]: { [userId: string]: RtspReader } } = {};
+  static camStreams: { [camId: string]: { reader?: RtspReader } } = {};
 
-  static async pipeRes(camId, userId, res) {
-    if (!this.camStreams[camId] || !this.camStreams[camId][userId]) {
-      const rtspReader = new RtspReader();
-      const camItem = this.getCamera(camId);
-      await rtspReader.startStream(camItem);
+  static async getPlaylist(camId, res) {
+    if (this.camStreams[camId]) {
+      this.camStreams[camId].reader.getPlaylist(res);
+    }
+  }
 
-      if (!this.camStreams[camId]) {
-        this.camStreams[camId] = {};
-      }
-      this.camStreams[camId][userId] = rtspReader;
-      rtspReader.setPipe(res);
-    } else {
-      this.camStreams[camId][userId].setPipe(res);
+  static async getHeader(camId, res) {
+    if (this.camStreams[camId]) {
+      this.camStreams[camId].reader.getHeader(res);
+    }
+  }
+
+  static async getSegment(camId, segId, res) {
+    if (this.camStreams[camId]) {
+      this.camStreams[camId].reader.getSegment(res, segId);
     }
   }
 
@@ -46,33 +48,54 @@ export class CameraService {
     }
   }
 
-  public static async connect(cameraModel: CameraModel) {
-    const connected = this.cameraModels.find(
+  public static async disconnect(cameraModel: CameraModel) {
+    const connected = this.cameraModels.findIndex(
       (x) => x.model && x.model.id == cameraModel.id
     );
-    if (!connected) {
-      try {
-        const cam = await OnvifManager.connect(
-          cameraModel.url,
-          cameraModel.port,
-          cameraModel.username,
-          cameraModel.password
-        );
+    if (
+      this.camStreams[cameraModel.id] &&
+      this.camStreams[cameraModel.id].reader
+    ) {
+      this.camStreams[cameraModel.id].reader.stopStream();
+    }
+    if (connected && connected > -1) {
+      this.cameraModels.splice(connected, 1);
+    }
+  }
 
-        if (cam) {
-          const camItem = { model: cameraModel, camera: cam };
-          this.cameraModels.push(camItem);
-          // const rtspReader = new RtspReader();
-          // await rtspReader.startStream(camItem);
+  public static async connect(cameraModel: CameraModel) {
+    const connectedIndex = this.cameraModels.findIndex(
+      (x) => x.model && x.model.id == cameraModel.id
+    );
+    if (
+      this.camStreams[cameraModel.id] &&
+      this.camStreams[cameraModel.id].reader
+    ) {
+      await this.camStreams[cameraModel.id].reader.stopStream();
+    }
 
-          this.camStreams[cameraModel.id] = {};
-        }
-        return cam;
-      } catch (ex) {
-        throw ex;
+    if (connectedIndex && connectedIndex > -1) {
+      this.cameraModels.splice(connectedIndex, 1);
+    }
+
+    try {
+      const cam = await OnvifManager.connect(
+        cameraModel.url,
+        cameraModel.port,
+        cameraModel.username,
+        cameraModel.password
+      );
+      if (cam) {
+        const camItem = { model: cameraModel, camera: cam };
+        this.cameraModels.push(camItem);
+        const rtspReader = new RtspReader();
+        await rtspReader.startStream(camItem);
+
+        this.camStreams[cameraModel.id] = { reader: rtspReader };
       }
-    } else {
-      return connected.camera;
+      return cam;
+    } catch (ex) {
+      throw ex;
     }
   }
 
@@ -91,137 +114,130 @@ export class RtspReader extends EventEmitter {
   firstChunk: any[] = [];
   streams: any[] = [];
   mp4frag;
+  initStream: any;
 
   async stopStream() {
-    // spawn('taskkill', ['/pid', this.process.pid.toString(), '/f', '/t']);
     return new Promise((resolve: any) => {
+      setTimeout(() => {
+        resolve();
+      }, 2000);
       if (!this.process || this.process.killed) {
         resolve();
       }
-
+      this.mp4frag.resetCache();
+      // this.process.stdio[1].unpipe(this.mp4frag);
       this.process.on('close', () => resolve());
-
       this.process.kill('SIGKILL');
-      // this.process = void 0;
-      execSync(`kill -9 ${this.process.pid}`);
+      // execSync(`kill -9 ${this.process.pid}`);
     });
   }
 
-  setPipe(res) {
-    // console.log('setpipe');
-    this.streams.push(res);
-    console.log(this.mp4frag.initialization);
-    if(this.mp4frag.initialization){
-      res.write(this.mp4frag.initialization)
+  getPlaylist(res) {
+    if (this.mp4frag.m3u8) {
+      res.writeHead(200, { 'Content-Type': 'application/vnd.apple.mpegurl' });
+      res.end(this.mp4frag.m3u8);
+    } else {
+      res.sendStatus(503);
     }
-    // if (this.firstChunk) {
-    //   for (let index = 0; index < this.firstChunk.length; index++) {
-    //     const element = this.firstChunk[index];
-    //     res.write(element);
-    //   }
-    // }
-    // this.process.stdout.pipe(res);
-    // if (this.process) {
-    //   if (!this.stream) {
-    //     this.stream = new PassThrough();
-    //     this.process.stdout.pipe(this.stream);
-    //   }
-    //   this.stream.pipe(res);
-    // }
+  }
+
+  getHeader(res) {
+    console.log('getHeader');
+    if (this.mp4frag.initialization) {
+      res.writeHead(200, { 'Content-Type': 'video/mp4' });
+      res.end(this.mp4frag.initialization);
+    } else {
+      res.sendStatus(503);
+    }
+  }
+
+  getSegment(res, id) {
+    const segmentObject = this.mp4frag.getSegmentObject(id);
+    if (segmentObject) {
+      res.writeHead(200, { 'Content-Type': 'video/mp4' });
+      res.end(segmentObject.segment);
+    } else {
+      res.sendStatus(503);
+    }
   }
 
   unpipe(res) {
-    console.log('unpipe');
     if (this.process) {
     }
   }
 
   async startStream(camItem: IServiceCamera) {
-    console.log('spawn');
-    if (camItem && camItem.camera && !this.process) {
-      const rtspUrl = new URL(camItem.camera.defaultProfile.StreamUri.Uri);
-      const connectionUrl = `rtsp://${camItem.model.username}:${camItem.model.password}@${camItem.model.url}:${camItem.model.rtspPort}${rtspUrl.pathname}${rtspUrl.search}`;
-      // const connectionUrl =
-      //   'rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mp4';
+    return new Promise((resolve: any) => {
+      if (camItem && camItem.camera && !this.process) {
+        const rtspUrl = new URL(camItem.camera.defaultProfile.StreamUri.Uri);
+        const connectionUrl = `rtsp://${camItem.model.username}:${camItem.model.password}@${camItem.model.url}:${camItem.model.rtspPort}${rtspUrl.pathname}${rtspUrl.search}`;
 
-      //Add -vf format=yuv420p (or the alias -pix_fmt yuv420p) to make the output use a widely compatible pixel format.
+        // this.process = spawn(ffmpegInstaller.path, [
+        //   '-analyzeduration',
+        //   '100000',
+        //   '-reorder_queue_size',
+        //   '5',
+        //   '-rtsp_transport',
+        //   'tcp',
+        //   '-i',
+        //   connectionUrl,
+        //   '-c:v',
+        //   'copy',
+        //   '-an',
+        //   '-f',
+        //   'mp4',
+        //   '-movflags',
+        //   '+frag_every_frame+empty_moov+default_base_moof',
+        //   '-reset_timestamps',
+        //   '1',
+        //   'pipe:1',
+        // ], { stdio: ['ignore', 'pipe', 'inherit'] });
+        this.process = spawn(
+          ffmpegInstaller.path,
+          [
+            '-loglevel',
+            'quiet',
+            // '-probesize',
+            // '64',
+            '-analyzeduration',
+            '100000',
+            '-reorder_queue_size',
+            '1',
+            '-rtsp_transport',
+            'tcp',
+            '-i',
+            connectionUrl,
+            '-an',
+            '-c:v',
+            'copy',
+            '-f',
+            'mp4',
+            '-movflags',
+            '+frag_keyframe+empty_moov+default_base_moof',
+            '-metadata',
+            'title="kartal"',
+            '-reset_timestamps',
+            '1',
+            'pipe:1',
+          ],
+          { stdio: ['ignore', 'pipe', 'inherit'] }
+        );
+        this.mp4frag = new Mp4Frag({
+          hlsPlaylistSize: 2,
+          hlsPlaylistBase: 'source',
+          hlsParentPath: camItem.model.id,
+        });
 
-      //   var args = [
-      //     "-f", "dshow",
-      //     "-i",  "video=Integrated Webcam" ,
-      //     "-framerate", this.options.fps,
-      //     "-video_size", this.options.width + 'x' + this.options.height,
-      //     '-pix_fmt',  'yuv420p',
-      //     '-c:v',  'libx264',
-      //     '-b:v', '600k',
-      //     '-bufsize', '600k',
-      //     '-vprofile', 'baseline',
-      //     '-tune', 'zerolatency',
-      //     '-f' ,'rawvideo',
-      //     '-'
-      // ];
-      // const outStream = fs.createWriteStream('output.mp4');
-      this.process = spawn(ffmpegInstaller.path, [
-        // '-probesize',
-        // '64',
-        '-analyzeduration',
-        '100000',
-        '-reorder_queue_size',
-        '5',
-        '-rtsp_transport',
-        'tcp',
-        '-i',
-        connectionUrl,
-        '-c:v',
-        'copy',
-        // with audio params
-        // '-c:a',
-        // 'aac',
-        // without audio param
-        '-an',
-        '-f',
-        'mp4',
-        '-movflags',
-        '+frag_every_frame+empty_moov+default_base_moof',
-        '-reset_timestamps',
-        '1',
-        //'frag_keyframe+empty_moov+faststart',
-        'pipe:',
-      ]);
-      this.mp4frag = new Mp4Frag({
-        segmentCount: 10,
-      });
-      this.process.stdout.pipe(this.mp4frag);
+        this.process.stdio[1].pipe(this.mp4frag);
 
-      // mp4frag.on('segment', (data) => {
-      //   console.log('---- segment ----');
-      //   console.log(data);
-      //   for (let index = 0; index < this.streams.length; index++) {
-      //     const element = this.streams[index];
-      //     element.write(data.segment);
-      //   }
-      // });
-
-      let count = 0;
-      this.process.stdout.on('data', (chunk) => {
-        // if (count < 3) {
-        //   this.firstChunk.push(chunk);
-        //   count++;
-        // }
-        for (let index = 0; index < this.streams.length; index++) {
-          const element = this.streams[index];
-          element.write(chunk);
-        }
-      });
-      // this.process.stdout.pipe(this.stream, { end: false });
-      this.process.stderr.on('data', function (chunk) {
-        var textChunk = chunk.toString('utf8');
-        // console.error('stderr', textChunk);
-      });
-
-      this.process.on('close', function () {
-        console.log('finished');
-      });
-    }
+        this.mp4frag.on('initialized', (params) => {
+          setTimeout(() => {
+            resolve();
+          }, 1000);
+        });
+      } else {
+        resolve();
+      }
+    });
   }
 }

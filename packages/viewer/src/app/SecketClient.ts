@@ -34,7 +34,6 @@ export class SocketClient extends EventTarget {
         super.dispatchEvent(new CustomEvent(data.camId, { detail: data }));
         break;
       default:
-        // console.log(data)
         super.dispatchEvent(new CustomEvent(this.camId, { detail: data }));
         break;
     }
@@ -43,12 +42,10 @@ export class SocketClient extends EventTarget {
   public connectCamera(camId: string) {
     this.camId = camId;
     this.socket?.send(JSON.stringify({ type: 'connect', camId: camId }));
-    // this.socket.addEventListener
   }
 
   public stopStream(camId: string) {
     this.socket?.send(JSON.stringify({ type: 'stop', camId: camId }));
-    // this.socket.addEventListener
   }
 
   public isOpen() {

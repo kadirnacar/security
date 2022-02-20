@@ -49,6 +49,7 @@ class Home extends Component<any, HomeState> {
 
   factory(node: TabNode) {
     const component = node.getComponent();
+    console.log(node.getId());
     switch (component) {
       case 'button':
         return <button>{node.getName()}</button>;

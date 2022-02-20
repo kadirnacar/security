@@ -171,6 +171,19 @@ class CameraForm extends Component<Props & WithRouter, State> {
               }}
             />
           </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Label>PTZ</Form.Label>
+            <Form.Check
+              checked={this.state.data.isPtz || false}
+              placeholder="PTZ"
+              onChange={(ev) => {
+                const { data } = this.state;
+                data.isPtz = ev.target.checked;
+                this.setState({ data });
+              }}
+            />
+          </Form.Group>
         </Form>
       </>
     );

@@ -25,6 +25,19 @@ export class CameraRouter {
     }
   }
 
+  public async disconnect(req: Request, res: Response, next) {
+    try {
+      const id = req.params['id'];
+      const dataRepo = Services.Camera;
+      const data = await dataRepo.get(id);
+      const cam = await CameraService.disconnect(data);
+
+      res.status(200).send({});
+    } catch (err) {
+      next(err);
+    }
+  }
+
   public async setPos(req: Request, res: Response, next) {
     try {
       const id = req.params['id'];
@@ -43,31 +56,29 @@ export class CameraRouter {
     }
   }
 
-  public async watchCam(req: Request, res: Response, next) {
+  public async getPlaylist(req: Request, res: Response, next) {
     try {
-      // res.writeHead(200, {
-      //   'Access-Control-Allow-Origin': '*',
-      //   Connection: 'Keep-Alive',
-      //   'Content-Type': 'video/mp4',
-      // });
-
-      res.on('close', () => {console.log('reg close')});
-      res.on('data', () => {console.log('reg data')});
-      res.on('finish', () => {console.log('reg end')});
-      res.on('error', () => {console.log('reg error')});
-      res.on('unpipe', () => {console.log('reg pause')});
-      res.on('pipe', () => {console.log('reg readable')});
-      res.on('drain', () => {console.log('reg resume')});
-      // res.writeHead(206)
-      const userId = createUuidV4();
       const id = req.params['id'];
-      // res.set('Content-Type', 'video/mp4');
-      // res.on('close', async () => {
-      //   await CameraService.stopRes(id, userId, res);
-      // });
+      await CameraService.getPlaylist(id, res);
+    } catch (err) {
+      next(err);
+    }
+  }
 
-      console.log('request', id);
-      await CameraService.pipeRes(id, id, res);
+  public async getHeader(req: Request, res: Response, next) {
+    try {
+      const id = req.params['id'];
+      await CameraService.getHeader(id, res);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  public async getSegment(req: Request, res: Response, next) {
+    try {
+      const id = req.params['id'];
+      const segment = req.params['segment'];
+      await CameraService.getSegment(id, segment, res);
     } catch (err) {
       next(err);
     }
@@ -75,7 +86,10 @@ export class CameraRouter {
 
   async init() {
     this.router.post('/connect/:id', this.connect.bind(this));
+    this.router.post('/disconnect/:id', this.disconnect.bind(this));
     this.router.post('/pos/:id', this.setPos.bind(this));
-    this.router.get('/watch/:id', this.watchCam.bind(this));
+    this.router.get('/watch/:id/source:segment.m4s', this.getSegment.bind(this));
+    this.router.get('/watch/:id/source.mp4', this.getHeader.bind(this));
+    this.router.get('/watch/:id', this.getPlaylist.bind(this));
   }
 }
