@@ -31,6 +31,7 @@ interface State {
   isLoaded?: boolean;
   cameraItem?: Camera;
   objectDetect?: objectDetection.ObjectDetection;
+  animation?: boolean;
 }
 
 export class CameraView extends Component<
@@ -44,6 +45,7 @@ export class CameraView extends Component<
     this.savePosition = this.savePosition.bind(this);
     this.connectCam = this.connectCam.bind(this);
     this.disconnectCam = this.disconnectCam.bind(this);
+    this.runFrame = this.runFrame.bind(this);
     this.video = React.createRef<any>();
     this.canvas = React.createRef<HTMLCanvasElement>();
     this.canvasElement = React.createRef<HTMLCanvasElement>();
@@ -56,6 +58,7 @@ export class CameraView extends Component<
       action: undefined,
       cameraItem: undefined,
       objectDetect: undefined,
+      animation: true,
     };
   }
 
@@ -65,6 +68,7 @@ export class CameraView extends Component<
   socket?: WebSocket;
   ctx?: CanvasRenderingContext2D;
   canvasElement: React.RefObject<HTMLCanvasElement>;
+  animationFrame?: number;
 
   static contextType = AppCtx;
 
@@ -84,7 +88,9 @@ export class CameraView extends Component<
   }
 
   async componentDidMount() {
-    if (this.props.id) {
+    const videoElement: HTMLVideoElement =
+      this.video.current?.videoRef?.current;
+    if (this.props.id && videoElement) {
       await this.props.DataActions?.getById('Camera', this.props.id);
       if (this.props.Data.Camera.CurrentItem?.position) {
         this.setState({
@@ -92,20 +98,26 @@ export class CameraView extends Component<
         });
       }
       if (this.canvasElement.current) {
+        const rect = videoElement.getBoundingClientRect();
+        this.canvasElement.current.width = rect.width;
+        this.canvasElement.current.height = rect.height;
         const ct = this.canvasElement.current.getContext('2d');
         if (ct) {
           this.ctx = ct;
-          this.ctx.fillStyle = 'black';
-          this.ctx.fillRect(0, 0, 640, 480);
+          this.ctx.fillStyle = 'white';
+          this.ctx.fillRect(0, 0, rect.width, rect.height);
         }
       }
+      const objectDetect = await objectDetection.load({
+        modelUrl: 'assets/models/lite_mobilenet_v2/model.json',
+      });
       // await tf.setBackend('wasm');
       this.setState({
         isLoaded: false,
         cameraItem: this.props.Data.Camera.CurrentItem,
+        objectDetect,
       });
     }
-    const videoElement = this.video.current.videoRef.current;
   }
 
   componentWillUnmount() {
@@ -130,10 +142,68 @@ export class CameraView extends Component<
     }
   }
 
+  async runFrame() {
+    const videoElement: HTMLVideoElement =
+      this.video.current?.videoRef?.current;
+
+    if (this.ctx && videoElement && this.canvasElement.current) {
+      // const pose = await this.state.objectDetect?.detect(videoElement);
+
+      this.state.objectDetect?.detect(this.canvasElement.current).then((pose) => {
+        const rect = videoElement.getBoundingClientRect();
+        if (this.ctx) {
+          if (this.canvasElement.current) {
+            this.canvasElement.current.width = rect.width;
+            this.canvasElement.current.height = rect.height;
+          }
+
+          this.ctx.clearRect(0, 0, rect.width, rect.height);
+          this.ctx.drawImage(videoElement, 0, 0, rect.width, rect.height);
+
+          if (pose && pose.length > 0) {
+            for (let i = 0; i < pose.length; i++) {
+              console.log(pose);
+              this.ctx.strokeStyle = 'red';
+              this.ctx.font = '50px serif';
+              // this.ctx.fillText
+              this.ctx.fillText(
+                pose[i].class,
+                pose[i].bbox[0],
+                pose[i].bbox[1],
+                pose[i].bbox[2]
+              );
+              this.ctx.strokeRect(
+                pose[i].bbox[0],
+                pose[i].bbox[1],
+                pose[i].bbox[2],
+                pose[i].bbox[3]
+              );
+
+              // this.ctx.drawImage(
+              //   videoElement,
+              //   pose[i].bbox[0],
+              //   pose[i].bbox[1],
+              //   pose[i].bbox[2],
+              //   pose[i].bbox[3],
+              //   0,
+              //   0,
+              //   pose[i].bbox[2],
+              //   pose[i].bbox[3]
+              // );
+              // this.ctx.strokeRect(i * 200, 0, 200, 200 * (size[1] / size[0]));
+            }
+          }
+        }
+      });
+    }
+
+    setTimeout(() => {
+      this.animationFrame = requestAnimationFrame(this.runFrame);
+    }, 1000);
+    // if (this.state.animation)
+    //   this.animationFrame = requestAnimationFrame(this.runFrame);
+  }
   render() {
-    const inputGroupStyle = {
-      width: 100,
-    };
     return (
       <Row>
         <Col xs={12}>
@@ -250,7 +320,7 @@ export class CameraView extends Component<
               </>
             ) : null}
             <Row>
-              <Col xs={12}>
+              <Col xs={12} style={{ position: 'relative' }}>
                 {/* <video
                   style={{ width: '100%' }}
                   ref={this.video}
@@ -266,11 +336,32 @@ export class CameraView extends Component<
                   width="100%"
                   height="auto"
                 /> */}
-                <Replay source={this.state.streamSource}>
-                  {/* <Replay source="https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8"> */}
-                  <HlsjsVideoStreamer ref={this.video} />
-                </Replay>
-                <canvas ref={this.canvasElement}></canvas>
+                <div
+                  style={{
+                    overflow: 'hidden',
+                    height: '1px',
+                  }}
+                >
+                  <Replay
+                    source={this.state.streamSource}
+                    options={{ controls: null }}
+                    onStreamStateChange={(evt) => {
+                      if (evt.playState == 'playing' && !this.animationFrame) {
+                        console.log('runframe');
+                        this.runFrame();
+                      }
+                    }}
+                  >
+                    {/* <Replay source="https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8"> */}
+                    <HlsjsVideoStreamer
+                      ref={this.video}
+                      onReady={(evt) => {
+                        console.log(evt);
+                      }}
+                    />
+                  </Replay>
+                </div>
+                <canvas style={{}} ref={this.canvasElement}></canvas>
               </Col>
             </Row>
           </Container>
