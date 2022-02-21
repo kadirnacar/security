@@ -41,12 +41,6 @@ export class CameraService {
     }
   }
 
-  static async setPipe(camId, res) {
-    if (this.camStreams[camId]) {
-      this.camStreams[camId].reader.setPipe(res);
-    }
-  }
-
   static async stopRes(camId, userId, res) {
     if (this.camStreams[camId] && this.camStreams[camId][userId]) {
       await this.camStreams[camId][userId].stopStream();
@@ -117,9 +111,10 @@ export class RtspReader extends EventEmitter {
   }
 
   process: ChildProcess;
+  firstChunk: any[] = [];
+  streams: any[] = [];
   mp4frag;
   initStream: any;
-  responses: any[] = [];
 
   async stopStream() {
     return new Promise((resolve: any) => {
@@ -165,11 +160,6 @@ export class RtspReader extends EventEmitter {
     }
   }
 
-  setPipe(res) {
-    res.write(this.initStream);
-    this.responses.push(res);
-  }
-
   unpipe(res) {
     if (this.process) {
     }
@@ -204,14 +194,6 @@ export class RtspReader extends EventEmitter {
         this.process = spawn(
           ffmpegInstaller.path,
           [
-            '-loglevel',
-            'quiet',
-            // '-probesize',
-            // '64',
-            // '-analyzeduration',
-            // '100000',
-            // '-reorder_queue_size',
-            // '1',
             '-rtsp_transport',
             'tcp',
             '-i',
@@ -219,37 +201,35 @@ export class RtspReader extends EventEmitter {
             '-an',
             '-c:v',
             'copy',
+            // '-probesize',
+            // '32',
+            '-analyzeduration',
+            '1000000',
             '-f',
             'mp4',
             '-movflags',
             '+frag_keyframe+empty_moov+default_base_moof',
-            // '-metadata',
-            // 'title="kartal"',
             // '-reset_timestamps',
-            // '1',
+            // '0',
             'pipe:1',
           ],
           { stdio: ['ignore', 'pipe', 'inherit'] }
         );
         this.mp4frag = new Mp4Frag({
-          hlsPlaylistSize: 2,
+          hlsPlaylistSize: 1,
+          hlsPlaylistInit: false,
           hlsPlaylistBase: 'source',
+          segmentCount: 1,
           hlsParentPath: camItem.model.id,
         });
 
         this.process.stdio[1].pipe(this.mp4frag);
 
-        this.process.stdio[1].on('data', (chunk) => {
-          for (let index = 0; index < this.responses.length; index++) {
-            const element = this.responses[index];
-            element.write(chunk);
-          }
-        });
-
         this.mp4frag.on('initialized', (params) => {
           console.log(params);
-          this.initStream = params.initialization;
-          resolve();
+          setTimeout(() => {
+            resolve();
+          }, 1000);
         });
       } else {
         resolve();

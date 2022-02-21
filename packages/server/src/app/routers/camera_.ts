@@ -1,6 +1,6 @@
 import { Services } from '@security/database';
 import { Request, Response, Router } from 'express';
-import { CameraService } from '../services/CameraService2';
+import { CameraService } from '../services/CameraService';
 import Camera = require('../../onvif-nvt/camera');
 import { createUuidV4 } from '../../onvif-nvt/utils/util';
 
@@ -84,15 +84,6 @@ export class CameraRouter {
     }
   }
 
-  public async setPipe(req: Request, res: Response, next) {
-    try {
-      const id = req.params['id'];
-      await CameraService.setPipe(id, res);
-    } catch (err) {
-      next(err);
-    }
-  }
-
   async init() {
     this.router.post('/connect/:id', this.connect.bind(this));
     this.router.post('/disconnect/:id', this.disconnect.bind(this));
@@ -100,6 +91,5 @@ export class CameraRouter {
     this.router.get('/watch/:id/source:segment.m4s', this.getSegment.bind(this));
     this.router.get('/watch/:id/source.mp4', this.getHeader.bind(this));
     this.router.get('/watch/:id', this.getPlaylist.bind(this));
-    this.router.get('/pipe/:id', this.setPipe.bind(this));
   }
 }

@@ -84,12 +84,36 @@ export class CameraRouter {
     }
   }
 
+  public async setPipe(req: Request, res: Response, next) {
+    try {
+      const id = req.params['id'];
+      await CameraService.setPipe(id, res);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  public async getCamInfo(req: Request, res: Response, next) {
+    try {
+      const id = req.params['id'];
+      const cam = await CameraService.getCamera(id);
+      res.status(200).send(cam);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async init() {
     this.router.post('/connect/:id', this.connect.bind(this));
     this.router.post('/disconnect/:id', this.disconnect.bind(this));
     this.router.post('/pos/:id', this.setPos.bind(this));
-    this.router.get('/watch/:id/source:segment.m4s', this.getSegment.bind(this));
+    this.router.get(
+      '/watch/:id/source:segment.m4s',
+      this.getSegment.bind(this)
+    );
     this.router.get('/watch/:id/source.mp4', this.getHeader.bind(this));
     this.router.get('/watch/:id', this.getPlaylist.bind(this));
+    this.router.get('/pipe/:id', this.setPipe.bind(this));
+    this.router.get('/info/:id', this.getCamInfo.bind(this));
   }
 }
