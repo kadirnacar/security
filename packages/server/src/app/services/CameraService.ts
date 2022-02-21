@@ -142,7 +142,6 @@ export class RtspReader extends EventEmitter {
   }
 
   getHeader(res) {
-    console.log('getHeader');
     if (this.mp4frag.initialization) {
       res.writeHead(200, { 'Content-Type': 'video/mp4' });
       res.end(this.mp4frag.initialization);

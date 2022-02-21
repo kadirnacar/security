@@ -12,6 +12,11 @@ import SlideValue from './SlideValue';
 import { Replay } from 'vimond-replay';
 import 'vimond-replay/index.css';
 import HlsjsVideoStreamer from 'vimond-replay/video-streamer/hlsjs';
+import * as objectDetection from '@tensorflow-models/coco-ssd';
+import '@tensorflow/tfjs-backend-cpu';
+import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm';
+import '@tensorflow/tfjs-backend-webgl';
+import * as tf from '@tensorflow/tfjs-core';
 
 interface Props {
   DataActions?: DataActions<Camera>;
@@ -25,6 +30,7 @@ interface State {
   streamSource?: any;
   isLoaded?: boolean;
   cameraItem?: Camera;
+  objectDetect?: objectDetection.ObjectDetection;
 }
 
 export class CameraView extends Component<
@@ -38,20 +44,27 @@ export class CameraView extends Component<
     this.savePosition = this.savePosition.bind(this);
     this.connectCam = this.connectCam.bind(this);
     this.disconnectCam = this.disconnectCam.bind(this);
-    this.video = React.createRef<HTMLVideoElement>();
+    this.video = React.createRef<any>();
     this.canvas = React.createRef<HTMLCanvasElement>();
+    this.canvasElement = React.createRef<HTMLCanvasElement>();
+
+    // tfjsWasm.setWasmPaths('assets/wasm/');
+
     this.state = {
       range: { min: -1, max: 1, step: 0.1, speed: 0.8 },
       velocity: { x: 0, y: 1, z: 0 },
       action: undefined,
       cameraItem: undefined,
+      objectDetect: undefined,
     };
   }
 
   context: AppContextInterface | undefined;
-  video: React.RefObject<HTMLVideoElement>;
+  video: React.RefObject<any>;
   canvas: React.RefObject<HTMLCanvasElement>;
   socket?: WebSocket;
+  ctx?: CanvasRenderingContext2D;
+  canvasElement: React.RefObject<HTMLCanvasElement>;
 
   static contextType = AppCtx;
 
@@ -76,12 +89,23 @@ export class CameraView extends Component<
       if (this.props.Data.Camera.CurrentItem?.position) {
         this.setState({
           velocity: this.props.Data.Camera.CurrentItem.position,
-          cameraItem: this.props.Data.Camera.CurrentItem,
         });
       }
-      // await this.connectCam();
-      this.setState({ isLoaded: false });
+      if (this.canvasElement.current) {
+        const ct = this.canvasElement.current.getContext('2d');
+        if (ct) {
+          this.ctx = ct;
+          this.ctx.fillStyle = 'black';
+          this.ctx.fillRect(0, 0, 640, 480);
+        }
+      }
+      // await tf.setBackend('wasm');
+      this.setState({
+        isLoaded: false,
+        cameraItem: this.props.Data.Camera.CurrentItem,
+      });
     }
+    const videoElement = this.video.current.videoRef.current;
   }
 
   componentWillUnmount() {
@@ -244,8 +268,9 @@ export class CameraView extends Component<
                 /> */}
                 <Replay source={this.state.streamSource}>
                   {/* <Replay source="https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8"> */}
-                  <HlsjsVideoStreamer />
+                  <HlsjsVideoStreamer ref={this.video} />
                 </Replay>
+                <canvas ref={this.canvasElement}></canvas>
               </Col>
             </Row>
           </Container>

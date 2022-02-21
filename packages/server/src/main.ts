@@ -5,6 +5,7 @@
 
 import * as bodyParser from 'body-parser';
 import * as express from 'express';
+import path = require('path');
 import { CameraRouter } from './app/routers/camera';
 import { DataRouter } from './app/routers/data';
 import { CameraService } from './app/services/CameraService';
@@ -26,7 +27,7 @@ function corsPrefetch(req: Request, res: express.Response, next: Function) {
 
   next();
 }
-
+app.use(express.static(path.join(__dirname, 'assets')));
 app.use(corsPrefetch as any);
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: false }));

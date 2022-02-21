@@ -20,7 +20,7 @@
         ],
         "styles": ["packages/viewer/src/styles.css"],
         "scripts": [],
-        "webpackConfig": "@nrwl/react/plugins/webpack"
+        "webpackConfig": "packages/viewer/webpack.config.js"
       },
       "configurations": {
         "production": {
@@ -41,6 +41,7 @@
     },
     "serve": {
       "executor": "@nrwl/web:dev-server",
+      "webpackConfig":"",
       "options": {
         "buildTarget": "viewer:build",
         "proxyConfig": "packages/viewer/proxy.conf.json",
