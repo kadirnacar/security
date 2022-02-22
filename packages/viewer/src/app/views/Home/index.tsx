@@ -1,7 +1,10 @@
 import {
   AppBar,
   Box,
+  Button,
+  ButtonGroup,
   Card,
+  CardHeader,
   Container,
   createStyles,
   CssBaseline,
@@ -12,9 +15,16 @@ import {
 } from '@material-ui/core';
 import { CameraAlt, Close, Save } from '@material-ui/icons';
 import { withStyles } from '@material-ui/styles';
+import { Camera } from '@security/models';
 import React, { Component } from 'react';
 import { Responsive as ResponsiveGridLayout } from 'react-grid-layout';
+import { connect } from 'react-redux';
 import { withSize } from 'react-sizeme';
+import { bindActionCreators } from 'redux';
+import { DataActions } from '../../reducers/Data/actions';
+import { DataState } from '../../reducers/Data/state';
+import { ApplicationState } from '../../store';
+import LayoutItem from './LayoutItem';
 
 const defaultLayout = [
   {
@@ -43,8 +53,12 @@ const defaultLayout = [
 interface HomeState {
   layout: any[];
 }
+interface Props {
+  DataActions?: DataActions<Camera>;
+  Data?: DataState;
+}
 
-class Home extends Component<any, HomeState> {
+class Home extends Component<Props, HomeState> {
   constructor(props) {
     super(props);
 
@@ -56,7 +70,8 @@ class Home extends Component<any, HomeState> {
     };
   }
 
-  componentDidMount() {
+  async componentDidMount() {
+    await this.props.DataActions?.getList('Camera');
     const savedLayout = localStorage.getItem('layout');
     if (savedLayout) {
       try {
@@ -85,12 +100,21 @@ class Home extends Component<any, HomeState> {
       <>
         <CssBaseline />
         <Card className={this.props['classes'].root}>
-          <IconButton title="Kamera Aç">
-            <CameraAlt />
-          </IconButton>
-          <IconButton title="Görünümü Kaydet" onClick={this.saveLayout}>
-            <Save />
-          </IconButton>
+          <CardHeader
+            title="Kameralar"
+            action={
+              <ButtonGroup>
+                {this.props.Data?.Camera.List.map((cam, index) => {
+                  return (
+                    <Button key={index} startIcon={<CameraAlt />}>
+                      {cam.name}
+                    </Button>
+                  );
+                })}
+                <Button startIcon={<Save />}>Kaydet</Button>
+              </ButtonGroup>
+            }
+          ></CardHeader>
         </Card>
         <ResponsiveGridLayout
           className="layout"
@@ -102,11 +126,19 @@ class Home extends Component<any, HomeState> {
           onLayoutChange={this.layoutChange}
           layouts={{ lg: this.state.layout }}
           draggableHandle={'.dragger'}
+          resizeHandles={['se', 'e', 'w']}
         >
           {this.state.layout.map((item, index) => {
             return (
               <Paper key={item.i} data-grid={{ ...item }}>
-                <AppBar
+                <LayoutItem
+                  index={index}
+                  item={item}
+                  onRemoveItem={this.removeLayoutItem.bind(this, index)}
+                >
+                  dldkkdl
+                </LayoutItem>
+                {/* <AppBar
                   className={'dragger'}
                   color="transparent"
                   style={{ height: 42 }}
@@ -134,7 +166,7 @@ class Home extends Component<any, HomeState> {
                     risus, porta ac consectetur ac, vestibulum at eros. Praesent
                     commodo cursus magna, vel scelerisque nisl consectetur et.
                   </Box>
-                </Container>
+                </Container> */}
               </Paper>
             );
           })}
@@ -146,20 +178,18 @@ class Home extends Component<any, HomeState> {
 
 const styles = createStyles((theme) => ({
   root: {
-    padding: theme.spacing(1),
     width: '100%',
-    display: 'flex',
-    justifyContent: 'flex-end',
-  },
-  toolbar: {
-    height: 42,
-    minHeight: 42,
-  },
-  grow: {
-    flexGrow: 1,
   },
 }));
 
+const mapStateToProps = (state: ApplicationState) => state;
+
+const mapDispatchToProps = (dispatch) => {
+  return {
+    DataActions: bindActionCreators({ ...new DataActions<Camera>() }, dispatch),
+  };
+};
+
 export default withSize({ refreshMode: 'debounce', refreshRate: 60 })(
-  withStyles(styles)(Home)
+  withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(Home))
 );

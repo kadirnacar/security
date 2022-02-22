@@ -5,7 +5,6 @@ import {
   createStyles,
   CssBaseline,
   IconButton,
-  Typography,
 } from '@material-ui/core';
 import { Add } from '@material-ui/icons';
 import { withStyles } from '@material-ui/styles';
