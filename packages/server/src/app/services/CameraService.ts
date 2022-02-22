@@ -11,6 +11,7 @@ import EventEmitter = require('events');
 import { PassThrough, Writable } from 'stream';
 import * as fs from 'fs';
 import * as Mp4Frag from 'mp4frag';
+import path = require('path');
 
 export interface IServiceCamera {
   model: CameraModel;
@@ -43,7 +44,7 @@ export class CameraService {
 
   static async setPipe(camId, res) {
     if (this.camStreams[camId]) {
-      this.camStreams[camId].reader.setPipe(res);
+      await this.camStreams[camId].reader.setPipe(res);
     }
   }
 
@@ -118,8 +119,6 @@ export class RtspReader extends EventEmitter {
 
   process: ChildProcess;
   mp4frag;
-  initStream: any;
-  responses: any[] = [];
 
   async stopStream() {
     return new Promise((resolve: any) => {
@@ -165,9 +164,9 @@ export class RtspReader extends EventEmitter {
     }
   }
 
-  setPipe(res) {
-    res.write(this.initStream);
-    // this.responses.push(res);
+  async setPipe(res) {
+    res.writeHead(200, { 'Content-Type': 'video/mp4' });
+    res.write(this.mp4frag.initialization)
     this.mp4frag.pipe(res);
   }
 
@@ -176,77 +175,46 @@ export class RtspReader extends EventEmitter {
     }
   }
 
+
   async startStream(camItem: IServiceCamera) {
     return new Promise((resolve: any) => {
       if (camItem && camItem.camera && !this.process) {
         const rtspUrl = new URL(camItem.camera.defaultProfile.StreamUri.Uri);
         const connectionUrl = `rtsp://${camItem.model.username}:${camItem.model.password}@${camItem.model.url}:${camItem.model.rtspPort}${rtspUrl.pathname}${rtspUrl.search}`;
 
-        // this.process = spawn(ffmpegInstaller.path, [
-        //   '-analyzeduration',
-        //   '100000',
-        //   '-reorder_queue_size',
-        //   '5',
-        //   '-rtsp_transport',
-        //   'tcp',
-        //   '-i',
-        //   connectionUrl,
-        //   '-c:v',
-        //   'copy',
-        //   '-an',
-        //   '-f',
-        //   'mp4',
-        //   '-movflags',
-        //   '+frag_every_frame+empty_moov+default_base_moof',
-        //   '-reset_timestamps',
-        //   '1',
-        //   'pipe:1',
-        // ], { stdio: ['ignore', 'pipe', 'inherit'] });
+        console.log(connectionUrl, rtspUrl);
         this.process = spawn(
           ffmpegInstaller.path,
           [
             '-rtsp_transport',
             'tcp',
+            '-re',
             '-i',
             connectionUrl,
             '-an',
             '-c:v',
             'copy',
-
             '-f',
             'mp4',
-            '-avioflags',
-            'direct',
             '-movflags',
-            '+frag_keyframe+empty_moov+default_base_moof',
-            '-preset',
-            'ultrafast',
+            '+frag_keyframe+empty_moov+default_base_moof+faststart',
             '-tune',
             'zerolatency',
-            '-probesize',
-            '32',
-            '-analyzeduration',
-            '0',
-            '-fflags',
-            'nobuffer',
-            '-flush_packets',
-            '0',
-            // '-reset_timestamps',
-            // '0',
+            '-reset_timestamps',
+            '1',
             'pipe:1',
-          ]
-          // { stdio: ['ignore', 'pipe', 'inherit'] }
+          ],
+          { stdio: ['ignore', 'pipe', 'ignore', 'pipe'] }
         );
         this.mp4frag = new Mp4Frag({});
 
-        this.process.stdout.pipe(this.mp4frag);
+        this.process.stdio[1].pipe(this.mp4frag);
 
-        this.process.stderr.on('data', (chunk) => {
-          console.log(chunk.toString('utf8'));
-        });
+        // this.process.stderr.on('data', (chunk) => {
+        //   console.log('stderr',chunk.toString('utf8'));
+        // });
 
         this.mp4frag.on('initialized', (params) => {
-          this.initStream = params.initialization;
           resolve();
         });
       } else {

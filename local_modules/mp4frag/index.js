@@ -13,14 +13,14 @@ const _TFHD = Buffer.from([0x74, 0x66, 0x68, 0x64]); // tfhd
 const _TRUN = Buffer.from([0x74, 0x72, 0x75, 0x6e]); // trun
 const _MFRA = Buffer.from([0x6d, 0x66, 0x72, 0x61]); // mfra
 const _HLS_INIT_DEF = true; // hls playlist available after initialization and before 1st segment
-const _HLS_SIZE_DEF = 4; // hls playlist size default
-const _HLS_SIZE_MIN = 2; // hls playlist size minimum
+const _HLS_SIZE_DEF = 1; // hls playlist size default
+const _HLS_SIZE_MIN = 1; // hls playlist size minimum
 const _HLS_SIZE_MAX = 20; // hls playlist size maximum
 const _HLS_EXTRA_DEF = 0; // hls playlist extra segments in memory default
 const _HLS_EXTRA_MIN = 0; // hls playlist extra segments in memory minimum
 const _HLS_EXTRA_MAX = 10; // hls playlist extra segments in memory maximum
-const _SEG_SIZE_DEF = 2; // segment list size default
-const _SEG_SIZE_MIN = 2; // segment list size minimum
+const _SEG_SIZE_DEF = 1; // segment list size default
+const _SEG_SIZE_MIN = 1; // segment list size minimum
 const _SEG_SIZE_MAX = 30; // segment list size maximum
 
 /**

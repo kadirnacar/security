@@ -19,8 +19,7 @@
           "packages/viewer/src/assets"
         ],
         "styles": ["packages/viewer/src/styles.css"],
-        "scripts": [],
-        "webpackConfig": "packages/viewer/webpack.config.js"
+        "scripts": []
       },
       "configurations": {
         "production": {

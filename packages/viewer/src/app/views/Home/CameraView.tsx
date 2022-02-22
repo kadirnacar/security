@@ -291,7 +291,7 @@ export class CameraView extends Component<
           <Container>
             <Row>
               <Col xs={12} style={{ position: 'relative' }}>
-                <div ref={this.infoDiv}></div>
+                <div ref={this.infoDiv} style={{ textAlign: 'right' }}></div>
 
                 <div
                   style={{
