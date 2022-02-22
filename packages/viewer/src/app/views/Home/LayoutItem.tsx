@@ -3,7 +3,6 @@ import {
   Box,
   Container,
   IconButton,
-  Paper,
   Toolbar,
   Typography,
 } from '@material-ui/core';
@@ -11,9 +10,11 @@ import { Close } from '@material-ui/icons';
 import React, { Component } from 'react';
 
 type Props = {
+  title: string;
   item: any;
   onRemoveItem: (index) => void;
   index: number;
+  buttons?: React.ReactNode[];
 };
 
 class LayoutItem extends Component<Props, any> {
@@ -37,13 +38,16 @@ class LayoutItem extends Component<Props, any> {
             }}
           >
             <Typography variant="h6" color="textSecondary">
-              {this.props.item.i}
+              {this.props.title}
             </Typography>
             <div
               style={{
                 flexGrow: 1,
               }}
             />
+            {this.props.buttons?.map((btn, index) => {
+              return btn;
+            })}
             <IconButton
               edge="end"
               title="Kapat"

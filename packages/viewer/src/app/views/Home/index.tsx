@@ -13,7 +13,7 @@ import {
   Toolbar,
   Typography,
 } from '@material-ui/core';
-import { CameraAlt, Close, Save } from '@material-ui/icons';
+import { CameraAlt, Close, Save, Restore } from '@material-ui/icons';
 import { withStyles } from '@material-ui/styles';
 import { Camera } from '@security/models';
 import React, { Component } from 'react';
@@ -65,13 +65,18 @@ class Home extends Component<Props, HomeState> {
     this.saveLayout = this.saveLayout.bind(this);
     this.layoutChange = this.layoutChange.bind(this);
     this.removeLayoutItem = this.removeLayoutItem.bind(this);
+    this.loadLayout = this.loadLayout.bind(this);
     this.state = {
-      layout: defaultLayout,
+      layout: [],
     };
   }
 
   async componentDidMount() {
     await this.props.DataActions?.getList('Camera');
+    this.loadLayout();
+  }
+
+  loadLayout() {
     const savedLayout = localStorage.getItem('layout');
     if (savedLayout) {
       try {
@@ -111,7 +116,16 @@ class Home extends Component<Props, HomeState> {
                     </Button>
                   );
                 })}
-                <Button startIcon={<Save />}>Kaydet</Button>
+                <Button
+                  title="Görünümü Sıfırla"
+                  startIcon={<Restore />}
+                  onClick={this.loadLayout}
+                ></Button>
+                <Button
+                  title="Görünümü Kaydet"
+                  startIcon={<Save />}
+                  onClick={this.saveLayout}
+                ></Button>
               </ButtonGroup>
             }
           ></CardHeader>
@@ -134,39 +148,11 @@ class Home extends Component<Props, HomeState> {
                 <LayoutItem
                   index={index}
                   item={item}
+                  title={item.i}
                   onRemoveItem={this.removeLayoutItem.bind(this, index)}
                 >
                   dldkkdl
                 </LayoutItem>
-                {/* <AppBar
-                  className={'dragger'}
-                  color="transparent"
-                  style={{ height: 42 }}
-                >
-                  <Toolbar className={this.props['classes'].toolbar}>
-                    <Typography variant="h6" color="textSecondary">
-                      {item.i}
-                    </Typography>
-                    <div className={this.props['classes'].grow} />
-                    <IconButton
-                      edge="end"
-                      title="Kapat"
-                      size="small"
-                      onClick={this.removeLayoutItem.bind(this, index)}
-                    >
-                      <Close fontSize="small" />
-                    </IconButton>
-                  </Toolbar>
-                </AppBar>
-                <Toolbar />
-                <Container>
-                  <Box sx={{ my: 2 }}>
-                    Cras mattis consectetur purus sit amet fermentum. Cras justo
-                    odio, dapibus ac facilisis in, egestas eget quam. Morbi leo
-                    risus, porta ac consectetur ac, vestibulum at eros. Praesent
-                    commodo cursus magna, vel scelerisque nisl consectetur et.
-                  </Box>
-                </Container> */}
               </Paper>
             );
           })}
