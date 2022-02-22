@@ -226,7 +226,6 @@ export class RtspReader extends EventEmitter {
         this.process.stdio[1].pipe(this.mp4frag);
 
         this.mp4frag.on('initialized', (params) => {
-          console.log(params);
           setTimeout(() => {
             resolve();
           }, 1000);

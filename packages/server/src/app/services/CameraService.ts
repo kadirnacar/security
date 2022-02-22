@@ -182,7 +182,6 @@ export class RtspReader extends EventEmitter {
         const rtspUrl = new URL(camItem.camera.defaultProfile.StreamUri.Uri);
         const connectionUrl = `rtsp://${camItem.model.username}:${camItem.model.password}@${camItem.model.url}:${camItem.model.rtspPort}${rtspUrl.pathname}${rtspUrl.search}`;
 
-        console.log(connectionUrl, rtspUrl);
         this.process = spawn(
           ffmpegInstaller.path,
           [

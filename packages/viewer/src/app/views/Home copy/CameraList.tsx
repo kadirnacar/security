@@ -4,7 +4,6 @@ import React, { Component } from 'react';
 import { ListGroup } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
-import { AppCtx } from '../../reducers/Base';
 import { DataActions } from '../../reducers/Data/actions';
 import { ApplicationState } from '../../store';
 interface Props {
@@ -16,10 +15,9 @@ type State = {};
 
 export class CameraList extends Component<Props & ApplicationState, State> {
   state = {};
-  static contextType = AppCtx;
 
   async componentDidMount() {
-    await this.props.DataActions?.getList('Camera');
+    // await this.props.DataActions?.getList('Camera');
   }
 
   render() {

@@ -1,78 +1,45 @@
-import { Camera } from '@security/models';
-import {
-  Actions,
-  DockLocation,
-  Layout,
-  Model,
-  TabNode,
-} from 'flexlayout-react';
 import React, { Component } from 'react';
-import CameraList from './CameraList';
-import CameraView from './CameraView';
-import data from './flexlayout';
-import './home.css';
+import { Responsive as ResponsiveGridLayout } from 'react-grid-layout';
+import { withSize } from 'react-sizeme';
 
-interface HomeState {
-  model: Model;
-}
+interface HomeState {}
 
 class Home extends Component<any, HomeState> {
   constructor(props) {
     super(props);
-    this.factory = this.factory.bind(this);
-    this.onSelectCamera = this.onSelectCamera.bind(this);
-    this.state = {
-      model: Model.fromJson(data),
-    };
+    this.state = {};
   }
 
-  onSelectCamera(camera: Camera) {
-    const node = this.state.model.getNodeById(camera.id || '');
-    if (!node) {
-      this.state.model.doAction(
-        Actions.addNode(
-          {
-            id: camera.id,
-            type: 'camera',
-            name: camera.name,
-            component: 'CameraView',
-          },
-          'cameras',
-          DockLocation.RIGHT,
-          -1
-        )
-      );
-    } else {
-      Actions.selectTab(camera.id || '');
-    }
-  }
-
-  factory(node: TabNode) {
-    const component = node.getComponent();
-    switch (component) {
-      case 'button':
-        return <button>{node.getName()}</button>;
-      case 'CameraList':
-        return <CameraList onSelect={this.onSelectCamera} />;
-      case 'CameraView':
-        return <CameraView id={node.getId()} />;
-      default:
-        return <div></div>;
-    }
-  }
   render() {
+    const layouts = {
+      xs: [
+        { w: 12, h: 6, x: 0, y: 0, i: 'a', moved: false, static: false },
+        { w: 12, h: 6, x: 9, y: 0, i: 'b', moved: false, static: false },
+        { w: 12, h: 6, x: 6, y: 0, i: 'c', moved: false, static: false },
+      ],
+    };
+    console.log(this.props);
     return (
-      <Layout
-        model={this.state.model}
-        onModelChange={(model) => {}}
-        factory={this.factory}
-      />
+      <ResponsiveGridLayout
+        className="layout"
+        layouts={layouts}
+        breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+        cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+        rowHeight={60}
+        width={this.props['size'].width}
+      >
+        <div key="1" data-grid={{ w: 3, h: 2, x: 0, y: Infinity }}>
+          1
+        </div>
+        <div key="2" data-grid={{ w: 3, h: 2, x: 3, y: Infinity }}>
+          2
+        </div>
+        <div key="3" data-grid={{ w: 3, h: 2, x: 0, y: Infinity }}>
+          3
+        </div>
+      </ResponsiveGridLayout>
     );
   }
 }
 
-const mapStateToProps = (state) => ({});
-
-const mapDispatchToProps = {};
-
-export default Home;
+export default withSize({ refreshMode: 'debounce', refreshRate: 60 })(Home);

@@ -27,7 +27,7 @@ class Navigation extends Component<Props, NavigationState> {
   }
 
   async componentDidMount() {
-    await this.props.DataActions?.getList('Camera');
+    // await this.props.DataActions?.getList('Camera');
   }
 
   render() {

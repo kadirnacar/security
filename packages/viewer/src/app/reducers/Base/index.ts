@@ -1,14 +1,4 @@
-import * as React from 'react';
 import { Action, Reducer } from 'redux';
-import { SocketClient } from '../../SecketClient';
-
-export interface AppContextInterface {
-  socket?: SocketClient;
-}
-
-export const socket = new SocketClient();
-
-export const AppCtx = React.createContext<AppContextInterface>({ socket });
 
 export enum BaseActions {
   IndicatorStart = 'INDICATOR_START',

@@ -1,60 +1,130 @@
+import {
+  createStyles,
+  createTheme,
+  CssBaseline,
+  ThemeProvider,
+  withStyles,
+} from '@material-ui/core';
+import clsx from 'clsx';
 import React, { Component } from 'react';
-import { Container, Nav, Navbar, Row } from 'react-bootstrap';
 import { connect } from 'react-redux';
-import { Route, Routes, Link } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
+import Header from '../../components/Header';
+import Sidebar from '../../components/Sidebar';
 import Home from '../../views/Home';
 import Settings from '../../views/Settings';
-import './main.css';
 
-type Props = {};
+const drawerWidth = 240;
 
-type State = {};
+type Props = {
+  classes?: any;
+};
 
-export class Main extends Component<Props, State> {
-  state = {};
+type State = {
+  open: boolean;
+  darkMode: boolean;
+};
+
+class Main extends Component<Props, State> {
+  constructor(props) {
+    super(props);
+
+    this.handleDrawerClose = this.handleDrawerClose.bind(this);
+    this.handleDrawerToggle = this.handleDrawerToggle.bind(this);
+    this.toggleDarkMode = this.toggleDarkMode.bind(this);
+    this.state = {
+      darkMode: true,
+      open: true,
+    };
+  }
+
+  handleDrawerToggle = () => {
+    this.setState({ open: !this.state.open });
+  };
+
+  handleDrawerClose = () => {
+    this.setState({ open: false });
+  };
+
+  classes;
+
+  toggleDarkMode = () => {
+    this.setState({ darkMode: !this.state.darkMode });
+  };
 
   render() {
+    const theme = createTheme({
+      palette: {
+        type: this.state.darkMode ? 'dark' : 'light',
+      },
+    });
     return (
-      <Container>
-        <Row style={{ position: 'absolute', left: 0, right: 0, top: 0 }}>
-          <Navbar bg="dark" variant="dark">
-            <Container>
-              <Navbar.Brand href="#home">Şahin</Navbar.Brand>
-              <Nav className="me-auto">
-                <Link className="nav-link" to="/">
-                  Monitor
-                </Link>
-                <Link className="nav-link" to="/settings">
-                  Ayarlar
-                </Link>
-              </Nav>
-            </Container>
-          </Navbar>
-        </Row>
-        <Row
-          style={{
-            margin: 0,
-            marginRight: 0,
-            padding: 0,
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            top: 56,
-          }}
-        >
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/settings/*" element={<Settings />} />
-          </Routes>
-        </Row>
-      </Container>
+      <>
+        <ThemeProvider theme={theme}>
+          <div className={this.props.classes.root}>
+            <CssBaseline />
+            <Header
+              handleDrawerToggle={this.handleDrawerToggle}
+              toggleDarkMode={this.toggleDarkMode}
+              darkMode={this.state.darkMode}
+            />
+            <Sidebar
+              handleDrawerClose={this.handleDrawerClose}
+              open={this.state.open}
+            />
+            <main
+              className={clsx(this.props.classes.content, {
+                [this.props.classes.contentShift]: open,
+              })}
+            >
+              <div className={this.props.classes.drawerHeader} />
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/settings/*" element={<Settings />} />
+              </Routes>
+            </main>
+          </div>
+        </ThemeProvider>
+      </>
     );
   }
 }
+
+const styles = createStyles((theme) => ({
+  root: {
+    display: 'flex',
+  },
+
+  content: {
+    flexGrow: 1,
+    padding: theme.spacing(3),
+    transition: theme.transitions.create('margin', {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+    marginLeft: -drawerWidth,
+  },
+  contentShift: {
+    transition: theme.transitions.create('margin', {
+      easing: theme.transitions.easing.easeOut,
+      duration: theme.transitions.duration.enteringScreen,
+    }),
+    marginLeft: 0,
+  },
+  drawerHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: theme.spacing(0, 1),
+    // necessary for content to be below app bar
+    ...theme.mixins.toolbar,
+    justifyContent: 'flex-end',
+  },
+}));
 
 const mapStateToProps = (state) => ({});
 
 const mapDispatchToProps = {};
 
-export default connect(mapStateToProps, mapDispatchToProps)(Main);
+export default withStyles(styles)(
+  connect(mapStateToProps, mapDispatchToProps)(Main)
+);

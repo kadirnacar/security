@@ -1,12 +1,18 @@
 import '@fortawesome/fontawesome-svg-core/styles.css';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  Container,
+  Divider,
+  TextField,
+  Typography,
+} from '@material-ui/core';
 import React, { Component } from 'react';
-import { Card } from 'react-bootstrap';
 import { connect } from 'react-redux';
-import { Route, Routes } from 'react-router-dom';
 import { withRouter } from '../../withRouter';
-import CameraForm from './CameraForm';
-import Navigation from './Navigation';
-import './setting.css';
 
 interface SettingsState {}
 class Settings extends Component<any, SettingsState> {
@@ -17,23 +23,42 @@ class Settings extends Component<any, SettingsState> {
 
   render() {
     return (
-      <>
-        <Navigation />
-        <Card
-          className="flex-column"
-          bg={'light'}
-          text={'dark'}
-          style={{ width: '80%', minWidth: 300, borderRadius: 0 }}
-        >
-          <Card.Body>
-            <Routes>
-              <Route path="/" element={<div>1</div>} />
-              <Route path="/camera-add" element={<CameraForm isNew={true} />} />
-              <Route path="/camera-edit/:id" element={<CameraForm isNew={false} />} />
-            </Routes>
-          </Card.Body>
+      <Container maxWidth={false}>
+        <Card>
+          <CardHeader subheader="Update password" title="Password" />
+          <Divider />
+          <CardContent>
+            <TextField
+              fullWidth
+              label="Password"
+              margin="normal"
+              name="password"
+              type="password"
+              variant="outlined"
+            />
+            <TextField
+              fullWidth
+              label="Confirm password"
+              margin="normal"
+              name="confirm"
+              type="password"
+              variant="outlined"
+            />
+          </CardContent>
+          <Divider />
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              p: 2,
+            }}
+          >
+            <Button color="primary" variant="contained">
+              Update
+            </Button>
+          </Box>
         </Card>
-      </>
+      </Container>
     );
   }
 }

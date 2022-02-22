@@ -1,31 +1,27 @@
 import { Camera } from '@security/models';
-import React, { Component } from 'react';
-import { Button, Col, Container, Form, InputGroup, Row } from 'react-bootstrap';
-import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
-import { AppCtx, AppContextInterface } from '../../reducers/Base';
-import { DataActions } from '../../reducers/Data/actions';
-import { CameraService } from '../../services/CameraService';
-import { ApplicationState } from '../../store';
-import MinMaxValue from './MinMaxVale';
-import SlideValue from './SlideValue';
-import { Replay } from 'vimond-replay';
-import 'vimond-replay/index.css';
-import HlsjsVideoStreamer from 'vimond-replay/video-streamer/hlsjs';
 import * as objectDetection from '@tensorflow-models/coco-ssd';
 import '@tensorflow/tfjs-backend-cpu';
 import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm';
 import '@tensorflow/tfjs-backend-webgl';
 import * as tf from '@tensorflow/tfjs-core';
-import * as bodyDetection from '@tensorflow-models/body-pix';
+import React, { Component } from 'react';
+import { Button, Col, Container, Form, InputGroup, Row } from 'react-bootstrap';
+import { connect } from 'react-redux';
+import { bindActionCreators } from 'redux';
+import 'vimond-replay/index.css';
+import { DataActions } from '../../reducers/Data/actions';
+import { CameraService } from '../../services/CameraService';
+import { ApplicationState } from '../../store';
+import MinMaxValue from './MinMaxVale';
+import SlideValue from './SlideValue';
+
+// tfjsWasm.setWasmPaths('assets/wasm/');
 
 interface Props {
   DataActions?: DataActions<Camera>;
   id?: string;
 }
-tfjsWasm.setWasmPaths(
-  `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${tfjsWasm.version_wasm}/dist/`
-);
+
 interface State {
   range: { min: any; max: any; step: any; speed: any };
   velocity?: { x?: any; y?: any; z?: any };
@@ -34,16 +30,10 @@ interface State {
   isLoaded?: boolean;
   cameraItem?: Camera;
   objectDetect?: objectDetection.ObjectDetection;
-  bodyDetect?: bodyDetection.BodyPix;
   animation?: boolean;
-  detectType: 'object' | 'body';
 }
 
-export class CameraView extends Component<
-  Props & ApplicationState,
-  State,
-  AppContextInterface
-> {
+export class CameraView extends Component<Props & ApplicationState, State> {
   constructor(props) {
     super(props);
     this.startStream = this.startStream.bind(this);
@@ -51,12 +41,13 @@ export class CameraView extends Component<
     this.connectCam = this.connectCam.bind(this);
     this.disconnectCam = this.disconnectCam.bind(this);
     this.runFrame = this.runFrame.bind(this);
-    this.video = React.createRef<any>();
+    this.video = React.createRef<HTMLVideoElement>();
     this.canvas = React.createRef<HTMLCanvasElement>();
     this.canvasElement = React.createRef<HTMLCanvasElement>();
-
-    // tfjsWasm.setWasmPaths('assets/wasm/');
-
+    tfjsWasm.setWasmPaths(
+      `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${tfjsWasm.version_wasm}/dist/`
+      // 'wasm/'
+    );
     this.state = {
       range: { min: -1, max: 1, step: 0.1, speed: 0.8 },
       velocity: { x: 0, y: 1, z: 0 },
@@ -64,19 +55,15 @@ export class CameraView extends Component<
       cameraItem: undefined,
       objectDetect: undefined,
       animation: true,
-      detectType: 'body',
     };
   }
 
-  context: AppContextInterface | undefined;
-  video: React.RefObject<any>;
+  video: React.RefObject<HTMLVideoElement>;
   canvas: React.RefObject<HTMLCanvasElement>;
   socket?: WebSocket;
   ctx?: CanvasRenderingContext2D;
   canvasElement: React.RefObject<HTMLCanvasElement>;
   animationFrame?: number;
-
-  static contextType = AppCtx;
 
   async connectCam() {
     if (this.props.id) {
@@ -92,20 +79,19 @@ export class CameraView extends Component<
       await CameraService.disconnect(this.props.id);
     }
   }
-
   async componentDidMount() {
-    await tf.setBackend('wasm');
-
-    const videoElement: HTMLVideoElement = this.video.current;
-    if (this.props.id && videoElement) {
+    if (this.props.id) {
       await this.props.DataActions?.getById('Camera', this.props.id);
-      if (this.props.Data.Camera.CurrentItem?.position) {
+      if (this.props.Data.Camera.CurrentItem) {
         this.setState({
           velocity: this.props.Data.Camera.CurrentItem.position,
+          isLoaded: false,
+          cameraItem: this.props.Data.Camera.CurrentItem,
         });
       }
-      if (this.canvasElement.current) {
-        const rect = videoElement.getBoundingClientRect();
+
+      if (this.canvasElement.current && this.video.current) {
+        const rect = this.video.current.getBoundingClientRect();
         this.canvasElement.current.width = rect.width;
         this.canvasElement.current.height = rect.height;
         const ct = this.canvasElement.current.getContext('2d');
@@ -115,23 +101,48 @@ export class CameraView extends Component<
           this.ctx.fillRect(0, 0, rect.width, rect.height);
         }
       }
-      const bodyFix = await bodyDetection.load({
-        architecture: 'MobileNetV1',
-        outputStride: 16,
-        multiplier: 0.75,
-        quantBytes: 2,
+      await tf.setBackend('wasm');
+      await tf.ready();
+      const objectDetect = await objectDetection.load({
+        // modelUrl: 'assets/models/lite_mobilenet_v2/model.json',
       });
-      // const objectDetect = await objectDetection.load({
-      //   modelUrl: 'assets/models/lite_mobilenet_v2/model.json',
-      // });
       this.setState({
-        isLoaded: false,
-        cameraItem: this.props.Data.Camera.CurrentItem,
-        // objectDetect,
-        bodyDetect: bodyFix,
+        objectDetect,
       });
     }
   }
+  // async componentDidMount() {
+  //   const videoElement: HTMLVideoElement =
+  //     this.video.current?.videoRef?.current;
+  //   if (this.props.id && videoElement) {
+  //     await this.props.DataActions?.getById('Camera', this.props.id);
+  //     if (this.props.Data.Camera.CurrentItem?.position) {
+  //       this.setState({
+  //         velocity: this.props.Data.Camera.CurrentItem.position,
+  //       });
+  //     }
+  //     if (this.canvasElement.current) {
+  //       const rect = videoElement.getBoundingClientRect();
+  //       this.canvasElement.current.width = rect.width;
+  //       this.canvasElement.current.height = rect.height;
+  //       const ct = this.canvasElement.current.getContext('2d');
+  //       if (ct) {
+  //         this.ctx = ct;
+  //         this.ctx.fillStyle = 'white';
+  //         this.ctx.fillRect(0, 0, rect.width, rect.height);
+  //       }
+  //     }
+  //     const objectDetect = await objectDetection.load({
+  //       modelUrl: 'assets/models/lite_mobilenet_v2/model.json',
+  //     });
+  //     // await tf.setBackend('wasm');
+  //     this.setState({
+  //       isLoaded: false,
+  //       cameraItem: this.props.Data.Camera.CurrentItem,
+  //       objectDetect,
+  //     });
+  //   }
+  // }
 
   componentWillUnmount() {
     if (this.props.id && this.socket) {
@@ -156,119 +167,48 @@ export class CameraView extends Component<
   }
 
   async runFrame() {
-    const videoElement: HTMLVideoElement = this.video.current;
-
-    if (this.ctx && videoElement && this.canvasElement.current) {
-      // const pose = await this.state.objectDetect?.detect(videoElement);
-
-      const rect = videoElement.getBoundingClientRect();
+    if (this.ctx && this.canvasElement.current && this.video.current) {
       if (this.ctx) {
         this.ctx.clearRect(
           0,
           0,
-          videoElement.videoWidth,
-          videoElement.videoHeight
+          this.video.current.videoWidth,
+          this.video.current.videoHeight
         );
         this.ctx.drawImage(
-          videoElement,
+          this.video.current,
           0,
           0,
-          videoElement.videoWidth,
-          videoElement.videoHeight
+          this.video.current.videoWidth,
+          this.video.current.videoHeight
         );
+
+        try {
+          const pose = await this.state.objectDetect?.detect(
+            this.video.current
+          );
+
+          if (pose && pose.length > 0) {
+            for (let i = 0; i < pose.length; i++) {
+              this.ctx.strokeStyle = 'red';
+              this.ctx.font = '50px serif';
+              // this.ctx.fillText
+              this.ctx.fillText(
+                pose[i].class,
+                pose[i].bbox[0],
+                pose[i].bbox[1],
+                pose[i].bbox[2]
+              );
+              this.ctx.strokeRect(
+                pose[i].bbox[0],
+                pose[i].bbox[1],
+                pose[i].bbox[2],
+                pose[i].bbox[3]
+              );
+            }
+          }
+        } catch {}
       }
-
-      // if (this.state.detectType == 'object') {
-      //   this.state.objectDetect
-      //     ?.detect(this.canvasElement.current)
-      //     .then((pose) => {
-      //       const rect = videoElement.getBoundingClientRect();
-      //       if (this.ctx) {
-      //         if (this.canvasElement.current) {
-      //           this.canvasElement.current.width = rect.width;
-      //           this.canvasElement.current.height = rect.height;
-      //         }
-
-      //         this.ctx.clearRect(0, 0, rect.width, rect.height);
-      //         this.ctx.drawImage(videoElement, 0, 0, rect.width, rect.height);
-
-      //         if (pose && pose.length > 0) {
-      //           for (let i = 0; i < pose.length; i++) {
-      //             console.log(pose);
-      //             this.ctx.strokeStyle = 'red';
-      //             this.ctx.font = '50px serif';
-      //             // this.ctx.fillText
-      //             this.ctx.fillText(
-      //               pose[i].class,
-      //               pose[i].bbox[0],
-      //               pose[i].bbox[1],
-      //               pose[i].bbox[2]
-      //             );
-      //             this.ctx.strokeRect(
-      //               pose[i].bbox[0],
-      //               pose[i].bbox[1],
-      //               pose[i].bbox[2],
-      //               pose[i].bbox[3]
-      //             );
-      //           }
-      //         }
-      //       }
-      //     });
-      // }
-      // if (this.state.detectType == 'body' && this.state.bodyDetect) {
-      //   try {
-      //     const pose = await this.state.bodyDetect.segmentPerson(videoElement, {
-      //       flipHorizontal: false,
-      //       internalResolution: 'medium',
-      //       segmentationThreshold: 0.7,
-      //     });
-      //     const seg = bodyDetection.toMask(pose);
-      //     if (seg) {
-      //       const maskBlurAmount = 0;
-      //       bodyDetection.drawMask(
-      //         this.canvasElement.current,
-      //         videoElement,
-      //         seg,
-      //         0.7,
-      //         maskBlurAmount,
-      //         false
-      //       );
-      //     }
-      //     // console.log(console.log(seg));
-      //     // if (pose && pose.allPoses.length > 0) {
-      //     //   for (let index = 0; index < pose.allPoses.length; index++) {
-      //     //     const element = pose.allPoses[index];
-      //     //     const xSort = element.keypoints.sort((a, b) => {
-      //     //       if (a.position.x > b.position.x) {
-      //     //         return 1;
-      //     //       } else if (a.position.x < b.position.x) {
-      //     //         return -1;
-      //     //       } else {
-      //     //         return 0;
-      //     //       }
-      //     //     });
-
-      //     //     const minX = xSort[0].position.x;
-      //     //     const maxX = xSort[xSort.length - 1].position.x;
-
-      //     //     const ySort = element.keypoints.sort((a, b) => {
-      //     //       if (a.position.y > b.position.y) {
-      //     //         return 1;
-      //     //       } else if (a.position.y < b.position.y) {
-      //     //         return -1;
-      //     //       } else {
-      //     //         return 0;
-      //     //       }
-      //     //     });
-
-      //     //     const minY = ySort[0].position.y;
-      //     //     const maxY = ySort[ySort.length - 1].position.y;
-      //     //     this.ctx.strokeStyle = 'red';
-      //     //     this.ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
-      //     //   }
-      //     // }
-      //   } catch {}
-      // }
     }
 
     // setTimeout(() => {
@@ -282,39 +222,6 @@ export class CameraView extends Component<
       <Row>
         <Col xs={12}>
           <Container>
-            <Row>
-              <Col xs={12} style={{ position: 'relative' }}>
-                <div
-                  style={{
-                    // overflow: 'hidden',
-                    // height: '1px',
-                  }}
-                >
-                  <video
-                    src={this.state.streamSource}
-                    autoPlay
-                    controls
-                    style={{ width: '100%' }}
-                    ref={this.video}
-                    onLoadedData={async () => {
-                      // if (this.canvasElement.current && this.video.current) {
-                      //   this.canvasElement.current.width =
-                      //     this.video.current.videoWidth;
-                      //   this.canvasElement.current.height =
-                      //     this.video.current.videoHeight;
-                      // }
-                      // setTimeout(async () => {
-                      //   await this.runFrame();
-                      // }, 500);
-                    }}
-                  ></video>
-                </div>
-                <canvas
-                  style={{ width: '100%',display:'none' }}
-                  ref={this.canvasElement}
-                ></canvas>
-              </Col>
-            </Row>
             <Row>
               <Col xs="12">
                 <Button
@@ -426,6 +333,72 @@ export class CameraView extends Component<
                 </Row>
               </>
             ) : null}
+            <Row>
+              <Col xs={12} style={{ position: 'relative' }}>
+                {/* <video
+                  style={{ width: '100%' }}
+                  ref={this.video}
+                  controls
+                  autoPlay
+                  muted
+                  src={this.state.streamSource}
+                ></video> */}
+                {/* <ReactHlsPlayer
+                  src="https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8"
+                  autoPlay={false}
+                  controls={true}
+                  width="100%"
+                  height="auto"
+                /> */}
+                <div
+                  style={{
+                    height: 0,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <video
+                    src={this.state.streamSource}
+                    autoPlay
+                    style={{ width: '100%' }}
+                    ref={this.video}
+                    onLoadedData={async () => {
+                      if (this.canvasElement.current && this.video.current) {
+                        this.canvasElement.current.width =
+                          this.video.current.videoWidth;
+                        this.canvasElement.current.height =
+                          this.video.current.videoHeight;
+                      }
+                      setTimeout(async () => {
+                        await this.runFrame();
+                      }, 500);
+                    }}
+                  ></video>
+                  {/* <Replay source={this.state.streamSource}></Replay> */}
+
+                  {/* <Replay
+                    source={this.state.streamSource}
+                    options={{ controls: null }}
+                    onStreamStateChange={(evt) => {
+                      if (evt.playState == 'playing' && !this.animationFrame) {
+                        console.log('runframe');
+                        this.runFrame();
+                      }
+                    }}
+                  >
+                    <HlsjsVideoStreamer
+                      ref={this.video}
+                      onReady={(evt) => {
+                        console.log(evt);
+                      }}
+                    />
+                  </Replay> */}
+                </div>
+                <canvas
+                  style={{ width: '100%' }}
+                  ref={this.canvasElement}
+                ></canvas>
+              </Col>
+            </Row>
           </Container>
         </Col>
       </Row>

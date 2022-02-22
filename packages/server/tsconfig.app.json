@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
     "module": "commonjs",
-    "types": ["node", "express", "onvif-nvt"]
+    "types": ["node", "express"]
   },
   "exclude": [],
   "include": ["**/*.ts"]
