@@ -74,7 +74,7 @@ class Main extends Component<Props, State> {
             />
             <main
               className={clsx(this.props.classes.content, {
-                [this.props.classes.contentShift]: open,
+                [this.props.classes.contentShift]: this.state.open,
               })}
             >
               <div className={this.props.classes.drawerHeader} />

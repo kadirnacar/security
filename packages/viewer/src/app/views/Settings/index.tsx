@@ -1,72 +1,103 @@
-import '@fortawesome/fontawesome-svg-core/styles.css';
 import {
-  Box,
-  Button,
   Card,
-  CardContent,
   CardHeader,
   Container,
-  Divider,
-  TextField,
+  createStyles,
+  CssBaseline,
+  IconButton,
   Typography,
 } from '@material-ui/core';
+import { Add } from '@material-ui/icons';
+import { withStyles } from '@material-ui/styles';
+import { Camera } from '@security/models';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
+import { bindActionCreators } from 'redux';
+import { DataActions } from '../../reducers/Data/actions';
+import { DataState } from '../../reducers/Data/state';
+import { ApplicationState } from '../../store';
 import { withRouter } from '../../withRouter';
+import Form from './Form';
 
 interface SettingsState {}
-class Settings extends Component<any, SettingsState> {
+interface Props {
+  DataActions?: DataActions<Camera>;
+  Data?: DataState;
+}
+class Settings extends Component<Props, SettingsState> {
   constructor(props) {
     super(props);
+
+    this.onDelete = this.onDelete.bind(this);
+    this.onSave = this.onSave.bind(this);
+    this.onCreate = this.onCreate.bind(this);
     this.state = {};
+  }
+
+  async componentDidMount() {
+    await this.props.DataActions?.getList('Camera');
+  }
+
+  async onSave(item: Camera) {
+    await this.props.DataActions?.updateItem('Camera', item);
+  }
+
+  async onDelete(item: Camera) {
+    if (item.id) await this.props.DataActions?.deleteItem('Camera', item.id);
+  }
+
+  async onCreate() {
+    await this.props.DataActions?.createItem('Camera', {});
+    await this.props.DataActions?.getList('Camera');
   }
 
   render() {
     return (
-      <Container maxWidth={false}>
-        <Card>
-          <CardHeader subheader="Update password" title="Password" />
-          <Divider />
-          <CardContent>
-            <TextField
-              fullWidth
-              label="Password"
-              margin="normal"
-              name="password"
-              type="password"
-              variant="outlined"
-            />
-            <TextField
-              fullWidth
-              label="Confirm password"
-              margin="normal"
-              name="confirm"
-              type="password"
-              variant="outlined"
-            />
-          </CardContent>
-          <Divider />
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              p: 2,
-            }}
-          >
-            <Button color="primary" variant="contained">
-              Update
-            </Button>
-          </Box>
+      <>
+        <CssBaseline />
+        <Card className={this.props['classes'].root}>
+          <CardHeader
+            title="Kameralar"
+            action={
+              <IconButton title="Yeni Kamera Ekle" onClick={this.onCreate}>
+                <Add />
+              </IconButton>
+            }
+          ></CardHeader>
         </Card>
-      </Container>
+        <Container maxWidth={false}>
+          <div>
+            {this.props.Data?.Camera.List.map((cam, index) => {
+              return (
+                <Form
+                  key={index}
+                  camera={cam}
+                  onRemove={this.onDelete}
+                  onSave={this.onSave}
+                />
+              );
+            })}
+          </div>
+        </Container>
+      </>
     );
   }
 }
 
-const mapStateToProps = (state) => ({});
+const styles = createStyles((theme) => ({
+  root: {
+    width: '100%',
+  },
+}));
 
-const mapDispatchToProps = {};
+const mapStateToProps = (state: ApplicationState) => state;
 
-export default withRouter(
-  connect(mapStateToProps, mapDispatchToProps)(Settings)
+const mapDispatchToProps = (dispatch) => {
+  return {
+    DataActions: bindActionCreators({ ...new DataActions<Camera>() }, dispatch),
+  };
+};
+
+export default withStyles(styles)(
+  withRouter(connect(mapStateToProps, mapDispatchToProps)(Settings))
 );
