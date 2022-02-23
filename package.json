@@ -2,11 +2,12 @@
   "name": "security",
   "version": "0.0.0",
   "license": "MIT",
+  "bin": "./dist/packages/server/main.js",
   "scripts": {
     "server": "npx nx serve server --watch=true",
-    "server-build": "npx nx build server --prod",
+    "server-build": "npx nx build server",
     "viewer": "npx nx serve viewer --watch=true",
-    "viewer-build": "npx nx build viewer --prod"
+    "viewer-build": "npx nx build viewer"
   },
   "private": true,
   "devDependencies": {
@@ -35,6 +36,7 @@
     "eslint-plugin-jsx-a11y": "6.5.1",
     "eslint-plugin-react": "7.28.0",
     "eslint-plugin-react-hooks": "4.3.0",
+    "pkg": "^5.5.2",
     "prettier": "^2.5.1",
     "typescript": "~4.5.5"
   },
@@ -77,5 +79,19 @@
     "tslib": "^2.3.1",
     "vimond-replay": "^3.3.0",
     "ws": "^8.5.0"
+  },
+  "pkg": {
+    "scripts": "dist/packages/server/**/*.js",
+    "assets": [
+      "dist/packages/server/assets/**/*",
+      "dist/packages/server/data/**/*",
+      "dist/packages/server/web/**/*"
+    ],
+    "targets": [
+      "node16-macos-arm64",
+      "node16-macos-x64",
+      "node16-win-x64"
+    ],
+    "outputPath": "build"
   }
 }

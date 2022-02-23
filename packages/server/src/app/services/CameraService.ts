@@ -8,6 +8,7 @@ import * as OnvifManager from '../../onvif-nvt/onvif-nvt';
 import Camera = require('../../onvif-nvt/camera');
 import EventEmitter = require('events');
 import path = require('path');
+// var ffmpegPath = (path.join(__dirname, '../../../node_modules/@ffmpeg-installer/darwin-arm64/ffmpeg' )).replace('app.asar', 'app.asar.unpacked')
 
 export interface IServiceCamera {
   model: CameraModel;
