@@ -28,9 +28,14 @@ function corsPrefetch(req: Request, res: express.Response, next: Function) {
   next();
 }
 app.use(express.static(path.join(__dirname, 'assets')));
+app.use(express.static(__dirname + '/web'));
 app.use(corsPrefetch as any);
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: false }));
+
+app.get('/', function (req, res) {
+  res.sendFile(path.join(__dirname, 'web', '/index.html'));
+});
 
 app.use('/api', dataRouter.router);
 app.use('/api/camera', cameraRouter.router);
