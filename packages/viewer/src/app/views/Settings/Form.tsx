@@ -1,23 +1,17 @@
 import {
   Box,
-  Button,
   Card,
   CardContent,
   CardHeader,
+  Checkbox,
   Divider,
+  FormControlLabel,
   IconButton,
   TextField,
-  Checkbox,
-  FormControlLabel,
-  CssBaseline,
 } from '@material-ui/core';
+import { Delete, Save } from '@material-ui/icons';
 import { Camera } from '@security/models';
 import React, { Component } from 'react';
-import { Save, Delete, Add } from '@material-ui/icons';
-import { ApplicationState } from '../../store';
-import { bindActionCreators } from 'redux';
-import { DataActions } from '../../reducers/Data/actions';
-import { connect } from 'react-redux';
 
 interface State {
   camera?: Camera;

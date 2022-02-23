@@ -1,3 +1,4 @@
+import * as React from 'react';
 import {
   Location,
   NavigateFunction,
@@ -5,9 +6,7 @@ import {
   useLocation,
   useNavigate,
   useParams,
-  
 } from 'react-router-dom';
-import * as React from 'react';
 
 export interface WithRouter {
   navigate?: NavigateFunction;

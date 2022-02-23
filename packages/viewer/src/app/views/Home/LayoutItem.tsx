@@ -1,7 +1,6 @@
 import {
   AppBar,
   Box,
-  Container,
   IconButton,
   Toolbar,
   Typography,
@@ -11,7 +10,6 @@ import React, { Component } from 'react';
 
 type Props = {
   title: string;
-  item: any;
   onRemoveItem: (index) => void;
   index: number;
   buttons?: React.ReactNode[];
@@ -64,9 +62,15 @@ class LayoutItem extends Component<Props, any> {
             minHeight: 42,
           }}
         />
-        <Container>
-          <Box sx={{ my: 2 }}>{this.props.children}</Box>
-        </Container>
+        <Box
+          style={{
+            overflow: 'auto',
+            height: 'calc(100% - 42px)',
+            width: '100%',
+          }}
+        >
+          {this.props.children}
+        </Box>
       </>
     );
   }

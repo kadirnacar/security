@@ -1,17 +1,14 @@
 import {
   AppBar,
-  Badge,
   createStyles,
   IconButton,
   Toolbar,
   Typography,
   withStyles,
 } from '@material-ui/core';
-import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import Brightness4Icon from '@material-ui/icons/Brightness4';
 import Brightness7Icon from '@material-ui/icons/Brightness7';
 import MenuIcon from '@material-ui/icons/Menu';
-import NotificationsIcon from '@material-ui/icons/Notifications';
 import React, { Component } from 'react';
 
 type Props = {
@@ -55,25 +52,6 @@ class Header extends Component<Props, State> {
           >
             {this.props.darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
           </IconButton>
-
-          {/* <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            className={this.props.classes.rightIcons}
-          >
-            <Badge badgeContent={4} color="secondary">
-              <NotificationsIcon />
-            </Badge>
-          </IconButton>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            className={this.props.classes.rightIcons}
-          >
-            <AccountCircleIcon />
-          </IconButton> */}
         </Toolbar>
       </AppBar>
     );

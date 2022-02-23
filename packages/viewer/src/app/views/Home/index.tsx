@@ -1,19 +1,14 @@
 import {
-  AppBar,
-  Box,
   Button,
   ButtonGroup,
   Card,
   CardHeader,
-  Container,
   createStyles,
   CssBaseline,
   IconButton,
   Paper,
-  Toolbar,
-  Typography,
 } from '@material-ui/core';
-import { CameraAlt, Close, Save, Restore } from '@material-ui/icons';
+import { CameraAlt, Restore, Save, Settings } from '@material-ui/icons';
 import { withStyles } from '@material-ui/styles';
 import { Camera } from '@security/models';
 import React, { Component } from 'react';
@@ -24,31 +19,8 @@ import { bindActionCreators } from 'redux';
 import { DataActions } from '../../reducers/Data/actions';
 import { DataState } from '../../reducers/Data/state';
 import { ApplicationState } from '../../store';
+import CameraView from './CameraView';
 import LayoutItem from './LayoutItem';
-
-const defaultLayout = [
-  {
-    i: 'cam1',
-    x: 0,
-    y: 0,
-    w: 6,
-    h: 2,
-  },
-  {
-    i: 'cam2',
-    x: 0,
-    y: 2,
-    w: 12,
-    h: 2,
-  },
-  {
-    i: 'cam3',
-    x: 6,
-    y: 0,
-    w: 6,
-    h: 2,
-  },
-];
 
 interface HomeState {
   layout: any[];
@@ -58,6 +30,9 @@ interface Props {
   Data?: DataState;
 }
 
+const Tags = {
+  CameraView: CameraView,
+};
 class Home extends Component<Props, HomeState> {
   constructor(props) {
     super(props);
@@ -90,14 +65,41 @@ class Home extends Component<Props, HomeState> {
     localStorage.setItem('layout', JSON.stringify(this.state.layout));
   }
 
-  layoutChange(layout) {
-    this.setState({ layout });
+  layoutChange(currentLayout) {
+    const { layout } = this.state;
+    const newLayout: any[] = [];
+    currentLayout.forEach((l, i) => {
+      let d = layout.find((x) => x.i == l.i);
+      if (d) {
+        newLayout.push({ ...d, ...l });
+      } else {
+        newLayout.push(l);
+      }
+    });
+    this.setState({ layout: newLayout });
   }
 
   removeLayoutItem(i) {
     const { layout } = this.state;
     layout.splice(i, 1);
     this.setState({ layout });
+  }
+
+  addCamLayout(cam: Camera) {
+    const { layout } = this.state;
+    const hasCamItem = !!layout.find((x) => x.i == cam.id);
+
+    if (!hasCamItem) {
+      layout.push({
+        i: `${cam.id}`,
+        x: 0,
+        y: 0,
+        w: 6,
+        h: 6,
+        type: 'cam',
+      });
+      this.setState({ layout });
+    }
   }
 
   render() {
@@ -111,7 +113,11 @@ class Home extends Component<Props, HomeState> {
               <ButtonGroup>
                 {this.props.Data?.Camera.List.map((cam, index) => {
                   return (
-                    <Button key={index} startIcon={<CameraAlt />}>
+                    <Button
+                      key={index}
+                      startIcon={<CameraAlt />}
+                      onClick={this.addCamLayout.bind(this, cam)}
+                    >
                       {cam.name}
                     </Button>
                   );
@@ -138,20 +144,33 @@ class Home extends Component<Props, HomeState> {
           containerPadding={[0, 10]}
           width={this.props['size'].width}
           onLayoutChange={this.layoutChange}
-          layouts={{ lg: this.state.layout }}
+          // layouts={{ lg: this.state.layout }}
           draggableHandle={'.dragger'}
           resizeHandles={['se', 'e', 'w']}
         >
           {this.state.layout.map((item, index) => {
+            let title = '';
+            let buttons: any[] = [];
+            let cam: any = null;
+            let TagName: any = 'div';
+            let props: any = {};
+
+            if (item.type == 'cam') {
+              cam = this.props.Data?.Camera.List.find((x) => x.id == item.i);
+              title = cam.name;
+              props = { camera: cam };
+              TagName = Tags['CameraView'];
+            }
+
             return (
-              <Paper key={item.i} data-grid={{ ...item }}>
+              <Paper key={item.i} data-grid={item}>
                 <LayoutItem
                   index={index}
-                  item={item}
-                  title={item.i}
+                  title={title}
+                  buttons={buttons}
                   onRemoveItem={this.removeLayoutItem.bind(this, index)}
                 >
-                  dldkkdl
+                  <TagName {...props} />
                 </LayoutItem>
               </Paper>
             );

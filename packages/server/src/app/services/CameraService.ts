@@ -1,16 +1,12 @@
 import * as ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import { Camera as CameraModel } from '@security/models';
-import { ChildProcess, execSync, spawn } from 'child_process';
+import { ChildProcess, spawn } from 'child_process';
+import * as Mp4Frag from 'mp4frag';
 import { URL } from 'url';
+import * as WebSocket from 'ws';
 import * as OnvifManager from '../../onvif-nvt/onvif-nvt';
 import Camera = require('../../onvif-nvt/camera');
-import * as queryString from 'query-string';
-import * as WebSocket from 'ws';
-import { createUuidV4 } from '../../onvif-nvt/utils/util';
 import EventEmitter = require('events');
-import { PassThrough, Writable } from 'stream';
-import * as fs from 'fs';
-import * as Mp4Frag from 'mp4frag';
 import path = require('path');
 
 export interface IServiceCamera {
@@ -166,7 +162,14 @@ export class RtspReader extends EventEmitter {
 
   async setPipe(res) {
     res.writeHead(200, { 'Content-Type': 'video/mp4' });
-    res.write(this.mp4frag.initialization)
+    // res.writeHead(200, {
+    //   //'Transfer-Encoding': 'binary'
+    //   Connection: 'keep-alive',
+    //   'Content-Type': 'video/mp4',
+    //   //, 'Content-Length': chunksize            // ends after all bytes delivered
+    //   'Accept-Ranges': 'bytes', // Helps Chrome
+    // });
+    res.write(this.mp4frag.initialization);
     this.mp4frag.pipe(res);
   }
 
@@ -174,7 +177,6 @@ export class RtspReader extends EventEmitter {
     if (this.process) {
     }
   }
-
 
   async startStream(camItem: IServiceCamera) {
     return new Promise((resolve: any) => {
@@ -203,7 +205,7 @@ export class RtspReader extends EventEmitter {
             '1',
             'pipe:1',
           ],
-          { stdio: ['ignore', 'pipe', 'ignore', 'pipe'] }
+          { stdio: ['ignore', 'pipe', 'inherit', 'pipe'] }
         );
         this.mp4frag = new Mp4Frag({});
 
