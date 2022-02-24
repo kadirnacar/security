@@ -8,6 +8,7 @@ import * as OnvifManager from '../../onvif-nvt/onvif-nvt';
 import Camera = require('../../onvif-nvt/camera');
 import EventEmitter = require('events');
 import path = require('path');
+import * as golang from 'golang';
 // var ffmpegPath = (path.join(__dirname, '../../../node_modules/@ffmpeg-installer/darwin-arm64/ffmpeg' )).replace('app.asar', 'app.asar.unpacked')
 
 export interface IServiceCamera {
@@ -25,6 +26,43 @@ export class CameraService {
     if (this.camStreams[camId]) {
       this.camStreams[camId].reader.getPlaylist(res);
     }
+  }
+
+  static IsJsonString(str) {
+    try {
+      JSON.parse(str);
+    } catch (e) {
+      return false;
+    }
+    return true;
+  }
+
+  static async rtspgo(id, sdp, res) {
+    const camItem = this.getCamera(id);
+    const rtspUrl = new URL(camItem.camera.defaultProfile.StreamUri.Uri);
+    const connectionUrl = `rtsp://${camItem.model.username}:${camItem.model.password}@${camItem.model.url}:${camItem.model.rtspPort}${rtspUrl.pathname}${rtspUrl.search}`;
+
+    const goProcess = spawn('go', ['run', '.', id, sdp, connectionUrl], {
+      cwd: './rtspgo',
+    });
+
+    goProcess.stdout.on('data', (chunk) => {
+      const dataString = chunk.toString('utf8');
+      try {
+        const data = JSON.parse(dataString);
+        if (data.answer) {
+          res.status(200).send(data);
+        } else {
+          res.status(501).send();
+        }
+      } catch (e) {
+        res.status(501).send();
+      }
+    });
+
+    goProcess.stderr.on('data', (chunk) => {
+      console.log('stderr', chunk.toString('utf8'));
+    });
   }
 
   static async getHeader(camId, res) {
@@ -89,11 +127,12 @@ export class CameraService {
         cameraModel.username,
         cameraModel.password
       );
+
       if (cam) {
         const camItem = { model: cameraModel, camera: cam };
         this.cameraModels.push(camItem);
         const rtspReader = new RtspReader();
-        await rtspReader.startStream(camItem);
+        // await rtspReader.startStream(camItem);
 
         this.camStreams[cameraModel.id] = { reader: rtspReader };
       }

@@ -103,6 +103,15 @@ export class CameraRouter {
     }
   }
 
+  public async rtspgo(req: Request, res: Response, next) {
+    try {
+      const id = req.params['id'];
+      const cam = await CameraService.rtspgo(id, req.body.data, res);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async init() {
     this.router.post('/connect/:id', this.connect.bind(this));
     this.router.post('/disconnect/:id', this.disconnect.bind(this));
@@ -115,5 +124,6 @@ export class CameraRouter {
     this.router.get('/watch/:id', this.getPlaylist.bind(this));
     this.router.get('/pipe/:id', this.setPipe.bind(this));
     this.router.get('/info/:id', this.getCamInfo.bind(this));
+    this.router.post('/rtspgo/:id', this.rtspgo.bind(this));
   }
 }

@@ -108,7 +108,9 @@ class CameraView extends Component<Props & any, State> {
         } catch {}
       }
     }
-    this.animationFrame = requestAnimationFrame(this.runFrame);
+    setTimeout(() => {
+      this.animationFrame = requestAnimationFrame(this.runFrame);
+    }, 100);
   }
 
   render() {
@@ -122,11 +124,57 @@ class CameraView extends Component<Props & any, State> {
             <IconButton
               style={{ margin: 'auto' }}
               title="Kapat"
-              onClick={() => {
-                this.setState({
-                  playing: true,
-                  streamSource: `http://${location.host}/api/camera/pipe/${this.props['camera'].id}`,
-                });
+              onClick={async () => {
+                this.setState(
+                  {
+                    playing: true,
+                    // streamSource: `http://${location.host}/api/camera/pipe/${this.props['camera'].id}`,
+                  },
+                  () => {
+                    const pc = new RTCPeerConnection({
+                      iceServers: [
+                        {
+                          urls: ['stun:stun.l.google.com:19302'],
+                        },
+                      ],
+                    });
+
+                    pc.onnegotiationneeded = async (ev) => {
+                      let offer = await pc.createOffer();
+                      await pc.setLocalDescription(offer);
+                      const response = await fetch(
+                        `http://${location.host}/api/camera/rtspgo/${this.props['camera'].id}`,
+                        {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            data: btoa(pc.localDescription?.sdp || ''),
+                          }),
+                        }
+                      );
+                      const data = await response.json();
+                      // console.log(Buffer.from(data.answer, 'base64'));
+                      pc.setRemoteDescription(
+                        new RTCSessionDescription({
+                          type: 'answer',
+                          sdp: atob(data.answer),
+                        })
+                      );
+                    };
+                    pc.addTransceiver('video', {
+                      direction: 'sendrecv',
+                    });
+
+                    pc.ontrack = (event) => {
+                      let stream = new MediaStream();
+                      stream.addTrack(event.track);
+                      this.video.current.srcObject = stream;
+                      // stream.addTrack(event.track);
+                      // videoElem.srcObject = stream;
+                      console.log(event.streams.length + ' track is delivered');
+                    };
+                  }
+                );
               }}
             >
               <PlayCircleFilled style={{ fontSize: 120 }} />
@@ -158,18 +206,18 @@ class CameraView extends Component<Props & any, State> {
                 } catch {}
                 if (!this.animationFrame) await this.runFrame();
               }}
-              onPause={() => {
-                this.setState({
-                  playing: false,
-                  streamSource: '',
-                });
-              }}
-              onError={() => {
-                this.setState({
-                  playing: false,
-                  streamSource: '',
-                });
-              }}
+              // onPause={() => {
+              //   this.setState({
+              //     playing: false,
+              //     streamSource: '',
+              //   });
+              // }}
+              // onError={() => {
+              //   this.setState({
+              //     playing: false,
+              //     streamSource: '',
+              //   });
+              // }}
             ></video>
             {this.props['camera'].isPtz ? (
               <SpeedDial
