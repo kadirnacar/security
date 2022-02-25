@@ -5,7 +5,7 @@ export class CameraService extends ServiceBase {
   public static async getInfo(id: string): Promise<Result<any>> {
     const result = await this.requestJson(
       {
-        url: `/api/camera/info/${id}`,
+        url: `/api/camera/tensor/${id}`,
         method: 'GET',
       },
       true

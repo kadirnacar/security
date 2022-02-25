@@ -4,15 +4,14 @@ import {
   ArrowDownward,
   ArrowForward,
   ArrowUpward,
+  DirectionsWalk,
   PlayCircleFilled,
+  Settings,
   ZoomIn,
   ZoomOut,
-  DirectionsWalk,
-  Settings,
 } from '@material-ui/icons';
 import SpeedDial from '@material-ui/lab/SpeedDial';
 import SpeedDialAction from '@material-ui/lab/SpeedDialAction';
-import SpeedDialIcon from '@material-ui/lab/SpeedDialIcon';
 import { Camera } from '@security/models';
 import * as bodyDetection from '@tensorflow-models/body-pix';
 import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm';
@@ -20,6 +19,8 @@ import * as tf from '@tensorflow/tfjs-core';
 import React, { Component } from 'react';
 import 'vimond-replay/index.css';
 import { CameraService } from '../../services/CameraService';
+import '@tensorflow/tfjs-backend-webgl';
+import '@tensorflow/tfjs-backend-wasm';
 
 tfjsWasm.setWasmPaths(
   `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${tfjsWasm.version_wasm}/dist/`
@@ -34,6 +35,7 @@ interface State {
   showMenu?: boolean;
   velocity?: { x?: any; y?: any; z?: any };
   mode: 'canvas' | 'video';
+  boxes: any[];
 }
 
 type Props = {
@@ -53,12 +55,18 @@ class CameraView extends Component<Props & any, State> {
       playing: false,
       velocity: { x: 0, y: 1, z: 0 },
       mode: 'video',
+      boxes: [],
     };
   }
 
   animationFrame?: number;
   video: React.RefObject<any>;
   canvas: React.RefObject<any>;
+  ctx?: any;
+
+  async componentWillUnmount() {
+    await CameraService.disconnect(this.props['camera'].id);
+  }
 
   async componentDidMount() {
     await tf.setBackend('wasm');
@@ -70,9 +78,9 @@ class CameraView extends Component<Props & any, State> {
     const videoElement: HTMLVideoElement = this.video?.current;
 
     const bodyFix = await bodyDetection.load({
-      architecture: 'MobileNetV1',
+      architecture: 'ResNet50',
       outputStride: 16,
-      multiplier: 0.75,
+      multiplier: 1,
       quantBytes: 2,
     });
 
@@ -84,16 +92,85 @@ class CameraView extends Component<Props & any, State> {
     });
   }
 
+  async getTensor() {
+    try {
+      const result = await CameraService.getInfo(this.props['camera'].id);
+      let boxes: any = [];
+      for (let index = 0; index < result.value.length; index++) {
+        const points: any[] = result.value[index].keypoints;
+        // .filter(
+        //   (x) => x.score > 0.5
+        // );
+
+        if (points.length > 0) {
+          points.sort(function (a, b) {
+            return a.position.x - b.position.x;
+          });
+          const minX = points[0].position;
+          const maxX = points[points.length - 1].position;
+
+          points.sort(function (a, b) {
+            return a.position.y - b.position.y;
+          });
+          const minY = points[0].position;
+          const maxY = points[points.length - 1].position;
+          boxes.push({
+            x1: minX.x,
+            y1: minY.y,
+            x2: maxX.x,
+            y2: maxY.y,
+          });
+        }
+      }
+      this.setState({ boxes });
+    } catch {
+      this.setState({ boxes: [] });
+    }
+    this.getTensor();
+  }
+
   async runFrame() {
+    const videoElement: HTMLVideoElement = this.video?.current;
+    if (videoElement && this.canvas.current) {
+      this.ctx.clearRect(
+        0,
+        0,
+        this.canvas.current.width,
+        this.canvas.current.height
+      );
+      this.ctx.drawImage(videoElement, 0, 0);
+
+      const { boxes } = this.state;
+      const diff = 100;
+      for (let index = 0; index < boxes.length; index++) {
+        const box = boxes[index];
+        this.ctx.beginPath();
+        this.ctx.moveTo(box.x1, box.y1 - diff);
+        this.ctx.lineTo(box.x2, box.y1 - diff);
+        this.ctx.lineTo(box.x2, box.y2 - diff);
+        this.ctx.lineTo(box.x1, box.y2 - diff);
+        this.ctx.lineTo(box.x1, box.y1 - diff);
+        this.ctx.lineWidth = 8;
+        this.ctx.strokeStyle = 'red';
+
+        this.ctx.stroke();
+      }
+    }
+    this.animationFrame = requestAnimationFrame(this.runFrame);
+  }
+
+  async runFrame2() {
     const videoElement: HTMLVideoElement = this.video?.current;
     if (videoElement) {
       if (this.state.bodyDetect) {
         try {
           const pose = await this.state.bodyDetect.segmentPerson(videoElement, {
             flipHorizontal: false,
-            internalResolution: 'low',
-            segmentationThreshold: 0.7,
+            internalResolution: 'full',
+            scoreThreshold: 0.3,
+            segmentationThreshold: 0.3,
           });
+          console.log(pose);
           const seg = bodyDetection.toMask(pose);
           if (seg && this.state.mode == 'canvas') {
             bodyDetection.drawMask(
@@ -105,17 +182,20 @@ class CameraView extends Component<Props & any, State> {
               false
             );
           }
-        } catch {}
+        } catch (err) {
+          console.log(err);
+        }
       }
     }
-    setTimeout(() => {
+    setTimeout(async () => {
+      // await this.runFrame();
       this.animationFrame = requestAnimationFrame(this.runFrame);
     }, 100);
   }
 
   render() {
-    const speed = 0.8;
-    const step = 0.1;
+    const speed = 1;
+    const step = 0.05;
 
     return this.state.loaded ? (
       <>
@@ -125,12 +205,17 @@ class CameraView extends Component<Props & any, State> {
               style={{ margin: 'auto' }}
               title="Kapat"
               onClick={async () => {
+                // await CameraService.getInfo(this.props['camera'].id);
+                // return;
+
                 this.setState(
                   {
                     playing: true,
                     // streamSource: `http://${location.host}/api/camera/pipe/${this.props['camera'].id}`,
                   },
                   () => {
+                    this.ctx = this.canvas.current.getContext('2d');
+
                     const pc = new RTCPeerConnection({
                       iceServers: [
                         {
@@ -186,46 +271,18 @@ class CameraView extends Component<Props & any, State> {
               ref={this.canvas}
               style={{
                 width: '100%',
-                visibility: this.state.mode == 'video' ? 'hidden' : 'visible',
-                display: this.state.mode == 'video' ? 'none' : 'block',
+                // visibility: this.state.mode == 'video' ? 'hidden' : 'visible',
+                // display: this.state.mode == 'video' ? 'none' : 'block',
               }}
             ></canvas>
-            <video
-              src={this.state.streamSource}
-              autoPlay
-              controls={false}
-              style={{
-                width: '100%',
-                visibility: this.state.mode == 'canvas' ? 'hidden' : 'visible',
-              }}
-              ref={this.video}
-              onLoadedData={async () => {
-                try {
-                  this.canvas.current.width = this.video.current.videoWidth;
-                  this.canvas.current.height = this.video.current.videoHeight;
-                } catch {}
-                if (!this.animationFrame) await this.runFrame();
-              }}
-              // onPause={() => {
-              //   this.setState({
-              //     playing: false,
-              //     streamSource: '',
-              //   });
-              // }}
-              // onError={() => {
-              //   this.setState({
-              //     playing: false,
-              //     streamSource: '',
-              //   });
-              // }}
-            ></video>
+            <div style={{ overflow: 'hidden', height: 0 }}>
             {this.props['camera'].isPtz ? (
               <SpeedDial
                 style={{
                   position: 'absolute',
                   zIndex: 9999,
                   right: 20,
-                  top: 50,
+                  bottom: 50,
                 }}
                 ariaLabel="Ayarlar"
                 open={this.state.showMenu || false}
@@ -236,7 +293,7 @@ class CameraView extends Component<Props & any, State> {
                 onOpen={() => {
                   this.setState({ showMenu: true });
                 }}
-                direction={'down'}
+                direction={'up'}
               >
                 <SpeedDialAction
                   icon={<DirectionsWalk />}
@@ -384,10 +441,11 @@ class CameraView extends Component<Props & any, State> {
                   onClick={async () => {
                     const { velocity } = this.state;
                     if (velocity) {
-                      let cuurentValue = 0;
+                      let cuurentValue = step;
                       try {
                         cuurentValue = parseFloat(velocity.z);
                       } catch {}
+                      console.log(cuurentValue,velocity)
                       if (cuurentValue > 0) {
                         velocity.z = cuurentValue - step;
                         this.setState({ velocity });
@@ -411,7 +469,7 @@ class CameraView extends Component<Props & any, State> {
                   position: 'absolute',
                   zIndex: 9999,
                   right: 20,
-                  top: 50,
+                  bottom: 50,
                 }}
                 ariaLabel="Ayarlar"
                 open={this.state.showMenu || false}
@@ -422,7 +480,7 @@ class CameraView extends Component<Props & any, State> {
                 onOpen={() => {
                   this.setState({ showMenu: true });
                 }}
-                direction={'down'}
+                direction={'up'}
               >
                 <SpeedDialAction
                   icon={<DirectionsWalk />}
@@ -435,6 +493,40 @@ class CameraView extends Component<Props & any, State> {
                 />
               </SpeedDial>
             )}
+              <video
+                src={this.state.streamSource}
+                autoPlay
+                controls={false}
+                style={{
+                  width: '100%',
+                  visibility: 'hidden', //canvas' ? 'hidden' : 'visible',
+                }}
+                ref={this.video}
+                onLoadedData={async () => {
+                  try {
+                    this.canvas.current.width = this.video.current.videoWidth;
+                    this.canvas.current.height = this.video.current.videoHeight;
+                  } catch {}
+                  if (!this.animationFrame)
+                    requestAnimationFrame(this.runFrame);
+
+                  this.getTensor();
+                }}
+                // onPause={() => {
+                //   this.setState({
+                //     playing: false,
+                //     streamSource: '',
+                //   });
+                // }}
+                // onError={() => {
+                //   this.setState({
+                //     playing: false,
+                //     streamSource: '',
+                //   });
+                // }}
+              ></video>
+            </div>
+            
           </>
         )}
       </>

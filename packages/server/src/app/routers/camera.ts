@@ -3,6 +3,14 @@ import { Request, Response, Router } from 'express';
 import { CameraService } from '../services/CameraService';
 import Camera = require('../../onvif-nvt/camera');
 import { createUuidV4 } from '../../onvif-nvt/utils/util';
+import * as onvif from 'node-onvif';
+// import * as tf from '@tensorflow/tfjs-node';
+import * as tfGpu from '@tensorflow/tfjs-node-gpu';
+import * as bodyDetection from '@tensorflow-models/body-pix';
+import '@tensorflow/tfjs-node-gpu';
+
+import '@tensorflow/tfjs-backend-webgl';
+import '@tensorflow/tfjs-backend-wasm';
 
 export class CameraRouter {
   router: Router;
@@ -19,7 +27,7 @@ export class CameraRouter {
       const data = await dataRepo.get(id);
       const cam = await CameraService.connect(data);
 
-      res.status(200).send({});
+      res.status(200).send(cam);
     } catch (err) {
       next(err);
     }
@@ -112,6 +120,59 @@ export class CameraRouter {
     }
   }
 
+  public async getTensor(req: Request, res: Response, next) {
+    const id = req.params['id'];
+    try {
+      // if (!this.devices[id]) {
+      const cam = await CameraService.getCamera(id);
+      if (!cam) {
+        res.status(200).send([]);
+        return;
+      }
+      let device = new onvif.OnvifDevice({
+        xaddr: `http://${cam.model.url}/onvif/device_service`, //cam.camera.deviceio.serviceAddress.href,
+        user: cam.model.username,
+        pass: cam.model.password,
+      });
+
+      await device.init();
+      // this.devices[id] = device;
+      // }
+
+      const image = await device.fetchSnapshot();
+      const imagetf = tfGpu.node.decodeImage(image.body);
+      let pose;
+      try {
+        if (!this.bodyFix[id]) {
+          this.bodyFix[id] = await bodyDetection.load({
+            architecture: 'MobileNetV1',
+            outputStride: 16,
+            multiplier: 0.75,
+            quantBytes: 2,
+          });
+        }
+        pose = await this.bodyFix[id].segmentPerson(imagetf, {
+          flipHorizontal: false,
+          internalResolution: 'high',
+          segmentationThreshold: 0.5,
+          scoreThreshold: 0.5,
+        });
+      } catch (err) {
+        console.log(err);
+      }
+
+      // res.writeHead(200, { 'Content-Type': image.headers['content-type'] });
+      // res.write(image.body);
+      // res.end();
+      res.status(200).send(pose?.allPoses.filter((x) => x.score > 0.2));
+      // res.end(image.body.data);
+    } catch (err) {
+      delete this.devices[id];
+      res.status(200).send([]);
+    }
+  }
+  bodyFix: any = {};
+  devices: any = {};
   async init() {
     this.router.post('/connect/:id', this.connect.bind(this));
     this.router.post('/disconnect/:id', this.disconnect.bind(this));
@@ -124,6 +185,7 @@ export class CameraRouter {
     this.router.get('/watch/:id', this.getPlaylist.bind(this));
     this.router.get('/pipe/:id', this.setPipe.bind(this));
     this.router.get('/info/:id', this.getCamInfo.bind(this));
+    this.router.get('/tensor/:id', this.getTensor.bind(this));
     this.router.post('/rtspgo/:id', this.rtspgo.bind(this));
   }
 }
