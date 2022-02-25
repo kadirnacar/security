@@ -1,3 +1,4 @@
+import { createTheme, ThemeProvider } from '@mui/material';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import 'react-grid-layout/css/styles.css';
@@ -11,11 +12,19 @@ import { StoreHelper } from './app/store/StoreHelper';
 const initialState = loadState();
 const store = StoreHelper.initStore(history, initialState);
 
+const theme = createTheme({
+  palette: {
+    mode: 'dark',
+  },
+});
+
 ReactDOM.render(
   <Provider store={store}>
-    <BrowserRouter>
-      <Main />
-    </BrowserRouter>
+    <ThemeProvider theme={theme}>
+      <BrowserRouter>
+        <Main />
+      </BrowserRouter>
+    </ThemeProvider>
   </Provider>,
   document.getElementById('root')
 );

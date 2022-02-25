@@ -1,14 +1,11 @@
-import * as ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import { Camera as CameraModel } from '@security/models';
 import { ChildProcess, spawn } from 'child_process';
-import * as Mp4Frag from 'mp4frag';
 import { URL } from 'url';
 import * as WebSocket from 'ws';
 import * as OnvifManager from '../../onvif-nvt/onvif-nvt';
 import Camera = require('../../onvif-nvt/camera');
 import EventEmitter = require('events');
 import path = require('path');
-import * as golang from 'golang';
 // var ffmpegPath = (path.join(__dirname, '../../../node_modules/@ffmpeg-installer/darwin-arm64/ffmpeg' )).replace('app.asar', 'app.asar.unpacked')
 
 export interface IServiceCamera {
@@ -22,11 +19,6 @@ export class CameraService {
     {};
   static camStreams: { [camId: string]: { reader?: RtspReader } } = {};
 
-  static async getPlaylist(camId, res) {
-    if (this.camStreams[camId]) {
-      this.camStreams[camId].reader.getPlaylist(res);
-    }
-  }
 
   static IsJsonString(str) {
     try {
@@ -63,18 +55,6 @@ export class CameraService {
     goProcess.stderr.on('data', (chunk) => {
       console.log('stderr', chunk.toString('utf8'));
     });
-  }
-
-  static async getHeader(camId, res) {
-    if (this.camStreams[camId]) {
-      this.camStreams[camId].reader.getHeader(res);
-    }
-  }
-
-  static async getSegment(camId, segId, res) {
-    if (this.camStreams[camId]) {
-      this.camStreams[camId].reader.getSegment(res, segId);
-    }
   }
 
   static async setPipe(camId, res) {
@@ -154,7 +134,6 @@ export class RtspReader extends EventEmitter {
   }
 
   process: ChildProcess;
-  mp4frag;
 
   async stopStream() {
     return new Promise((resolve: any) => {
@@ -164,103 +143,18 @@ export class RtspReader extends EventEmitter {
       if (!this.process || this.process.killed) {
         resolve();
       }
-      this.mp4frag.resetCache();
-      // this.process.stdio[1].unpipe(this.mp4frag);
       this.process.on('close', () => resolve());
       this.process.kill('SIGKILL');
-      // execSync(`kill -9 ${this.process.pid}`);
     });
-  }
-
-  getPlaylist(res) {
-    if (this.mp4frag.m3u8) {
-      res.writeHead(200, { 'Content-Type': 'application/vnd.apple.mpegurl' });
-      res.end(this.mp4frag.m3u8);
-    } else {
-      res.sendStatus(503);
-    }
-  }
-
-  getHeader(res) {
-    if (this.mp4frag.initialization) {
-      res.writeHead(200, { 'Content-Type': 'video/mp4' });
-      res.end(this.mp4frag.initialization);
-    } else {
-      res.sendStatus(503);
-    }
-  }
-
-  getSegment(res, id) {
-    const segmentObject = this.mp4frag.getSegmentObject(id);
-    if (segmentObject) {
-      res.writeHead(200, { 'Content-Type': 'video/mp4' });
-      res.end(segmentObject.segment);
-    } else {
-      res.sendStatus(503);
-    }
   }
 
   async setPipe(res) {
     res.writeHead(200, { 'Content-Type': 'video/mp4' });
-    // res.writeHead(200, {
-    //   //'Transfer-Encoding': 'binary'
-    //   Connection: 'keep-alive',
-    //   'Content-Type': 'video/mp4',
-    //   //, 'Content-Length': chunksize            // ends after all bytes delivered
-    //   'Accept-Ranges': 'bytes', // Helps Chrome
-    // });
-    res.write(this.mp4frag.initialization);
-    this.mp4frag.pipe(res);
-  }
-
-  unpipe(res) {
-    if (this.process) {
-    }
   }
 
   async startStream(camItem: IServiceCamera) {
     return new Promise((resolve: any) => {
-      if (camItem && camItem.camera && !this.process) {
-        const rtspUrl = new URL(camItem.camera.defaultProfile.StreamUri.Uri);
-        const connectionUrl = `rtsp://${camItem.model.username}:${camItem.model.password}@${camItem.model.url}:${camItem.model.rtspPort}${rtspUrl.pathname}${rtspUrl.search}`;
-
-        this.process = spawn(
-          ffmpegInstaller.path,
-          [
-            '-rtsp_transport',
-            'tcp',
-            '-re',
-            '-i',
-            connectionUrl,
-            '-an',
-            '-c:v',
-            'copy',
-            '-f',
-            'mp4',
-            '-movflags',
-            '+frag_keyframe+empty_moov+default_base_moof+faststart',
-            '-tune',
-            'zerolatency',
-            '-reset_timestamps',
-            '1',
-            'pipe:1',
-          ],
-          { stdio: ['ignore', 'pipe', 'inherit', 'pipe'] }
-        );
-        this.mp4frag = new Mp4Frag({});
-
-        this.process.stdio[1].pipe(this.mp4frag);
-
-        // this.process.stderr.on('data', (chunk) => {
-        //   console.log('stderr',chunk.toString('utf8'));
-        // });
-
-        this.mp4frag.on('initialized', (params) => {
-          resolve();
-        });
-      } else {
-        resolve();
-      }
+      resolve();
     });
   }
 }

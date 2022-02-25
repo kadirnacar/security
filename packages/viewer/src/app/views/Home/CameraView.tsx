@@ -1,4 +1,3 @@
-import { CircularProgress, IconButton } from '@material-ui/core';
 import {
   ArrowBack,
   ArrowDownward,
@@ -9,18 +8,17 @@ import {
   Settings,
   ZoomIn,
   ZoomOut,
-} from '@material-ui/icons';
-import SpeedDial from '@material-ui/lab/SpeedDial';
-import SpeedDialAction from '@material-ui/lab/SpeedDialAction';
+} from '@mui/icons-material';
+import { SpeedDial, SpeedDialAction } from '@mui/lab';
+import { CircularProgress, IconButton } from '@mui/material';
 import { Camera } from '@security/models';
 import * as bodyDetection from '@tensorflow-models/body-pix';
+import '@tensorflow/tfjs-backend-wasm';
 import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm';
+import '@tensorflow/tfjs-backend-webgl';
 import * as tf from '@tensorflow/tfjs-core';
 import React, { Component } from 'react';
-import 'vimond-replay/index.css';
 import { CameraService } from '../../services/CameraService';
-import '@tensorflow/tfjs-backend-webgl';
-import '@tensorflow/tfjs-backend-wasm';
 
 tfjsWasm.setWasmPaths(
   `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${tfjsWasm.version_wasm}/dist/`
@@ -141,7 +139,7 @@ class CameraView extends Component<Props & any, State> {
       this.ctx.drawImage(videoElement, 0, 0);
 
       const { boxes } = this.state;
-      const diff = 100;
+      const diff = 0;
       for (let index = 0; index < boxes.length; index++) {
         const box = boxes[index];
         this.ctx.beginPath();
@@ -276,223 +274,223 @@ class CameraView extends Component<Props & any, State> {
               }}
             ></canvas>
             <div style={{ overflow: 'hidden', height: 0 }}>
-            {this.props['camera'].isPtz ? (
-              <SpeedDial
-                style={{
-                  position: 'absolute',
-                  zIndex: 9999,
-                  right: 20,
-                  bottom: 50,
-                }}
-                ariaLabel="Ayarlar"
-                open={this.state.showMenu || false}
-                icon={<Settings />}
-                onClose={() => {
-                  this.setState({ showMenu: false });
-                }}
-                onOpen={() => {
-                  this.setState({ showMenu: true });
-                }}
-                direction={'up'}
-              >
-                <SpeedDialAction
-                  icon={<DirectionsWalk />}
-                  tooltipTitle={'Dedektör'}
-                  onClick={async () => {
-                    this.setState({
-                      mode: this.state.mode == 'canvas' ? 'video' : 'canvas',
-                    });
+              {this.props['camera'].isPtz ? (
+                <SpeedDial
+                  style={{
+                    position: 'absolute',
+                    zIndex: 9999,
+                    right: 20,
+                    bottom: 50,
                   }}
-                />
-                <SpeedDialAction
-                  icon={<ArrowUpward />}
-                  tooltipTitle={'Yukarı'}
-                  onClick={async () => {
-                    const { velocity } = this.state;
-                    if (velocity) {
-                      let cuurentValue = 0;
-                      try {
-                        cuurentValue = parseFloat(velocity.y);
-                      } catch {}
-                      if (cuurentValue < 1) {
-                        velocity.y = cuurentValue + step;
-                        this.setState({ velocity });
-                        await CameraService.pos(
-                          this.props['camera'].id,
-                          velocity,
-                          {
-                            x: speed,
-                            y: speed,
-                            z: speed,
-                          }
-                        );
+                  ariaLabel="Ayarlar"
+                  open={this.state.showMenu || false}
+                  icon={<Settings />}
+                  onClose={() => {
+                    this.setState({ showMenu: false });
+                  }}
+                  onOpen={() => {
+                    this.setState({ showMenu: true });
+                  }}
+                  direction={'up'}
+                >
+                  <SpeedDialAction
+                    icon={<DirectionsWalk />}
+                    title={'Dedektör'}
+                    onClick={async () => {
+                      this.setState({
+                        mode: this.state.mode == 'canvas' ? 'video' : 'canvas',
+                      });
+                    }}
+                  />
+                  <SpeedDialAction
+                    icon={<ArrowUpward />}
+                    title={'Yukarı'}
+                    onClick={async () => {
+                      const { velocity } = this.state;
+                      if (velocity) {
+                        let cuurentValue = 0;
+                        try {
+                          cuurentValue = parseFloat(velocity.y);
+                        } catch {}
+                        if (cuurentValue < 1) {
+                          velocity.y = cuurentValue + step;
+                          this.setState({ velocity });
+                          await CameraService.pos(
+                            this.props['camera'].id,
+                            velocity,
+                            {
+                              x: speed,
+                              y: speed,
+                              z: speed,
+                            }
+                          );
+                        }
                       }
-                    }
-                  }}
-                />
-                <SpeedDialAction
-                  icon={<ArrowDownward />}
-                  tooltipTitle={'Aşağı'}
-                  onClick={async () => {
-                    const { velocity } = this.state;
-                    if (velocity) {
-                      let cuurentValue = 0;
-                      try {
-                        cuurentValue = parseFloat(velocity.y);
-                      } catch {}
-                      if (cuurentValue > -1) {
-                        velocity.y = cuurentValue - step;
-                        this.setState({ velocity });
-                        await CameraService.pos(
-                          this.props['camera'].id,
-                          velocity,
-                          {
-                            x: speed,
-                            y: speed,
-                            z: speed,
-                          }
-                        );
+                    }}
+                  />
+                  <SpeedDialAction
+                    icon={<ArrowDownward />}
+                    title={'Aşağı'}
+                    onClick={async () => {
+                      const { velocity } = this.state;
+                      if (velocity) {
+                        let cuurentValue = 0;
+                        try {
+                          cuurentValue = parseFloat(velocity.y);
+                        } catch {}
+                        if (cuurentValue > -1) {
+                          velocity.y = cuurentValue - step;
+                          this.setState({ velocity });
+                          await CameraService.pos(
+                            this.props['camera'].id,
+                            velocity,
+                            {
+                              x: speed,
+                              y: speed,
+                              z: speed,
+                            }
+                          );
+                        }
                       }
-                    }
-                  }}
-                />
+                    }}
+                  />
 
-                <SpeedDialAction
-                  icon={<ArrowBack />}
-                  tooltipTitle={'Sol'}
-                  onClick={async () => {
-                    const { velocity } = this.state;
-                    if (velocity) {
-                      let cuurentValue = 0;
-                      try {
-                        cuurentValue = parseFloat(velocity.x);
-                      } catch {}
-                      if (cuurentValue < 1) {
-                        velocity.x = cuurentValue - step;
-                        this.setState({ velocity });
-                        await CameraService.pos(
-                          this.props['camera'].id,
-                          velocity,
-                          {
-                            x: speed,
-                            y: speed,
-                            z: speed,
-                          }
-                        );
+                  <SpeedDialAction
+                    icon={<ArrowBack />}
+                    title={'Sol'}
+                    onClick={async () => {
+                      const { velocity } = this.state;
+                      if (velocity) {
+                        let cuurentValue = 0;
+                        try {
+                          cuurentValue = parseFloat(velocity.x);
+                        } catch {}
+                        if (cuurentValue < 1) {
+                          velocity.x = cuurentValue - step;
+                          this.setState({ velocity });
+                          await CameraService.pos(
+                            this.props['camera'].id,
+                            velocity,
+                            {
+                              x: speed,
+                              y: speed,
+                              z: speed,
+                            }
+                          );
+                        }
                       }
-                    }
-                  }}
-                />
-                <SpeedDialAction
-                  icon={<ArrowForward />}
-                  tooltipTitle={'Sağ'}
-                  onClick={async () => {
-                    const { velocity } = this.state;
-                    if (velocity) {
-                      let cuurentValue = 0;
-                      try {
-                        cuurentValue = parseFloat(velocity.x);
-                      } catch {}
-                      if (cuurentValue > -1) {
-                        velocity.x = cuurentValue + step;
-                        this.setState({ velocity });
-                        await CameraService.pos(
-                          this.props['camera'].id,
-                          velocity,
-                          {
-                            x: speed,
-                            y: speed,
-                            z: speed,
-                          }
-                        );
+                    }}
+                  />
+                  <SpeedDialAction
+                    icon={<ArrowForward />}
+                    title={'Sağ'}
+                    onClick={async () => {
+                      const { velocity } = this.state;
+                      if (velocity) {
+                        let cuurentValue = 0;
+                        try {
+                          cuurentValue = parseFloat(velocity.x);
+                        } catch {}
+                        if (cuurentValue > -1) {
+                          velocity.x = cuurentValue + step;
+                          this.setState({ velocity });
+                          await CameraService.pos(
+                            this.props['camera'].id,
+                            velocity,
+                            {
+                              x: speed,
+                              y: speed,
+                              z: speed,
+                            }
+                          );
+                        }
                       }
-                    }
-                  }}
-                />
-                <SpeedDialAction
-                  icon={<ZoomIn />}
-                  tooltipTitle={'Yaklaş'}
-                  onClick={async () => {
-                    const { velocity } = this.state;
-                    if (velocity) {
-                      let cuurentValue = 0;
-                      try {
-                        cuurentValue = parseFloat(velocity.z);
-                      } catch {}
-                      if (cuurentValue < 1) {
-                        velocity.z = cuurentValue + step;
-                        this.setState({ velocity });
-                        await CameraService.pos(
-                          this.props['camera'].id,
-                          velocity,
-                          {
-                            x: speed,
-                            y: speed,
-                            z: speed,
-                          }
-                        );
+                    }}
+                  />
+                  <SpeedDialAction
+                    icon={<ZoomIn />}
+                    title={'Yaklaş'}
+                    onClick={async () => {
+                      const { velocity } = this.state;
+                      if (velocity) {
+                        let cuurentValue = 0;
+                        try {
+                          cuurentValue = parseFloat(velocity.z);
+                        } catch {}
+                        if (cuurentValue < 1) {
+                          velocity.z = cuurentValue + step;
+                          this.setState({ velocity });
+                          await CameraService.pos(
+                            this.props['camera'].id,
+                            velocity,
+                            {
+                              x: speed,
+                              y: speed,
+                              z: speed,
+                            }
+                          );
+                        }
                       }
-                    }
-                  }}
-                />
-                <SpeedDialAction
-                  icon={<ZoomOut />}
-                  tooltipTitle={'Uzaklaş'}
-                  onClick={async () => {
-                    const { velocity } = this.state;
-                    if (velocity) {
-                      let cuurentValue = step;
-                      try {
-                        cuurentValue = parseFloat(velocity.z);
-                      } catch {}
-                      console.log(cuurentValue,velocity)
-                      if (cuurentValue > 0) {
-                        velocity.z = cuurentValue - step;
-                        this.setState({ velocity });
-                        await CameraService.pos(
-                          this.props['camera'].id,
-                          velocity,
-                          {
-                            x: speed,
-                            y: speed,
-                            z: speed,
-                          }
-                        );
+                    }}
+                  />
+                  <SpeedDialAction
+                    icon={<ZoomOut />}
+                    title={'Uzaklaş'}
+                    onClick={async () => {
+                      const { velocity } = this.state;
+                      if (velocity) {
+                        let cuurentValue = step;
+                        try {
+                          cuurentValue = parseFloat(velocity.z);
+                        } catch {}
+                        console.log(cuurentValue, velocity);
+                        if (cuurentValue > 0) {
+                          velocity.z = cuurentValue - step;
+                          this.setState({ velocity });
+                          await CameraService.pos(
+                            this.props['camera'].id,
+                            velocity,
+                            {
+                              x: speed,
+                              y: speed,
+                              z: speed,
+                            }
+                          );
+                        }
                       }
-                    }
+                    }}
+                  />
+                </SpeedDial>
+              ) : (
+                <SpeedDial
+                  style={{
+                    position: 'absolute',
+                    zIndex: 9999,
+                    right: 20,
+                    bottom: 50,
                   }}
-                />
-              </SpeedDial>
-            ) : (
-              <SpeedDial
-                style={{
-                  position: 'absolute',
-                  zIndex: 9999,
-                  right: 20,
-                  bottom: 50,
-                }}
-                ariaLabel="Ayarlar"
-                open={this.state.showMenu || false}
-                icon={<Settings />}
-                onClose={() => {
-                  this.setState({ showMenu: false });
-                }}
-                onOpen={() => {
-                  this.setState({ showMenu: true });
-                }}
-                direction={'up'}
-              >
-                <SpeedDialAction
-                  icon={<DirectionsWalk />}
-                  tooltipTitle={'Dedektör'}
-                  onClick={async () => {
-                    this.setState({
-                      mode: this.state.mode == 'canvas' ? 'video' : 'canvas',
-                    });
+                  ariaLabel="Ayarlar"
+                  open={this.state.showMenu || false}
+                  icon={<Settings />}
+                  onClose={() => {
+                    this.setState({ showMenu: false });
                   }}
-                />
-              </SpeedDial>
-            )}
+                  onOpen={() => {
+                    this.setState({ showMenu: true });
+                  }}
+                  direction={'up'}
+                >
+                  <SpeedDialAction
+                    icon={<DirectionsWalk />}
+                    title={'Dedektör'}
+                    onClick={async () => {
+                      this.setState({
+                        mode: this.state.mode == 'canvas' ? 'video' : 'canvas',
+                      });
+                    }}
+                  />
+                </SpeedDial>
+              )}
               <video
                 src={this.state.streamSource}
                 autoPlay
@@ -526,7 +524,6 @@ class CameraView extends Component<Props & any, State> {
                 // }}
               ></video>
             </div>
-            
           </>
         )}
       </>

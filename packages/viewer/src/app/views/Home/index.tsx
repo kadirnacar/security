@@ -1,15 +1,14 @@
+import { CameraAlt, Restore, Save } from '@mui/icons-material';
 import {
   Button,
   ButtonGroup,
   Card,
   CardHeader,
-  createStyles,
   CssBaseline,
-  IconButton,
   Paper,
-} from '@material-ui/core';
-import { CameraAlt, Restore, Save, Settings } from '@material-ui/icons';
-import { withStyles } from '@material-ui/styles';
+  Theme,
+} from '@mui/material';
+import { createStyles, withStyles } from '@mui/styles';
 import { Camera } from '@security/models';
 import React, { Component } from 'react';
 import { Responsive as ResponsiveGridLayout } from 'react-grid-layout';
@@ -181,11 +180,12 @@ class Home extends Component<Props, HomeState> {
   }
 }
 
-const styles = createStyles((theme) => ({
-  root: {
-    width: '100%',
-  },
-}));
+const styles = (theme: Theme) =>
+  createStyles({
+    root: {
+      width: '100%',
+    },
+  });
 
 const mapStateToProps = (state: ApplicationState) => state;
 

@@ -1,11 +1,5 @@
-import {
-  AppBar,
-  Box,
-  IconButton,
-  Toolbar,
-  Typography,
-} from '@material-ui/core';
-import { Close } from '@material-ui/icons';
+import { Close } from '@mui/icons-material';
+import { AppBar, Box, IconButton, Toolbar, Typography } from '@mui/material';
 import React, { Component } from 'react';
 
 type Props = {

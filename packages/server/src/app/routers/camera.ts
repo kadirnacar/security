@@ -1,16 +1,14 @@
 import { Services } from '@security/database';
-import { Request, Response, Router } from 'express';
-import { CameraService } from '../services/CameraService';
-import Camera = require('../../onvif-nvt/camera');
-import { createUuidV4 } from '../../onvif-nvt/utils/util';
-import * as onvif from 'node-onvif';
+import * as bodyDetection from '@tensorflow-models/body-pix';
+import '@tensorflow/tfjs-backend-wasm';
+import '@tensorflow/tfjs-backend-webgl';
+import '@tensorflow/tfjs-node-gpu';
 // import * as tf from '@tensorflow/tfjs-node';
 import * as tfGpu from '@tensorflow/tfjs-node-gpu';
-import * as bodyDetection from '@tensorflow-models/body-pix';
-import '@tensorflow/tfjs-node-gpu';
-
-import '@tensorflow/tfjs-backend-webgl';
-import '@tensorflow/tfjs-backend-wasm';
+import { Request, Response, Router } from 'express';
+import * as onvif from 'node-onvif';
+import { CameraService } from '../services/CameraService';
+import Camera = require('../../onvif-nvt/camera');
 
 export class CameraRouter {
   router: Router;
@@ -59,34 +57,6 @@ export class CameraRouter {
         }
       }
       res.status(200).send({});
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  public async getPlaylist(req: Request, res: Response, next) {
-    try {
-      const id = req.params['id'];
-      await CameraService.getPlaylist(id, res);
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  public async getHeader(req: Request, res: Response, next) {
-    try {
-      const id = req.params['id'];
-      await CameraService.getHeader(id, res);
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  public async getSegment(req: Request, res: Response, next) {
-    try {
-      const id = req.params['id'];
-      const segment = req.params['segment'];
-      await CameraService.getSegment(id, segment, res);
     } catch (err) {
       next(err);
     }
@@ -177,12 +147,6 @@ export class CameraRouter {
     this.router.post('/connect/:id', this.connect.bind(this));
     this.router.post('/disconnect/:id', this.disconnect.bind(this));
     this.router.post('/pos/:id', this.setPos.bind(this));
-    this.router.get(
-      '/watch/:id/source:segment.m4s',
-      this.getSegment.bind(this)
-    );
-    this.router.get('/watch/:id/source.mp4', this.getHeader.bind(this));
-    this.router.get('/watch/:id', this.getPlaylist.bind(this));
     this.router.get('/pipe/:id', this.setPipe.bind(this));
     this.router.get('/info/:id', this.getCamInfo.bind(this));
     this.router.get('/tensor/:id', this.getTensor.bind(this));

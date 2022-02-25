@@ -1,13 +1,13 @@
+import { Add } from '@mui/icons-material';
 import {
   Card,
   CardHeader,
   Container,
-  createStyles,
   CssBaseline,
   IconButton,
-} from '@material-ui/core';
-import { Add } from '@material-ui/icons';
-import { withStyles } from '@material-ui/styles';
+  Theme,
+} from '@mui/material';
+import { createStyles, withStyles } from '@mui/styles';
 import { Camera } from '@security/models';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -83,11 +83,12 @@ class Settings extends Component<Props, SettingsState> {
   }
 }
 
-const styles = createStyles((theme) => ({
-  root: {
-    width: '100%',
-  },
-}));
+const styles = (theme: Theme) =>
+  createStyles({
+    root: {
+      width: '100%',
+    },
+  });
 
 const mapStateToProps = (state: ApplicationState) => state;
 
@@ -97,6 +98,6 @@ const mapDispatchToProps = (dispatch) => {
   };
 };
 
-export default withStyles(styles)(
-  withRouter(connect(mapStateToProps, mapDispatchToProps)(Settings))
+export default withRouter(
+  connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)(Settings))
 );

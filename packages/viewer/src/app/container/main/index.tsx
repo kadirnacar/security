@@ -1,10 +1,5 @@
-import {
-  createStyles,
-  createTheme,
-  CssBaseline,
-  ThemeProvider,
-  withStyles,
-} from '@material-ui/core';
+import { CssBaseline, Theme } from '@mui/material';
+import { createStyles, WithStyles, withStyles } from '@mui/styles';
 import clsx from 'clsx';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -16,9 +11,39 @@ import Settings from '../../views/Settings';
 
 const drawerWidth = 240;
 
-type Props = {
-  classes?: any;
-};
+const styles = (theme: Theme) =>
+  createStyles({
+    root: {
+      display: 'flex',
+    },
+
+    content: {
+      flexGrow: 1,
+      padding: theme.spacing(3),
+      transition: theme.transitions.create('margin', {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.leavingScreen,
+      }),
+      marginLeft: -drawerWidth,
+    },
+    contentShift: {
+      transition: theme.transitions.create('margin', {
+        easing: theme.transitions.easing.easeOut,
+        duration: theme.transitions.duration.enteringScreen,
+      }),
+      marginLeft: 0,
+    },
+    drawerHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      padding: theme.spacing(0, 1),
+      // necessary for content to be below app bar
+      ...theme.mixins.toolbar,
+      justifyContent: 'flex-end',
+    },
+  });
+
+interface Props extends WithStyles<typeof styles> {}
 
 type State = {
   open: boolean;
@@ -53,78 +78,39 @@ class Main extends Component<Props, State> {
   };
 
   render() {
-    const theme = createTheme({
-      palette: {
-        type: this.state.darkMode ? 'dark' : 'light',
-      },
-    });
+    console.log(this.props)
     return (
-      <>
-        <ThemeProvider theme={theme}>
-          <div className={this.props.classes.root}>
-            <CssBaseline />
-            <Header
-              handleDrawerToggle={this.handleDrawerToggle}
-              toggleDarkMode={this.toggleDarkMode}
-              darkMode={this.state.darkMode}
-            />
-            <Sidebar
-              handleDrawerClose={this.handleDrawerClose}
-              open={this.state.open}
-            />
-            <main
-              className={clsx(this.props.classes.content, {
-                [this.props.classes.contentShift]: this.state.open,
-              })}
-            >
-              <div className={this.props.classes.drawerHeader} />
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/settings/*" element={<Settings />} />
-              </Routes>
-            </main>
-          </div>
-        </ThemeProvider>
-      </>
+      <div className={this.props.classes.root}>
+        <CssBaseline />
+        <Header
+          handleDrawerToggle={this.handleDrawerToggle}
+          toggleDarkMode={this.toggleDarkMode}
+          darkMode={this.state.darkMode}
+        />
+        <Sidebar
+          handleDrawerClose={this.handleDrawerClose}
+          open={this.state.open}
+        />
+        <main
+          className={clsx(this.props.classes.content, {
+            [this.props.classes.contentShift]: this.state.open,
+          })}
+        >
+          <div className={this.props.classes.drawerHeader} />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/settings/*" element={<Settings />} />
+          </Routes>
+        </main>
+      </div>
     );
   }
 }
-
-const styles = createStyles((theme) => ({
-  root: {
-    display: 'flex',
-  },
-
-  content: {
-    flexGrow: 1,
-    padding: theme.spacing(3),
-    transition: theme.transitions.create('margin', {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
-    }),
-    marginLeft: -drawerWidth,
-  },
-  contentShift: {
-    transition: theme.transitions.create('margin', {
-      easing: theme.transitions.easing.easeOut,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-    marginLeft: 0,
-  },
-  drawerHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: theme.spacing(0, 1),
-    // necessary for content to be below app bar
-    ...theme.mixins.toolbar,
-    justifyContent: 'flex-end',
-  },
-}));
 
 const mapStateToProps = (state) => ({});
 
 const mapDispatchToProps = {};
 
-export default withStyles(styles)(
+export default withStyles<any>(styles)(
   connect(mapStateToProps, mapDispatchToProps)(Main)
 );

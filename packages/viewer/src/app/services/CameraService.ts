@@ -2,6 +2,7 @@ import { Result } from '../reducers/Result';
 import { ServiceBase } from './ServiceBase';
 
 export class CameraService extends ServiceBase {
+
   public static async getInfo(id: string): Promise<Result<any>> {
     const result = await this.requestJson(
       {

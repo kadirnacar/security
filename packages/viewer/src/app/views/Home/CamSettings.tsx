@@ -1,13 +1,13 @@
-import { Grid, IconButton, Paper } from '@material-ui/core';
 import {
-  ArrowDownwardRounded,
   ArrowBack,
+  ArrowDownwardRounded,
   ArrowForward,
   ArrowUpward,
   CenterFocusStrong,
   ZoomIn,
   ZoomOut,
-} from '@material-ui/icons';
+} from '@mui/icons-material';
+import { Grid, IconButton, Paper } from '@mui/material';
 import { Camera } from '@security/models';
 import React, { Component } from 'react';
 

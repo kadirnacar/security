@@ -1,14 +1,6 @@
-import {
-  AppBar,
-  createStyles,
-  IconButton,
-  Toolbar,
-  Typography,
-  withStyles,
-} from '@material-ui/core';
-import Brightness4Icon from '@material-ui/icons/Brightness4';
-import Brightness7Icon from '@material-ui/icons/Brightness7';
-import MenuIcon from '@material-ui/icons/Menu';
+import { AppBar, IconButton, Theme, Toolbar, Typography } from '@mui/material';
+import { withStyles, createStyles } from '@mui/styles';
+import { Brightness4, Brightness7, Menu } from '@mui/icons-material';
 import React, { Component } from 'react';
 
 type Props = {
@@ -28,6 +20,7 @@ class Header extends Component<Props, State> {
   }
 
   render() {
+    console.log(this.props.classes);
     return (
       <AppBar position="fixed" className={this.props.classes.appbar}>
         <Toolbar>
@@ -37,7 +30,7 @@ class Header extends Component<Props, State> {
             onClick={this.props.handleDrawerToggle}
             edge="start"
           >
-            <MenuIcon />
+            <Menu />
           </IconButton>
           <Typography variant="h6" noWrap>
             Kartal
@@ -50,7 +43,7 @@ class Header extends Component<Props, State> {
             edge="start"
             className={this.props.classes.rightIcons}
           >
-            {this.props.darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+            {this.props.darkMode ? <Brightness7 /> : <Brightness4 />}
           </IconButton>
         </Toolbar>
       </AppBar>
@@ -58,20 +51,22 @@ class Header extends Component<Props, State> {
   }
 }
 
-const styles = createStyles((theme) => ({
-  appbar: {
-    backgroundColor: theme.palette.background.default,
-    color: theme.palette.text.primary,
-    [theme.breakpoints.up('sm')]: {
-      zIndex: theme.zIndex.drawer + 1,
+const styles = (theme: Theme) =>
+  createStyles({
+    appbar: {
+      backgroundColor: theme.palette.background.default + ' !important',
+      color: theme.palette.text.primary + ' !important',
+      zIndex: theme.zIndex.drawer + 1 + ' !important',
+      // [theme.breakpoints.up('sm')]: {
+      //   zIndex: theme.zIndex.drawer + 1,
+      // },
     },
-  },
-  rightIcons: {
-    marginLeft: theme.spacing(0.5),
-  },
-  spacer: {
-    flexGrow: 1,
-  },
-}));
+    rightIcons: {
+      marginLeft: theme.spacing(0.5) + ' !important',
+    },
+    spacer: {
+      flexGrow: 1 + ' !important',
+    },
+  });
 
-export default withStyles(styles)(Header);
+export default withStyles<any>(styles)(Header);

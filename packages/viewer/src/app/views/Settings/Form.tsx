@@ -1,3 +1,4 @@
+import { Delete, Save } from '@mui/icons-material';
 import {
   Box,
   Card,
@@ -8,8 +9,7 @@ import {
   FormControlLabel,
   IconButton,
   TextField,
-} from '@material-ui/core';
-import { Delete, Save } from '@material-ui/icons';
+} from '@mui/material';
 import { Camera } from '@security/models';
 import React, { Component } from 'react';
 
