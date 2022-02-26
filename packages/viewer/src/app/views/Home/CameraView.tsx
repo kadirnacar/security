@@ -61,6 +61,7 @@ class CameraView extends Component<Props, State> {
   }
 
   animationFrame?: number;
+  animationFrameTensor?: number;
   video: React.RefObject<any>;
   canvas: React.RefObject<any>;
   ctx?: any;
@@ -70,6 +71,14 @@ class CameraView extends Component<Props, State> {
     if (this.pc) {
       this.pc.close();
     }
+    this.isStop = true;
+    this.setState({ playing: false });
+    if (this.animationFrame) {
+      cancelAnimationFrame(this.animationFrame);
+    }
+    if (this.animationFrameTensor) {
+      cancelAnimationFrame(this.animationFrameTensor);
+    }
     await CameraService.disconnect(this.props.camera?.id || '');
   }
 
@@ -78,7 +87,8 @@ class CameraView extends Component<Props, State> {
     if (this.props.camera?.id) {
       await CameraService.connect(this.props.camera?.id);
     }
-
+    this.animationFrame = undefined;
+    this.animationFrameTensor = undefined;
     const videoElement: HTMLVideoElement = this.video?.current;
 
     const bodyFix = await bodyDetection.load({
@@ -104,7 +114,7 @@ class CameraView extends Component<Props, State> {
   last = 0;
   num = 0;
   speed = 0.5;
-
+  isStop = false;
   async getTensorServer(timeStamp) {
     let timeInSecond = timeStamp / 1000;
 
@@ -148,7 +158,9 @@ class CameraView extends Component<Props, State> {
       }
       this.last = timeInSecond;
     }
-    requestAnimationFrame(this.getTensorServer);
+    if (!this.isStop) {
+      this.animationFrameTensor = requestAnimationFrame(this.getTensorServer);
+    }
     // this.getTensor();
   }
   async getTensor(timeStamp) {
@@ -215,7 +227,9 @@ class CameraView extends Component<Props, State> {
 
       this.last = timeInSecond;
     }
-    requestAnimationFrame(this.getTensor);
+    if (!this.isStop) {
+      this.animationFrameTensor = requestAnimationFrame(this.getTensor);
+    }
   }
 
   async runFrame(timeStamp) {
@@ -246,7 +260,9 @@ class CameraView extends Component<Props, State> {
       }
     }
 
-    this.animationFrame = requestAnimationFrame(this.runFrame);
+    if (!this.isStop) {
+      this.animationFrame = requestAnimationFrame(this.runFrame);
+    }
   }
 
   render() {
