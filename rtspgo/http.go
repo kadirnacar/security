@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	webrtc "github.com/deepch/vdk/format/webrtcv3"
@@ -65,6 +66,10 @@ func HTTPAPIServerStreamWebRTC(suuid string, data string) {
 				err = muxerWebRTC.WritePacket(pck)
 				if err != nil {
 					log.Println("WritePacket", err)
+					mapErr := map[string]string{"error": err.Error()}
+					mapErrJ, _ := json.Marshal(mapErr)
+					fmt.Println(string(mapErrJ))
+					os.Exit(3)
 					return
 				}
 			}

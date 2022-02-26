@@ -78,7 +78,6 @@ class Main extends Component<Props, State> {
   };
 
   render() {
-    console.log(this.props)
     return (
       <div className={this.props.classes.root}>
         <CssBaseline />

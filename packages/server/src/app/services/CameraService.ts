@@ -19,6 +19,18 @@ export class CameraService {
     {};
   static camStreams: { [camId: string]: { reader?: RtspReader } } = {};
 
+  static async endProcess(process) {
+    return new Promise((resolve: any) => {
+      setTimeout(() => {
+        resolve();
+      }, 2000);
+      if (!process || process.killed) {
+        resolve();
+      }
+      process.on('close', () => resolve());
+      process.kill('SIGKILL');
+    });
+  }
 
   static IsJsonString(str) {
     try {
@@ -38,17 +50,23 @@ export class CameraService {
       cwd: './rtspgo',
     });
 
-    goProcess.stdout.on('data', (chunk) => {
+    goProcess.stdout.on('data', async (chunk) => {
       const dataString = chunk.toString('utf8');
       try {
         const data = JSON.parse(dataString);
         if (data.answer) {
           res.status(200).send(data);
+        } else if (data.error) {
+          console.log('stdout go err', data.error);
+          goProcess.kill();
+          await this.endProcess(goProcess);
+          res.status(501);
         } else {
-          res.status(501).send();
+          res.status(501);
         }
       } catch (e) {
-        res.status(501).send();
+        console.log('stdout err', e);
+        res.status(501);
       }
     });
 

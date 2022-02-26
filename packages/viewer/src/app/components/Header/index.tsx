@@ -20,7 +20,6 @@ class Header extends Component<Props, State> {
   }
 
   render() {
-    console.log(this.props.classes);
     return (
       <AppBar position="fixed" className={this.props.classes.appbar}>
         <Toolbar>

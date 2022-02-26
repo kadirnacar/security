@@ -1,7 +1,7 @@
 import { Services } from '@security/database';
+import { Settings } from '@security/models';
 import * as bodyDetection from '@tensorflow-models/body-pix';
 import '@tensorflow/tfjs-backend-wasm';
-import '@tensorflow/tfjs-backend-webgl';
 import '@tensorflow/tfjs-node-gpu';
 // import * as tf from '@tensorflow/tfjs-node';
 import * as tfGpu from '@tensorflow/tfjs-node-gpu';
@@ -113,19 +113,30 @@ export class CameraRouter {
       const imagetf = tfGpu.node.decodeImage(image.body);
       let pose;
       try {
-        if (!this.bodyFix[id]) {
+        const settings = await Services.Settings.get(null);
+        if (
+          !this.bodyFix[id] ||
+          !this.settings ||
+          settings.updateDate != this.settings.updateDate
+        ) {
+          this.settings = settings;
           this.bodyFix[id] = await bodyDetection.load({
-            architecture: 'MobileNetV1',
-            outputStride: 16,
-            multiplier: 0.75,
-            quantBytes: 2,
+            architecture: this.settings.architecture || 'MobileNetV1',
+            outputStride: this.settings.outputStride || 16,
+            multiplier:
+              this.settings.architecture == 'MobileNetV1'
+                ? this.settings.multiplier || 0.75
+                : undefined,
+            quantBytes: this.settings.quantBytes || 2,
           });
         }
         pose = await this.bodyFix[id].segmentPerson(imagetf, {
           flipHorizontal: false,
-          internalResolution: 'high',
-          segmentationThreshold: 0.5,
-          scoreThreshold: 0.5,
+          internalResolution: this.settings.internalResolution || 'high',
+          segmentationThreshold: this.settings.segmentationThreshold || 0.7,
+          maxDetections: this.settings.maxDetections,
+          nmsRadius: this.settings.nmsRadius,
+          scoreThreshold: this.settings.scoreThreshold,
         });
       } catch (err) {
         console.log(err);
@@ -138,11 +149,13 @@ export class CameraRouter {
       // res.end(image.body.data);
     } catch (err) {
       delete this.devices[id];
+      console.log(err);
       res.status(200).send([]);
     }
   }
   bodyFix: any = {};
   devices: any = {};
+  settings: Settings;
   async init() {
     this.router.post('/connect/:id', this.connect.bind(this));
     this.router.post('/disconnect/:id', this.disconnect.bind(this));

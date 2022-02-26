@@ -9,9 +9,9 @@ import {
   ZoomIn,
   ZoomOut,
 } from '@mui/icons-material';
-import { SpeedDial, SpeedDialAction } from '@mui/lab';
+import { SpeedDial, SpeedDialAction } from '@mui/material';
 import { CircularProgress, IconButton } from '@mui/material';
-import { Camera } from '@security/models';
+import { Camera, Settings as SettingsModel } from '@security/models';
 import * as bodyDetection from '@tensorflow-models/body-pix';
 import '@tensorflow/tfjs-backend-wasm';
 import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm';
@@ -37,16 +37,19 @@ interface State {
 }
 
 type Props = {
-  camera: Camera;
+  camera?: Camera;
   showSettings?: boolean;
+  settings: SettingsModel;
 };
 
-class CameraView extends Component<Props & any, State> {
+class CameraView extends Component<Props, State> {
   constructor(props) {
     super(props);
     this.video = React.createRef<any>();
     this.canvas = React.createRef<any>();
     this.runFrame = this.runFrame.bind(this);
+    this.getTensorServer = this.getTensorServer.bind(this);
+    this.getTensor = this.getTensor.bind(this);
     this.state = {
       streamSource: '',
       loaded: false,
@@ -61,27 +64,34 @@ class CameraView extends Component<Props & any, State> {
   video: React.RefObject<any>;
   canvas: React.RefObject<any>;
   ctx?: any;
+  pc?: RTCPeerConnection;
 
   async componentWillUnmount() {
-    await CameraService.disconnect(this.props['camera'].id);
+    if (this.pc) {
+      this.pc.close();
+    }
+    await CameraService.disconnect(this.props.camera?.id || '');
   }
 
   async componentDidMount() {
-    await tf.setBackend('wasm');
-
-    if (this.props['camera'].id) {
-      await CameraService.connect(this.props['camera'].id);
+    await tf.setBackend('webgl');
+    if (this.props.camera?.id) {
+      await CameraService.connect(this.props.camera?.id);
     }
 
     const videoElement: HTMLVideoElement = this.video?.current;
 
     const bodyFix = await bodyDetection.load({
-      architecture: 'ResNet50',
-      outputStride: 16,
-      multiplier: 1,
-      quantBytes: 2,
+      architecture: this.props.settings.architecture || 'MobileNetV1',
+      outputStride: this.props.settings.outputStride || 16,
+      multiplier:
+        this.props.settings.architecture == 'MobileNetV1'
+          ? this.props.settings.multiplier || 0.75
+          : undefined,
+      quantBytes: this.props.settings.quantBytes || 2,
     });
 
+    this.speed = this.props.settings.framePerSecond || 0.5;
     this.setState({
       bodyDetect: bodyFix,
       loaded: true,
@@ -90,58 +100,139 @@ class CameraView extends Component<Props & any, State> {
     });
   }
 
-  async getTensor() {
-    try {
-      const result = await CameraService.getInfo(this.props['camera'].id);
-      let boxes: any = [];
-      for (let index = 0; index < result.value.length; index++) {
-        const points: any[] = result.value[index].keypoints;
-        // .filter(
-        //   (x) => x.score > 0.5
-        // );
+  boxes: any[] = [];
+  last = 0;
+  num = 0;
+  speed = 0.5;
 
-        if (points.length > 0) {
-          points.sort(function (a, b) {
-            return a.position.x - b.position.x;
-          });
-          const minX = points[0].position;
-          const maxX = points[points.length - 1].position;
+  async getTensorServer(timeStamp) {
+    let timeInSecond = timeStamp / 1000;
 
-          points.sort(function (a, b) {
-            return a.position.y - b.position.y;
-          });
-          const minY = points[0].position;
-          const maxY = points[points.length - 1].position;
-          boxes.push({
-            x1: minX.x,
-            y1: minY.y,
-            x2: maxX.x,
-            y2: maxY.y,
-          });
+    if (timeInSecond - this.last >= this.speed) {
+      try {
+        const result = await CameraService.getTensor(
+          this.props.camera?.id || ''
+        );
+        let boxes: any = [];
+        for (let index = 0; index < result.value.length; index++) {
+          const points: any[] = result.value[index].keypoints;
+          // .filter(
+          //   (x) => x.score > 0.5
+          // );
+
+          if (points.length > 0) {
+            points.sort(function (a, b) {
+              return a.position.x - b.position.x;
+            });
+            const minX = points[0].position;
+            const maxX = points[points.length - 1].position;
+
+            points.sort(function (a, b) {
+              return a.position.y - b.position.y;
+            });
+            const minY = points[0].position;
+            const maxY = points[points.length - 1].position;
+            boxes.push({
+              x1: minX.x,
+              y1: minY.y,
+              x2: maxX.x,
+              y2: maxY.y,
+            });
+          }
         }
+        this.boxes = boxes;
+        // this.setState({ boxes });
+      } catch {
+        this.boxes = [];
+        // this.setState({ boxes: [] });
       }
-      this.setState({ boxes });
-    } catch {
-      this.setState({ boxes: [] });
+      this.last = timeInSecond;
     }
-    this.getTensor();
+    requestAnimationFrame(this.getTensorServer);
+    // this.getTensor();
+  }
+  async getTensor(timeStamp) {
+    let timeInSecond = timeStamp / 1000;
+
+    if (timeInSecond - this.last >= this.speed) {
+      try {
+        const videoElement = this.video?.current;
+        if (videoElement) {
+          if (this.state.bodyDetect) {
+            const pose = await this.state.bodyDetect.segmentPerson(
+              videoElement,
+              {
+                flipHorizontal: false,
+                internalResolution:
+                  this.props.settings.internalResolution || 'high',
+                segmentationThreshold:
+                  this.props.settings.segmentationThreshold || 0.7,
+                maxDetections: this.props.settings.maxDetections,
+                nmsRadius: this.props.settings.nmsRadius,
+                scoreThreshold: this.props.settings.scoreThreshold,
+              }
+            );
+
+            const poses: any[] = pose.allPoses.filter((x) => x.score > 0.2);
+
+            let boxes: any = [];
+            for (let index = 0; index < poses.length; index++) {
+              const points: any[] = poses[index].keypoints;
+              // .filter(
+              //   (x) => x.score > 0.5
+              // );
+
+              if (points.length > 0) {
+                points.sort(function (a, b) {
+                  return a.position.x - b.position.x;
+                });
+                const minX = points[0].position;
+                const maxX = points[points.length - 1].position;
+
+                points.sort(function (a, b) {
+                  return a.position.y - b.position.y;
+                });
+                const minY = points[0].position;
+                const maxY = points[points.length - 1].position;
+                boxes.push({
+                  x1: minX.x,
+                  y1: minY.y,
+                  x2: maxX.x,
+                  y2: maxY.y,
+                });
+              }
+            }
+            this.boxes = boxes;
+            // this.setState({ boxes });
+
+            // this.setState({ boxes });
+          }
+        }
+      } catch {
+        this.boxes = [];
+        // this.setState({ boxes: [] });
+      }
+
+      this.last = timeInSecond;
+    }
+    requestAnimationFrame(this.getTensor);
   }
 
-  async runFrame() {
+  async runFrame(timeStamp) {
     const videoElement: HTMLVideoElement = this.video?.current;
     if (videoElement && this.canvas.current) {
-      this.ctx.clearRect(
-        0,
-        0,
-        this.canvas.current.width,
-        this.canvas.current.height
-      );
+      // this.ctx.clearRect(
+      //   0,
+      //   0,
+      //   this.canvas.current.width,
+      //   this.canvas.current.height
+      // );
       this.ctx.drawImage(videoElement, 0, 0);
 
-      const { boxes } = this.state;
+      // const { boxes } = this.state;
       const diff = 0;
-      for (let index = 0; index < boxes.length; index++) {
-        const box = boxes[index];
+      for (let index = 0; index < this.boxes.length; index++) {
+        const box = this.boxes[index];
         this.ctx.beginPath();
         this.ctx.moveTo(box.x1, box.y1 - diff);
         this.ctx.lineTo(box.x2, box.y1 - diff);
@@ -154,47 +245,13 @@ class CameraView extends Component<Props & any, State> {
         this.ctx.stroke();
       }
     }
-    this.animationFrame = requestAnimationFrame(this.runFrame);
-  }
 
-  async runFrame2() {
-    const videoElement: HTMLVideoElement = this.video?.current;
-    if (videoElement) {
-      if (this.state.bodyDetect) {
-        try {
-          const pose = await this.state.bodyDetect.segmentPerson(videoElement, {
-            flipHorizontal: false,
-            internalResolution: 'full',
-            scoreThreshold: 0.3,
-            segmentationThreshold: 0.3,
-          });
-          console.log(pose);
-          const seg = bodyDetection.toMask(pose);
-          if (seg && this.state.mode == 'canvas') {
-            bodyDetection.drawMask(
-              this.canvas.current,
-              this.video.current,
-              seg,
-              0.7,
-              0,
-              false
-            );
-          }
-        } catch (err) {
-          console.log(err);
-        }
-      }
-    }
-    setTimeout(async () => {
-      // await this.runFrame();
-      this.animationFrame = requestAnimationFrame(this.runFrame);
-    }, 100);
+    this.animationFrame = requestAnimationFrame(this.runFrame);
   }
 
   render() {
     const speed = 1;
     const step = 0.05;
-
     return this.state.loaded ? (
       <>
         {!this.state.playing ? (
@@ -214,7 +271,7 @@ class CameraView extends Component<Props & any, State> {
                   () => {
                     this.ctx = this.canvas.current.getContext('2d');
 
-                    const pc = new RTCPeerConnection({
+                    this.pc = new RTCPeerConnection({
                       iceServers: [
                         {
                           urls: ['stun:stun.l.google.com:19302'],
@@ -222,33 +279,35 @@ class CameraView extends Component<Props & any, State> {
                       ],
                     });
 
-                    pc.onnegotiationneeded = async (ev) => {
-                      let offer = await pc.createOffer();
-                      await pc.setLocalDescription(offer);
-                      const response = await fetch(
-                        `http://${location.host}/api/camera/rtspgo/${this.props['camera'].id}`,
-                        {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            data: btoa(pc.localDescription?.sdp || ''),
-                          }),
-                        }
-                      );
-                      const data = await response.json();
-                      // console.log(Buffer.from(data.answer, 'base64'));
-                      pc.setRemoteDescription(
-                        new RTCSessionDescription({
-                          type: 'answer',
-                          sdp: atob(data.answer),
-                        })
-                      );
+                    this.pc.onnegotiationneeded = async (ev) => {
+                      if (this.pc) {
+                        let offer = await this.pc.createOffer();
+                        await this.pc.setLocalDescription(offer);
+                        const response = await fetch(
+                          `http://${location.host}/api/camera/rtspgo/${this.props['camera']?.id}`,
+                          {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              data: btoa(this.pc.localDescription?.sdp || ''),
+                            }),
+                          }
+                        );
+                        const data = await response.json();
+                        // console.log(Buffer.from(data.answer, 'base64'));
+                        this.pc.setRemoteDescription(
+                          new RTCSessionDescription({
+                            type: 'answer',
+                            sdp: atob(data.answer),
+                          })
+                        );
+                      }
                     };
-                    pc.addTransceiver('video', {
+                    this.pc.addTransceiver('video', {
                       direction: 'sendrecv',
                     });
 
-                    pc.ontrack = (event) => {
+                    this.pc.ontrack = (event) => {
                       let stream = new MediaStream();
                       stream.addTrack(event.track);
                       this.video.current.srcObject = stream;
@@ -274,7 +333,7 @@ class CameraView extends Component<Props & any, State> {
               }}
             ></canvas>
             <div style={{ overflow: 'hidden', height: 0 }}>
-              {this.props['camera'].isPtz ? (
+              {this.props['camera']?.isPtz ? (
                 <SpeedDial
                   style={{
                     position: 'absolute',
@@ -316,7 +375,7 @@ class CameraView extends Component<Props & any, State> {
                           velocity.y = cuurentValue + step;
                           this.setState({ velocity });
                           await CameraService.pos(
-                            this.props['camera'].id,
+                            this.props['camera']?.id || '',
                             velocity,
                             {
                               x: speed,
@@ -342,7 +401,7 @@ class CameraView extends Component<Props & any, State> {
                           velocity.y = cuurentValue - step;
                           this.setState({ velocity });
                           await CameraService.pos(
-                            this.props['camera'].id,
+                            this.props['camera']?.id || '',
                             velocity,
                             {
                               x: speed,
@@ -369,7 +428,7 @@ class CameraView extends Component<Props & any, State> {
                           velocity.x = cuurentValue - step;
                           this.setState({ velocity });
                           await CameraService.pos(
-                            this.props['camera'].id,
+                            this.props['camera']?.id || '',
                             velocity,
                             {
                               x: speed,
@@ -395,7 +454,7 @@ class CameraView extends Component<Props & any, State> {
                           velocity.x = cuurentValue + step;
                           this.setState({ velocity });
                           await CameraService.pos(
-                            this.props['camera'].id,
+                            this.props['camera']?.id || '',
                             velocity,
                             {
                               x: speed,
@@ -421,7 +480,7 @@ class CameraView extends Component<Props & any, State> {
                           velocity.z = cuurentValue + step;
                           this.setState({ velocity });
                           await CameraService.pos(
-                            this.props['camera'].id,
+                            this.props['camera']?.id || '',
                             velocity,
                             {
                               x: speed,
@@ -443,12 +502,11 @@ class CameraView extends Component<Props & any, State> {
                         try {
                           cuurentValue = parseFloat(velocity.z);
                         } catch {}
-                        console.log(cuurentValue, velocity);
                         if (cuurentValue > 0) {
                           velocity.z = cuurentValue - step;
                           this.setState({ velocity });
                           await CameraService.pos(
-                            this.props['camera'].id,
+                            this.props['camera']?.id || '',
                             velocity,
                             {
                               x: speed,
@@ -505,23 +563,14 @@ class CameraView extends Component<Props & any, State> {
                     this.canvas.current.width = this.video.current.videoWidth;
                     this.canvas.current.height = this.video.current.videoHeight;
                   } catch {}
-                  if (!this.animationFrame)
-                    requestAnimationFrame(this.runFrame);
+                  if (!this.animationFrame) this.runFrame(0);
 
-                  this.getTensor();
+                  if (this.props.settings.type == 'server') {
+                    this.getTensorServer(0);
+                  } else {
+                    this.getTensor(0);
+                  }
                 }}
-                // onPause={() => {
-                //   this.setState({
-                //     playing: false,
-                //     streamSource: '',
-                //   });
-                // }}
-                // onError={() => {
-                //   this.setState({
-                //     playing: false,
-                //     streamSource: '',
-                //   });
-                // }}
               ></video>
             </div>
           </>

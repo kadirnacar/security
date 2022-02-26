@@ -1,4 +1,4 @@
-import { Add } from '@mui/icons-material';
+import { Add, Save } from '@mui/icons-material';
 import {
   Card,
   CardHeader,
@@ -8,7 +8,7 @@ import {
   Theme,
 } from '@mui/material';
 import { createStyles, withStyles } from '@mui/styles';
-import { Camera } from '@security/models';
+import { Camera, Settings as SettingsModel } from '@security/models';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -17,6 +17,7 @@ import { DataState } from '../../reducers/Data/state';
 import { ApplicationState } from '../../store';
 import { withRouter } from '../../withRouter';
 import Form from './Form';
+import SettingsForm from './SettingsForm';
 
 interface SettingsState {}
 interface Props {
@@ -54,6 +55,7 @@ class Settings extends Component<Props, SettingsState> {
     return (
       <>
         <CssBaseline />
+        <SettingsForm />
         <Card className={this.props['classes'].root}>
           <CardHeader
             title="Kameralar"

@@ -25,6 +25,10 @@ const unloadedState: DataState = {
     List: [],
     operationLoading: false,
   },
+  Settings: {
+    List: [],
+    operationLoading: false,
+  },
 };
 
 export type KnownAction =

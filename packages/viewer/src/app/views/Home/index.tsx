@@ -47,6 +47,7 @@ class Home extends Component<Props, HomeState> {
 
   async componentDidMount() {
     await this.props.DataActions?.getList('Camera');
+    await this.props.DataActions?.getItem('Settings');
     this.loadLayout();
   }
 
@@ -157,7 +158,10 @@ class Home extends Component<Props, HomeState> {
             if (item.type == 'cam') {
               cam = this.props.Data?.Camera.List.find((x) => x.id == item.i);
               title = cam.name;
-              props = { camera: cam };
+              props = {
+                camera: cam,
+                settings: this.props.Data?.Settings.CurrentItem,
+              };
               TagName = Tags['CameraView'];
             }
 

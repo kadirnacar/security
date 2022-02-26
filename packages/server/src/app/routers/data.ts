@@ -34,6 +34,17 @@ export class DataRouter {
     }
   }
 
+  public async getItem(req: Request, res: Response, next) {
+    try {
+      const entity = req.params.entity;
+      const dataRepo = Services[entity];
+      const data = await dataRepo.get(null);
+      res.status(200).send(data);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   public async deleteItem(req: Request, res: Response, next) {
     try {
       const id = req.params['id'];
@@ -73,6 +84,7 @@ export class DataRouter {
 
   async init() {
     this.router.post('/:entity/list', this.getList.bind(this));
+    this.router.post('/:entity/item', this.getItem.bind(this));
     this.router.post('/:entity/item/:id', this.getById.bind(this));
     this.router.delete('/:entity/:id', this.deleteItem.bind(this));
     this.router.patch('/:entity', this.updateItem.bind(this));
