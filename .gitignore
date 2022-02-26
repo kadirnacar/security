@@ -2,10 +2,11 @@
 
 # compiled output
 /dist
+/dist*
 /tmp
 /out-tsc
 /build
-
+yarn.lock
 # dependencies
 /node_modules
 node_modules

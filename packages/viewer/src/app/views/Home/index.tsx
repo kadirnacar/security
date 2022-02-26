@@ -56,7 +56,7 @@ class Home extends Component<Props, HomeState> {
     if (savedLayout) {
       try {
         const layout = JSON.parse(savedLayout);
-        this.setState({ layout });
+        if (layout) this.setState({ layout });
       } catch (err) {}
     }
   }
