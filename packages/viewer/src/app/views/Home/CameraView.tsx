@@ -189,6 +189,7 @@ class CameraView extends Component<Props, State> {
       this.props.pos &&
       this.props.pos.x != prevProps.pos?.x
     ) {
+      console.log('deneme')
       await this.gotoPosition();
     }
   }
@@ -232,7 +233,6 @@ class CameraView extends Component<Props, State> {
   isStop = false;
   async getTensorServer(timeStamp) {
     let timeInSecond = timeStamp / 1000;
-
     if (timeInSecond - this.last >= this.speed) {
       try {
         const result = await CameraService.getTensor(
@@ -516,7 +516,7 @@ class CameraView extends Component<Props, State> {
                 // display: this.state.mode == 'video' ? 'none' : 'block',
               }}
             ></canvas>
-            <div style={{ overflow: 'auto', height: 500 }}>
+            <div style={{ overflow: 'hidden', height: 0 }}>
               {this.props['camera']?.isPtz ? (
                 <SpeedDial
                   style={{
@@ -873,22 +873,22 @@ class CameraView extends Component<Props, State> {
                 controls={false}
                 style={{
                   width: '100%',
-                  // visibility: 'hidden', //canvas' ? 'hidden' : 'visible',
+                  visibility: 'hidden', //canvas' ? 'hidden' : 'visible',
                 }}
                 ref={this.video}
                 onLoadedData={async () => {
                   console.log('video load');
-                  // try {
-                  //   this.canvas.current.width = this.video.current.videoWidth;
-                  //   this.canvas.current.height = this.video.current.videoHeight;
-                  // } catch {}
-                  // if (!this.animationFrame) this.runFrame(0);
+                  try {
+                    this.canvas.current.width = this.video.current.videoWidth;
+                    this.canvas.current.height = this.video.current.videoHeight;
+                  } catch {}
+                  if (!this.animationFrame) this.runFrame(0);
 
-                  // if (this.props.settings.type == 'server') {
-                  //   this.getTensorServer(0);
-                  // } else {
-                  //   this.getTensor(0);
-                  // }
+                  if (this.props.settings.type == 'server') {
+                    this.getTensorServer(0);
+                  } else {
+                    this.getTensor(0);
+                  }
                 }}
               ></video>
             </div>

@@ -111,7 +111,7 @@ export class CameraService {
       this.camStreams[cameraModel.id] &&
       this.camStreams[cameraModel.id].reader
     ) {
-      await this.camStreams[cameraModel.id].reader.stopStream();
+      // await this.camStreams[cameraModel.id].reader.stopStream();
     }
 
     if (connectedIndex && connectedIndex > -1) {
@@ -131,7 +131,6 @@ export class CameraService {
         this.cameraModels.push(camItem);
         const rtspReader = new RtspReader();
         // await rtspReader.startStream(camItem);
-
         this.camStreams[cameraModel.id] = { reader: rtspReader };
       }
       return cam;

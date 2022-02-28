@@ -77,15 +77,15 @@ export class CameraRouter {
       const id = req.params['id'];
 
       const dataRepo = Services.Camera;
-      const data = await dataRepo.get(id);
-      let device = new onvif.OnvifDevice({
-        xaddr: `http://${data.url}/onvif/device_service`, //cam.camera.deviceio.serviceAddress.href,
-        user: data.username,
-        pass: data.password,
-      });
+      // const data = await dataRepo.get(id);
+      // let device = new onvif.OnvifDevice({
+      //   xaddr: `http://${data.url}/onvif/device_service`, //cam.camera.deviceio.serviceAddress.href,
+      //   user: data.username,
+      //   pass: data.password,
+      // });
 
-      await device.init();
-      res.status(200).send(device);
+      // await device.init();
+      res.status(200).send({});
     } catch (err) {
       next(err);
     }
@@ -109,56 +109,64 @@ export class CameraRouter {
         res.status(200).send([]);
         return;
       }
-      let device = new onvif.OnvifDevice({
-        xaddr: `http://${cam.model.url}/onvif/device_service`, //cam.camera.deviceio.serviceAddress.href,
-        user: cam.model.username,
-        pass: cam.model.password,
-      });
+      await CameraService.connect(cam.model);
+      // let device = new onvif.OnvifDevice({
+      //   xaddr: `http://${cam.model.url}/onvif/device_service`, //cam.camera.deviceio.serviceAddress.href,
+      //   user: cam.model.username,
+      //   pass: cam.model.password,
+      // });
 
-      await device.init();
+      // await device.init();
       // this.devices[id] = device;
       // }
+      // console.log(await cam.camera.mediaGetSnapshotUri())
+      // cam.camera.snapshot.getSnapshot((data) => {
+      //   console.log(data);
+      //   res.end();
+      // });
 
-      const image = await device.fetchSnapshot();
-      const imagetf = tfGpu.node.decodeImage(image.body);
-      let pose;
-      try {
-        const settings = await Services.Settings.get(null);
-        if (
-          !this.bodyFix[id] ||
-          !this.settings ||
-          settings.updateDate != this.settings.updateDate
-        ) {
-          this.settings = settings;
-          this.bodyFix[id] = await bodyDetection.load({
-            architecture: this.settings.architecture || 'MobileNetV1',
-            outputStride: this.settings.outputStride || 16,
-            multiplier:
-              this.settings.architecture == 'MobileNetV1'
-                ? this.settings.multiplier || 0.75
-                : undefined,
-            quantBytes: this.settings.quantBytes || 2,
-          });
-        }
-        pose = await this.bodyFix[id].segmentPerson(imagetf, {
-          flipHorizontal: false,
-          internalResolution: this.settings.internalResolution || 'high',
-          segmentationThreshold: this.settings.segmentationThreshold || 0.7,
-          maxDetections: this.settings.maxDetections,
-          nmsRadius: this.settings.nmsRadius,
-          scoreThreshold: this.settings.scoreThreshold,
-        });
-      } catch (err) {
-        console.log(err);
-      }
-
-      // res.writeHead(200, { 'Content-Type': image.headers['content-type'] });
-      // res.write(image.body);
       // res.end();
-      res.status(200).send(pose?.allPoses.filter((x) => x.score > 0.2));
-      // res.end(image.body.data);
+
+      // const image = await device.fetchSnapshot();
+      // const imagetf = tfGpu.node.decodeImage(image.body);
+      // let pose;
+      // try {
+      //   const settings = await Services.Settings.get(null);
+      //   if (
+      //     !this.bodyFix[id] ||
+      //     !this.settings ||
+      //     settings.updateDate != this.settings.updateDate
+      //   ) {
+      //     this.settings = settings;
+      //     this.bodyFix[id] = await bodyDetection.load({
+      //       architecture: this.settings.architecture || 'MobileNetV1',
+      //       outputStride: this.settings.outputStride || 16,
+      //       multiplier:
+      //         this.settings.architecture == 'MobileNetV1'
+      //           ? this.settings.multiplier || 0.75
+      //           : undefined,
+      //       quantBytes: this.settings.quantBytes || 2,
+      //     });
+      //   }
+      //   pose = await this.bodyFix[id].segmentPerson(imagetf, {
+      //     flipHorizontal: false,
+      //     internalResolution: this.settings.internalResolution || 'high',
+      //     segmentationThreshold: this.settings.segmentationThreshold || 0.7,
+      //     maxDetections: this.settings.maxDetections,
+      //     nmsRadius: this.settings.nmsRadius,
+      //     scoreThreshold: this.settings.scoreThreshold,
+      //   });
+      // } catch (err) {
+      //   console.log(err);
+      // }
+
+      // // res.writeHead(200, { 'Content-Type': image.headers['content-type'] });
+      // // res.write(image.body);
+      // // res.end();
+      // res.status(200).send(pose?.allPoses.filter((x) => x.score > 0.2));
+      // // res.end(image.body.data);
     } catch (err) {
-      delete this.devices[id];
+      // delete this.devices[id];
       console.log(err);
       res.status(200).send([]);
     }
