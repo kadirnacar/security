@@ -1,0 +1,1 @@
+{"Settings":{"type":"client","architecture":"MobileNetV1","outputStride":16,"multiplier":0.75,"quantBytes":2,"internalResolution":"high","segmentationThreshold":0.7,"maxDetections":5,"scoreThreshold":0.3,"nmsRadius":20,"framePerSecond":0.5,"updateDate":"2022-02-28T14:41:52.145Z"}}
