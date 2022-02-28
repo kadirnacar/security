@@ -6,7 +6,6 @@ import '@tensorflow/tfjs-node-gpu';
 // import * as tf from '@tensorflow/tfjs-node';
 import * as tfGpu from '@tensorflow/tfjs-node-gpu';
 import { Request, Response, Router } from 'express';
-import * as onvif from 'node-onvif';
 import { CameraService } from '../services/CameraService';
 import Camera = require('../../onvif-nvt/camera');
 
