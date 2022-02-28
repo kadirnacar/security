@@ -170,7 +170,7 @@ class SettingsForm extends Component<Props, State> {
                 <MenuItem value={'low'}>Low</MenuItem>
                 <MenuItem value={'medium'}>Medium</MenuItem>
                 <MenuItem value={'high'}>High</MenuItem>
-                <MenuItem value={'Full'}>full</MenuItem>
+                <MenuItem value={'full'}>Full</MenuItem>
               </Select>
             </FormControl>
 

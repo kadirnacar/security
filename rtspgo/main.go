@@ -14,7 +14,7 @@ func main() {
 	sdp := os.Args[2]
 	url := os.Args[3]
 
-	result := fmt.Sprintf(`{ "server" : { "ice_servers": ["stun:stun.l.google.com:19302"] }, "streams" : { "%s": { "url" : "%s", "disable_audio": true, "on_demand": false } } }`, suuid, url)
+	result := fmt.Sprintf(`{ "server" : { }, "streams" : { "%s": { "url" : "%s", "disable_audio": true, "on_demand": false } } }`, suuid, url)
 
 	loadConfig2(result)
 

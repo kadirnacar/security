@@ -23,6 +23,7 @@ import LayoutItem from './LayoutItem';
 
 interface HomeState {
   layout: any[];
+  pos: any;
 }
 interface Props {
   DataActions?: DataActions<Camera>;
@@ -42,6 +43,7 @@ class Home extends Component<Props, HomeState> {
     this.loadLayout = this.loadLayout.bind(this);
     this.state = {
       layout: [],
+      pos: null,
     };
   }
 
@@ -149,15 +151,17 @@ class Home extends Component<Props, HomeState> {
           resizeHandles={['se', 'e', 'w']}
         >
           {this.state.layout.map((item, index) => {
+            console.log('layout');
             let title = '';
             let buttons: any[] = [];
-            let cam: any = null;
+            let cam: Camera | undefined = undefined;
             let TagName: any = 'div';
             let props: any = {};
 
             if (item.type == 'cam') {
               cam = this.props.Data?.Camera.List.find((x) => x.id == item.i);
-              title = cam.name;
+
+              title = cam ? cam.name : '';
               props = {
                 camera: cam,
                 settings: this.props.Data?.Settings.CurrentItem,
@@ -165,7 +169,7 @@ class Home extends Component<Props, HomeState> {
               TagName = Tags['CameraView'];
             }
 
-            return (
+            return this.props.Data?.Settings.CurrentItem ? (
               <Paper key={item.i} data-grid={item}>
                 <LayoutItem
                   index={index}
@@ -173,10 +177,29 @@ class Home extends Component<Props, HomeState> {
                   buttons={buttons}
                   onRemoveItem={this.removeLayoutItem.bind(this, index)}
                 >
-                  <TagName {...props} />
+                  <CameraView
+                    camera={cam}
+                    onClickPose={
+                      cam && !cam.isPtz
+                        ? (x, y, wi, he, boxHe) => {
+                            this.setState({
+                              pos: {
+                                x: x,
+                                y,
+                                width: wi,
+                                height: he,
+                                boxHeight: boxHe,
+                              },
+                            });
+                          }
+                        : undefined
+                    }
+                    pos={this.state.pos}
+                    settings={this.props.Data?.Settings.CurrentItem}
+                  />
                 </LayoutItem>
               </Paper>
-            );
+            ) : null;
           })}
         </ResponsiveGridLayout>
       </>

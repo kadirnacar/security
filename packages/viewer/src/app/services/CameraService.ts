@@ -3,6 +3,17 @@ import { ServiceBase } from './ServiceBase';
 
 export class CameraService extends ServiceBase {
 
+  public static async getInfo(id: string): Promise<Result<any>> {
+    const result = await this.requestJson(
+      {
+        url: `/api/camera/info/${id}`,
+        method: 'GET',
+      },
+      true
+    );
+    return result;
+  }
+
   public static async getTensor(id: string): Promise<Result<any>> {
     const result = await this.requestJson(
       {

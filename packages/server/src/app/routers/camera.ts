@@ -48,6 +48,7 @@ export class CameraRouter {
     try {
       const id = req.params['id'];
       const data = req.body;
+
       const camera = CameraService.getCamera(id)?.camera;
       if (camera) {
         if (data.action === 'home') {
@@ -74,8 +75,17 @@ export class CameraRouter {
   public async getCamInfo(req: Request, res: Response, next) {
     try {
       const id = req.params['id'];
-      const cam = await CameraService.getCamera(id);
-      res.status(200).send(cam);
+
+      const dataRepo = Services.Camera;
+      const data = await dataRepo.get(id);
+      let device = new onvif.OnvifDevice({
+        xaddr: `http://${data.url}/onvif/device_service`, //cam.camera.deviceio.serviceAddress.href,
+        user: data.username,
+        pass: data.password,
+      });
+
+      await device.init();
+      res.status(200).send(device);
     } catch (err) {
       next(err);
     }
