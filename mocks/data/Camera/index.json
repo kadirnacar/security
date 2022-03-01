@@ -1,1 +1,1 @@
-{"Camera":[]}
+{"Camera":[{"id":"8cf7f34d-ecf2-4501-bcb7-37dcebe3a0e9","name":"PTZ","url":"192.168.1.55","port":"80","rtspPort":"554","username":"admin","password":"admin123","isPtz":true,"position":{"x":"0.01","y":"0.30","z":0},"tolerance":{"x":{"max":"0.25","min":"-0.30"},"y":{"max":"-0.20","min":"0.85"}}},{"id":"ee0d967a-0735-4c19-9f2f-ffcd5c776d90","name":"Sabit","url":"192.168.1.56","port":"80","rtspPort":"554","username":"admin","password":"admin123"}]}

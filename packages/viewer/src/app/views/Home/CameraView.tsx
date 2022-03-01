@@ -37,6 +37,7 @@ import { DataState } from '../../reducers/Data/state';
 import { CameraService } from '../../services/CameraService';
 import { ApplicationState } from '../../store';
 import CanvasView from './CanvasView';
+import * as objectDetection from '@tensorflow-models/coco-ssd';
 
 tfjsWasm.setWasmPaths(
   `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${tfjsWasm.version_wasm}/dist/`
@@ -46,6 +47,7 @@ interface State {
   streamSource: string;
   animation?: boolean;
   bodyDetect?: bodyDetection.BodyPix;
+  objectDetect?: objectDetection.ObjectDetection;
   loaded: boolean;
   playing: boolean;
   showMenu?: boolean;
@@ -86,6 +88,7 @@ class CameraView extends Component<Props, State> {
     super(props);
     this.video = React.createRef<any>();
     this.canvas = React.createRef<any>();
+    this.boxesView = React.createRef<HTMLDivElement>();
     this.runFrame = this.runFrame.bind(this);
     this.getTensorServer = this.getTensorServer.bind(this);
     this.getTensor = this.getTensor.bind(this);
@@ -110,11 +113,19 @@ class CameraView extends Component<Props, State> {
 
   animationFrame?: number;
   animationFrameTensor?: number;
+  boxesView: React.RefObject<HTMLDivElement>;
   video: React.RefObject<any>;
   canvas: React.RefObject<any>;
   ctx?: CanvasRenderingContext2D;
   pc?: RTCPeerConnection;
   boxes: { x1: number; x2: number; y1: number; y2: number }[];
+  target?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    boxHeight: number;
+  };
 
   async componentWillUnmount() {
     if (this.pc) {
@@ -131,55 +142,13 @@ class CameraView extends Component<Props, State> {
     await CameraService.disconnect(this.props.camera?.id || '');
   }
 
-  async syncCameraPosition() {
-    const { velocity } = this.state;
-    if (velocity) {
-      await CameraService.pos(this.props['camera']?.id || '', velocity, {
+  async gotoPosition(velocity) {
+    if (velocity && this.props['camera']?.id) {
+      await CameraService.pos(this.props['camera']?.id, velocity, {
         x: this.state.speed,
         y: this.state.speed,
         z: this.state.speed,
       });
-    }
-  }
-  calculatePos() {
-    if (this.props.pos && this.props.camera) {
-    }
-  }
-  async gotoPosition() {
-    if (!this.props.pos) {
-      await this.syncCameraPosition();
-    } else if (this.props.camera?.tolerance) {
-      const diffX =
-        this.props.camera?.tolerance.x.max - this.props.camera.tolerance.x.min;
-      const diffY =
-        this.props.camera?.tolerance.y.min - this.props.camera.tolerance.y.max;
-
-      const resultX = (diffX * this.props.pos.x) / this.props.pos.width;
-      const resultY = (diffY * this.props.pos.y) / this.props.pos.height;
-
-      const zoomFactor =
-        parseFloat(this.props.pos.boxHeight.toString()) /
-        parseFloat(this.props.pos.height.toString());
-      const velocity = {
-        x: (
-          parseFloat(this.props.camera.tolerance.x.min.toString() || '0') +
-          resultX
-        ).toFixed(2),
-        y: (
-          parseFloat(this.props.camera.tolerance.y.min.toString() || '0') -
-          resultY
-        ).toFixed(2),
-        z: 0,
-      };
-
-      this.setState(
-        {
-          velocity,
-        },
-        async () => {
-          await this.syncCameraPosition();
-        }
-      );
     }
   }
 
@@ -187,10 +156,62 @@ class CameraView extends Component<Props, State> {
     if (
       !this.props.onClickPose &&
       this.props.pos &&
-      this.props.pos.x != prevProps.pos?.x
+      this.props.pos.x != prevProps.pos?.x &&
+      this.props.pos.y != prevProps.pos?.y
     ) {
-      console.log('deneme')
-      await this.gotoPosition();
+      this.target = {
+        x: this.props.pos.x,
+        y: this.props.pos.y,
+        height: this.props.pos.height,
+        width: this.props.pos.width,
+        boxHeight: this.props.pos.boxHeight,
+      };
+      if (this.props.camera?.tolerance) {
+        const diffX =
+          this.props.camera?.tolerance.x.max -
+          this.props.camera.tolerance.x.min;
+        const diffY =
+          this.props.camera?.tolerance.y.min -
+          this.props.camera.tolerance.y.max;
+
+        const resultX = (diffX * this.target.x) / this.target.width;
+        const resultY = (diffY * this.target.y) / this.target.height;
+
+        const verticalArea = this.target.y / this.target.height;
+        const horizontalArea = this.target.x / this.target.width;
+
+        let zoomFactor = 0;
+
+        if (this.target.y <= 400) {
+          zoomFactor = 0.5;
+          // } else if (this.target.y > 400 && this.target.y < 500) {
+          //   zoomFactor = 0.4;
+        } else if (this.target.y >= 400 && this.target.y < 600) {
+          zoomFactor = 0.4;
+        } else if (this.target.y >= 600 && this.target.y < 800) {
+          zoomFactor = 0.3;
+          //   zoomFactor = 0.4;
+        } else if (this.target.y >= 800 && this.target.y < 1000) {
+          zoomFactor = 0.1;
+        } else {
+          zoomFactor = 0;
+        }
+
+        console.log(verticalArea, this.target.y, this.target.height);
+        const velocity = {
+          x: (
+            parseFloat(this.props.camera.tolerance.x.min.toString() || '0') +
+            resultX
+          ).toFixed(2),
+          y: (
+            parseFloat(this.props.camera.tolerance.y.min.toString() || '0') -
+            resultY
+          ).toFixed(2),
+          z: zoomFactor,
+        };
+        this.setState({ velocity });
+        await this.gotoPosition(velocity);
+      }
     }
   }
 
@@ -222,7 +243,7 @@ class CameraView extends Component<Props, State> {
         // streamSource: `http://${location.host}/api/camera/pipe/${this.props.camera.id}`,
       },
       async () => {
-        await this.gotoPosition();
+        await this.gotoPosition(this.state.velocity);
       }
     );
   }
@@ -231,6 +252,7 @@ class CameraView extends Component<Props, State> {
   num = 0;
   speed = 0.5;
   isStop = false;
+
   async getTensorServer(timeStamp) {
     let timeInSecond = timeStamp / 1000;
     if (timeInSecond - this.last >= this.speed) {
@@ -278,6 +300,7 @@ class CameraView extends Component<Props, State> {
     }
     // this.getTensor();
   }
+
   async getTensor(timeStamp) {
     let timeInSecond = timeStamp / 1000;
 
@@ -301,6 +324,10 @@ class CameraView extends Component<Props, State> {
             const poses: Pose[] = pose.allPoses.filter((x) => x.score > 0.2);
 
             let boxes: any = [];
+
+            if (this.boxesView.current) {
+              this.boxesView.current.innerHTML = '';
+            }
             for (let index = 0; index < poses.length; index++) {
               const points: any[] = poses[index].keypoints;
               // .filter(
@@ -318,6 +345,61 @@ class CameraView extends Component<Props, State> {
                 });
                 const minY = points[0].position;
                 const maxY = points[points.length - 1].position;
+
+                // await this.props.onClickPose(
+                //   minX.x,
+                //   minX.x,
+                //   this.canvas.current.width,
+                //   this.canvas.current.height,
+                //   maxY.y - box.y1
+                // );
+                if (this.boxesView.current) {
+                  const elem = document.createElement('div');
+                  this.boxesView.current?.append(elem);
+
+                  // const image = document.createElement('img');
+                  // elem.append(image);
+                  // image.src = URL.createObjectURL(
+                  //   new Blob([pose.data.buffer], { type: 'image/png' })
+                  // );
+
+                  const c = document.createElement('canvas');
+
+                  elem.append(c);
+                  c.style.border = '1px solid';
+                  c.style.width = '300px';
+                  c.style.height = '300px';
+                  c.style.margin = '10px';
+                  c.style.display = 'flex';
+                  c.style.flexDirection = 'column';
+
+                  /*
+    width: 200px;
+    border: 1px solid;
+    height: 200px;
+    margin: 10px;
+    display: flex;
+    border-radius: 10px;
+    flex-direction: column;
+                */
+
+                  c.width = maxX.x - minX.x;
+                  c.height = maxY.y - minY.y;
+                  const ct = c.getContext('2d');
+                  const marginx = 150;
+                  const marginy = 250;
+                  ct?.drawImage(
+                    this.video.current,
+                    minX.x - marginx,
+                    minY.y - marginy,
+                    c.width + marginx * 2,
+                    c.height + marginy * 2,
+                    0,
+                    0,
+                    c.width,
+                    c.height
+                  );
+                }
                 boxes.push({
                   x1: minX.x,
                   y1: minY.y,
@@ -328,9 +410,15 @@ class CameraView extends Component<Props, State> {
             }
             this.boxes = boxes;
             // this.setState({ boxes });
+          } else if (this.state.objectDetect) {
+            const pose = await this.state.objectDetect.detect(
+              this.video.current
+            );
+            console.log(pose);
           }
         }
-      } catch {
+      } catch (ex) {
+        console.log(ex);
         this.boxes = [];
         // this.setState({ boxes: [] });
       }
@@ -367,6 +455,8 @@ class CameraView extends Component<Props, State> {
         this.ctx?.lineTo(box.x1, box.y1 - diff);
         this.ctx.lineWidth = 8;
         this.ctx.strokeStyle = 'red';
+        this.ctx.font = '48px serif';
+        this.ctx.fillText('x:' + box.x1 + '- y:' + box.y1, box.x1, box.y1 - 50);
 
         this.ctx?.stroke();
       }
@@ -459,8 +549,8 @@ class CameraView extends Component<Props, State> {
                     this.pc = new RTCPeerConnection({
                       // iceServers: [
                       //   {
-                          // urls: ['stun:stun.l.google.com:19302'],
-                        // },
+                      // urls: ['stun:stun.l.google.com:19302'],
+                      // },
                       // ],
                     });
 
@@ -737,7 +827,7 @@ class CameraView extends Component<Props, State> {
                     title={'Yavaşla'}
                     onClick={async () => {
                       const { step } = this.state;
-                      const mevement = step - 0.05;
+                      const mevement = step - 0.01;
 
                       if (mevement <= 1 && mevement >= 0) {
                         this.setState({
@@ -754,7 +844,7 @@ class CameraView extends Component<Props, State> {
                     title={'Hızlan'}
                     onClick={async () => {
                       const { step } = this.state;
-                      const mevement = step + 0.05;
+                      const mevement = step + 0.01;
 
                       if (mevement <= 1 && mevement >= 0) {
                         this.setState({
@@ -1011,6 +1101,7 @@ class CameraView extends Component<Props, State> {
                 <div>Step:{this.state.step}</div>
               </Container>
             </div>
+            {this.props.camera?.isPtz ? <div ref={this.boxesView}></div> : null}
           </>
         )}
       </>

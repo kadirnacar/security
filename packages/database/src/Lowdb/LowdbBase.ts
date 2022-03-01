@@ -98,7 +98,10 @@ export class LowdbBase {
     var data = this.multi ? db?.find({ id: model.id }).value() : db?.value();
     if (data) {
       this.multi
-        ? db.find({ id: model.id }).assign(model).write()
+        ? db
+            .find({ id: model.id })
+            .assign({ ...model, ...{ id: model.id } })
+            .write()
         : db.assign(model).write();
     } else {
       this.multi ? db?.push(model).write() : db?.assign(model).write();
