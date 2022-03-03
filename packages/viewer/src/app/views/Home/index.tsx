@@ -41,12 +41,14 @@ class Home extends Component<Props, HomeState> {
     this.layoutChange = this.layoutChange.bind(this);
     this.removeLayoutItem = this.removeLayoutItem.bind(this);
     this.loadLayout = this.loadLayout.bind(this);
+    this.imageDiv = React.createRef<any>();
     this.state = {
       layout: [],
       pos: null,
     };
   }
 
+  imageDiv: React.RefObject<any>;
   async componentDidMount() {
     await this.props.DataActions?.getList('Camera');
     await this.props.DataActions?.getItem('Settings');
@@ -151,7 +153,6 @@ class Home extends Component<Props, HomeState> {
           resizeHandles={['se', 'e', 'w']}
         >
           {this.state.layout.map((item, index) => {
-            console.log('layout');
             let title = '';
             let buttons: any[] = [];
             let cam: Camera | undefined = undefined;
@@ -179,6 +180,7 @@ class Home extends Component<Props, HomeState> {
                 >
                   <CameraView
                     camera={cam}
+                    boxesView={this.imageDiv.current}
                     onClickPose={
                       cam && !cam.isPtz
                         ? (x, y, wi, he, boxHe) => {
@@ -202,6 +204,15 @@ class Home extends Component<Props, HomeState> {
             ) : null;
           })}
         </ResponsiveGridLayout>
+        <Paper>
+          <LayoutItem
+            index={0}
+            title={''}
+            onRemoveItem={this.removeLayoutItem.bind(this, 2)}
+          >
+            <div ref={this.imageDiv}></div>
+          </LayoutItem>
+        </Paper>
       </>
     );
   }

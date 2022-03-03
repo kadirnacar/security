@@ -60,6 +60,7 @@
     "clsx": "^1.1.1",
     "core-js": "^3.21.0",
     "express": "4.17.2",
+    "fisheyegl": "file:./local_modules/fisheyegl",
     "golang": "^0.1.5-stable",
     "json-to-url": "^1.0.5",
     "lowdb": "^1.0.0",
@@ -76,7 +77,6 @@
     "redux-thunk": "^2.4.1",
     "reflect-metadata": "^0.1.13",
     "regenerator-runtime": "0.13.9",
-    "shelljs": "^0.8.5",
     "tslib": "^2.3.1",
     "ws": "^8.5.0"
   },

@@ -28,6 +28,7 @@ import { Pose } from '@tensorflow-models/body-pix/dist/types';
 import '@tensorflow/tfjs-backend-wasm';
 import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm';
 import '@tensorflow/tfjs-backend-webgl';
+import '@tensorflow/tfjs-backend-cpu';
 import * as tf from '@tensorflow/tfjs-core';
 import React, { Component, PointerEvent, PointerEventHandler } from 'react';
 import { connect } from 'react-redux';
@@ -36,7 +37,6 @@ import { DataActions } from '../../reducers/Data/actions';
 import { DataState } from '../../reducers/Data/state';
 import { CameraService } from '../../services/CameraService';
 import { ApplicationState } from '../../store';
-import CanvasView from './CanvasView';
 import * as objectDetection from '@tensorflow-models/coco-ssd';
 
 tfjsWasm.setWasmPaths(
@@ -53,7 +53,6 @@ interface State {
   showMenu?: boolean;
   velocity?: { x?: any; y?: any; z?: any };
   mode: 'canvas' | 'video';
-  boxes: { x1: number; x2: number; y1: number; y2: number }[];
   speed: number;
   step: number;
   decimal: number;
@@ -67,6 +66,7 @@ type Props = {
   settings: SettingsModel;
   DataActions?: DataActions<Camera>;
   Data?: DataState;
+  boxesView?: any;
   pos?: {
     x: number;
     y: number;
@@ -88,7 +88,6 @@ class CameraView extends Component<Props, State> {
     super(props);
     this.video = React.createRef<any>();
     this.canvas = React.createRef<any>();
-    this.boxesView = React.createRef<HTMLDivElement>();
     this.runFrame = this.runFrame.bind(this);
     this.getTensorServer = this.getTensorServer.bind(this);
     this.getTensor = this.getTensor.bind(this);
@@ -102,7 +101,6 @@ class CameraView extends Component<Props, State> {
       playing: false,
       velocity: { x: 0, y: 1, z: 0 },
       mode: 'video',
-      boxes: [],
       speed: 1,
       step: 0.1,
       decimal: 2,
@@ -113,12 +111,11 @@ class CameraView extends Component<Props, State> {
 
   animationFrame?: number;
   animationFrameTensor?: number;
-  boxesView: React.RefObject<HTMLDivElement>;
   video: React.RefObject<any>;
   canvas: React.RefObject<any>;
   ctx?: CanvasRenderingContext2D;
   pc?: RTCPeerConnection;
-  boxes: { x1: number; x2: number; y1: number; y2: number }[];
+  boxes: { x1: number; x2: number; y1: number; y2: number; score: number }[];
   target?: {
     x: number;
     y: number;
@@ -182,14 +179,25 @@ class CameraView extends Component<Props, State> {
 
         let zoomFactor = 0;
 
+        // if (this.target.y <= 300) {
+        //   zoomFactor = 0.5;
+        // } else if (this.target.y >= 300 && this.target.y < 600) {
+        //   zoomFactor = 0.4;
+        // } else if (this.target.y >= 600 && this.target.y < 900) {
+        //   zoomFactor = 0.3;
+        // } else if (this.target.y >= 900 && this.target.y < 1200) {
+        //   zoomFactor = 0.2;
+        // } else {
+        //   zoomFactor = 0;
+        // }
         if (this.target.y <= 400) {
           zoomFactor = 0.5;
           // } else if (this.target.y > 400 && this.target.y < 500) {
           //   zoomFactor = 0.4;
         } else if (this.target.y >= 400 && this.target.y < 600) {
-          zoomFactor = 0.4;
-        } else if (this.target.y >= 600 && this.target.y < 800) {
           zoomFactor = 0.3;
+        } else if (this.target.y >= 600 && this.target.y < 800) {
+          zoomFactor = 0.2;
           //   zoomFactor = 0.4;
         } else if (this.target.y >= 800 && this.target.y < 1000) {
           zoomFactor = 0.1;
@@ -197,7 +205,6 @@ class CameraView extends Component<Props, State> {
           zoomFactor = 0;
         }
 
-        console.log(verticalArea, this.target.y, this.target.height);
         const velocity = {
           x: (
             parseFloat(this.props.camera.tolerance.x.min.toString() || '0') +
@@ -223,7 +230,6 @@ class CameraView extends Component<Props, State> {
     this.animationFrame = undefined;
     this.animationFrameTensor = undefined;
     const videoElement: HTMLVideoElement = this.video?.current;
-
     const bodyFix = await bodyDetection.load({
       architecture: this.props.settings.architecture || 'MobileNetV1',
       outputStride: this.props.settings.outputStride || 16,
@@ -234,6 +240,8 @@ class CameraView extends Component<Props, State> {
       quantBytes: this.props.settings.quantBytes || 2,
     });
 
+    //const objectDetect = await objectDetection.load({ base: 'mobilenet_v2' });
+
     this.speed = this.props.settings.framePerSecond || 0.5;
     this.setState(
       {
@@ -241,6 +249,7 @@ class CameraView extends Component<Props, State> {
         loaded: true,
         velocity: this.props['camera']?.position || this.state.velocity,
         // streamSource: `http://${location.host}/api/camera/pipe/${this.props.camera.id}`,
+        // objectDetect,
       },
       async () => {
         await this.gotoPosition(this.state.velocity);
@@ -321,13 +330,14 @@ class CameraView extends Component<Props, State> {
                 scoreThreshold: this.props.settings.scoreThreshold,
               });
 
-            const poses: Pose[] = pose.allPoses.filter((x) => x.score > 0.2);
+            const poses: Pose[] = pose.allPoses; //.filter((x) => x.score > 0.2);
 
             let boxes: any = [];
 
-            if (this.boxesView.current) {
-              this.boxesView.current.innerHTML = '';
-            }
+            // if (this.boxesView.current) {
+            //   this.boxesView.current.innerHTML = '';
+            // }
+
             for (let index = 0; index < poses.length; index++) {
               const points: any[] = poses[index].keypoints;
               // .filter(
@@ -346,81 +356,81 @@ class CameraView extends Component<Props, State> {
                 const minY = points[0].position;
                 const maxY = points[points.length - 1].position;
 
-                // await this.props.onClickPose(
-                //   minX.x,
-                //   minX.x,
-                //   this.canvas.current.width,
-                //   this.canvas.current.height,
-                //   maxY.y - box.y1
-                // );
-                if (this.boxesView.current) {
-                  const elem = document.createElement('div');
-                  this.boxesView.current?.append(elem);
+                let scoreFactor = 0.2;
 
-                  // const image = document.createElement('img');
-                  // elem.append(image);
-                  // image.src = URL.createObjectURL(
-                  //   new Blob([pose.data.buffer], { type: 'image/png' })
-                  // );
-
-                  const c = document.createElement('canvas');
-
-                  elem.append(c);
-                  c.style.border = '1px solid';
-                  c.style.width = '300px';
-                  c.style.height = '300px';
-                  c.style.margin = '10px';
-                  c.style.display = 'flex';
-                  c.style.flexDirection = 'column';
-
-                  /*
-    width: 200px;
-    border: 1px solid;
-    height: 200px;
-    margin: 10px;
-    display: flex;
-    border-radius: 10px;
-    flex-direction: column;
-                */
-
-                  c.width = maxX.x - minX.x;
-                  c.height = maxY.y - minY.y;
-                  const ct = c.getContext('2d');
-                  const marginx = 150;
-                  const marginy = 250;
-                  ct?.drawImage(
-                    this.video.current,
-                    minX.x - marginx,
-                    minY.y - marginy,
-                    c.width + marginx * 2,
-                    c.height + marginy * 2,
-                    0,
-                    0,
-                    c.width,
-                    c.height
-                  );
+                if (minY.y <= 300) {
+                  scoreFactor = 0.2;
+                } else if (minY.y >= 300 && minY.y < 600) {
+                  scoreFactor = 0.3;
+                } else if (minY.y >= 600 && minY.y < 900) {
+                  scoreFactor = 0.4;
+                } else if (minY.y >= 900 && minY.y < 1200) {
+                  scoreFactor = 0.5;
+                } else {
+                  scoreFactor = 0.5;
                 }
-                boxes.push({
-                  x1: minX.x,
-                  y1: minY.y,
-                  x2: maxX.x,
-                  y2: maxY.y,
-                });
+
+                if (this.props.camera?.isPtz) {
+                  scoreFactor = 0.4;
+                }
+
+                if (poses[index].score >= scoreFactor) {
+                  if (
+                    this.props.boxesView &&
+                    this.props.camera?.isPtz 
+                    // points.find((x) => x.part == 'nose' && x.score > 0.4)
+                   ) {
+                    const elem = document.createElement('div');
+                    elem.className = 'img';
+                    elem.style.float = 'left';
+                    elem.onclick = () => {
+                      elem.remove();
+                    };
+                    this.props.boxesView.prepend(elem);
+                    const c = document.createElement('canvas');
+
+                    elem.append(c);
+                    c.style.border = '1px solid';
+                    // c.style.width = '300px';
+                    c.style.height = '300px';
+                    c.style.margin = '10px';
+                    c.style.display = 'flex';
+                    c.style.flexDirection = 'column';
+
+                    c.width = maxX.x - minX.x;
+                    c.height = maxY.y - minY.y;
+                    const ct = c.getContext('2d');
+                    const marginx = 150;
+                    const marginy = 250;
+                    ct?.drawImage(
+                      this.video.current,
+                      minX.x - marginx,
+                      minY.y - marginy,
+                      c.width + marginx * 2,
+                      c.height + marginy * 2,
+                      0,
+                      0,
+                      c.width,
+                      c.height
+                    );
+                  }
+
+                  boxes.push({
+                    x1: minX.x,
+                    y1: minY.y,
+                    x2: maxX.x,
+                    y2: maxY.y,
+                    score: poses[index].score,
+                  });
+                }
               }
             }
             this.boxes = boxes;
-            // this.setState({ boxes });
-          } else if (this.state.objectDetect) {
-            const pose = await this.state.objectDetect.detect(
-              this.video.current
-            );
-            console.log(pose);
+            this.travelPtz(boxes);
           }
         }
       } catch (ex) {
-        console.log(ex);
         this.boxes = [];
-        // this.setState({ boxes: [] });
       }
 
       this.last = timeInSecond;
@@ -430,18 +440,40 @@ class CameraView extends Component<Props, State> {
     }
   }
 
+  isTravel = false;
+  async travelPtz(boxes: any[]) {
+    if (!this.isTravel) {
+      this.isTravel = true;
+      for (let index = 0; index < boxes.length; index++) {
+        await this.goTravelPos(boxes[index]);
+      }
+      this.isTravel = false;
+    }
+  }
+
+  async goTravelPos(box) {
+    return new Promise(async (resolve: any) => {
+      const element = box;
+      if (this.props.onClickPose) {
+        await this.props.onClickPose(
+          element.x1,
+          element.y1,
+          this.canvas.current.width,
+          this.canvas.current.height,
+          element.y2 - element.y1
+        );
+      }
+      setTimeout(() => {
+        resolve();
+      }, 2000);
+    });
+  }
+  isRun = false;
   async runFrame(timeStamp) {
     const videoElement: HTMLVideoElement = this.video?.current;
     if (videoElement && this.canvas.current && this.ctx) {
-      // this.ctx.clearRect(
-      //   0,
-      //   0,
-      //   this.canvas.current.width,
-      //   this.canvas.current.height
-      // );
       this.ctx?.drawImage(videoElement, 0, 0);
 
-      // const { boxes } = this.state;
       const diff = 0;
       for (let index = 0; index < this.boxes.length; index++) {
         const box = this.boxes[index];
@@ -456,7 +488,13 @@ class CameraView extends Component<Props, State> {
         this.ctx.lineWidth = 8;
         this.ctx.strokeStyle = 'red';
         this.ctx.font = '48px serif';
-        this.ctx.fillText('x:' + box.x1 + '- y:' + box.y1, box.x1, box.y1 - 50);
+        this.ctx.fillText(
+          'S:' + box.score.toFixed(2) + ' Y:' + box.y1.toFixed(2),
+          box.x1,
+          box.y1 - 50
+        );
+        this.ctx.fillStyle = 'red';
+        // this.ctx.stroke();
 
         this.ctx?.stroke();
       }
@@ -496,26 +534,35 @@ class CameraView extends Component<Props, State> {
       event.target
     );
 
-    for (let index = 0; index < this.boxes.length; index++) {
-      const box = this.boxes[index];
-
-      if (
-        pos.x > box.x1 &&
-        pos.x < box.x2 &&
-        pos.y > box.y1 &&
-        pos.y < box.y2
-      ) {
-        if (this.props.onClickPose) {
-          await this.props.onClickPose(
-            box.x1,
-            box.y1,
-            this.canvas.current.width,
-            this.canvas.current.height,
-            box.y2 - box.y1
-          );
-        }
-      }
+    if (this.props.onClickPose) {
+      await this.props.onClickPose(
+        pos.x,
+        pos.y,
+        this.canvas.current.width,
+        this.canvas.current.height,
+        100
+      );
     }
+    // for (let index = 0; index < this.boxes.length; index++) {
+    //   const box = this.boxes[index];
+
+    // if (
+    //   pos.x > box.x1 &&
+    //   pos.x < box.x2 &&
+    //   pos.y > box.y1 &&
+    //   pos.y < box.y2
+    // ) {
+    // if (this.props.onClickPose) {
+    //   await this.props.onClickPose(
+    //     box.x1,
+    //     box.y1,
+    //     this.canvas.current.width,
+    //     this.canvas.current.height,
+    //     box.y2 - box.y1
+    //   );
+    // }
+    // }
+    // }
   }
 
   render() {
@@ -1101,7 +1148,6 @@ class CameraView extends Component<Props, State> {
                 <div>Step:{this.state.step}</div>
               </Container>
             </div>
-            {this.props.camera?.isPtz ? <div ref={this.boxesView}></div> : null}
           </>
         )}
       </>

@@ -18,44 +18,48 @@ class LayoutItem extends Component<Props, any> {
   render() {
     return (
       <>
-        <AppBar
-          className={'dragger'}
-          color="transparent"
-          style={{ height: 42 }}
-        >
-          <Toolbar
-            style={{
-              height: 42,
-              minHeight: 42,
-            }}
-          >
-            <Typography variant="h6" color="textSecondary">
-              {this.props.title}
-            </Typography>
-            <div
+        {this.props.title ? (
+          <>
+            <AppBar
+              className={'dragger'}
+              color="transparent"
+              style={{ height: 42 }}
+            >
+              <Toolbar
+                style={{
+                  height: 42,
+                  minHeight: 42,
+                }}
+              >
+                <Typography variant="h6" color="textSecondary">
+                  {this.props.title}
+                </Typography>
+                <div
+                  style={{
+                    flexGrow: 1,
+                  }}
+                />
+                {this.props.buttons?.map((btn, index) => {
+                  return btn;
+                })}
+                <IconButton
+                  edge="end"
+                  title="Kapat"
+                  size="small"
+                  onClick={this.props.onRemoveItem.bind(this, this.props.index)}
+                >
+                  <Close fontSize="small" />
+                </IconButton>
+              </Toolbar>
+            </AppBar>
+            <Toolbar
               style={{
-                flexGrow: 1,
+                height: 42,
+                minHeight: 42,
               }}
             />
-            {this.props.buttons?.map((btn, index) => {
-              return btn;
-            })}
-            <IconButton
-              edge="end"
-              title="Kapat"
-              size="small"
-              onClick={this.props.onRemoveItem.bind(this, this.props.index)}
-            >
-              <Close fontSize="small" />
-            </IconButton>
-          </Toolbar>
-        </AppBar>
-        <Toolbar
-          style={{
-            height: 42,
-            minHeight: 42,
-          }}
-        />
+          </>
+        ) : null}
         <Box
           style={{
             overflow: 'auto',
