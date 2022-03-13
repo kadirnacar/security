@@ -20,61 +20,34 @@ import {
   IconButton,
   SpeedDial,
   SpeedDialAction,
+  Typography,
 } from '@mui/material';
 import { Camera, Settings as SettingsModel } from '@security/models';
-import React, { Component } from 'react';
+import * as bodyDetection from '@tensorflow-models/body-pix';
+import { Pose } from '@tensorflow-models/body-pix/dist/types';
+import '@tensorflow/tfjs-backend-wasm';
+import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm';
+import '@tensorflow/tfjs-backend-webgl';
+import '@tensorflow/tfjs-backend-cpu';
+import * as tf from '@tensorflow/tfjs-core';
+import React, { Component, PointerEvent, PointerEventHandler } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { DataActions } from '../../reducers/Data/actions';
 import { DataState } from '../../reducers/Data/state';
 import { CameraService } from '../../services/CameraService';
 import { ApplicationState } from '../../store';
-import REGL from 'regl';
+import * as objectDetection from '@tensorflow-models/coco-ssd';
 
-let vert = `
-precision mediump float;
-  attribute vec2 position;
-  varying vec2 uv;
+tfjsWasm.setWasmPaths(
+  `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${tfjsWasm.version_wasm}/dist/`
+);
 
-  void main () {
-    uv = vec2((1.0 - position.x), position.y);
-    gl_Position = vec4(1.0 - 2.0 * position, 0, 1);
-  }
-`;
-
-let fragSingle = `
-precision mediump float;
-uniform sampler2D uSampler;
-varying vec2 uv;
-uniform vec3 zoom;
-uniform vec3 uLensS;
-uniform vec2 uLensF;
-
-
-vec2 GLCoord2TextureCoord(vec2 glCoord) {
-	return glCoord  * vec2(1.0, -1.0)/ 2.0 + vec2(0.5, 0.5);
-}
-
-void main() {
-  float scale = uLensS.z;
-	vec2 vPos = vec2(uv.x * 2.0 - 1.0, (1.0 - uv.y * 2.0));
-	float Fx = uLensF.x;
-	float Fy = uLensF.y;
-
-	vec2 vMapping = vPos.xy;
-	vMapping.x = vMapping.x + ((pow(vPos.y, 2.0)/scale)*vPos.x/scale)*-Fx;
-	vMapping.y = vMapping.y + ((pow(vPos.x, 2.0)/scale)*vPos.y/scale)*-Fy;
-	vMapping = vMapping * uLensS.xy;
-
-	vMapping = GLCoord2TextureCoord(vMapping/scale);
-
-  vec4 MonA = texture2D(uSampler, vMapping);
-  gl_FragColor = MonA;
-}
-`;
 interface State {
   streamSource: string;
   animation?: boolean;
+  bodyDetect?: bodyDetection.BodyPix;
+  objectDetect?: objectDetection.ObjectDetection;
   loaded: boolean;
   playing: boolean;
   showMenu?: boolean;
@@ -84,6 +57,7 @@ interface State {
   step: number;
   decimal: number;
   showSaveSettings: boolean;
+  poses: bodyDetection.SemanticPersonSegmentation[];
 }
 
 type Props = {
@@ -114,6 +88,10 @@ class CameraView extends Component<Props, State> {
     super(props);
     this.video = React.createRef<any>();
     this.canvas = React.createRef<any>();
+    this.runFrame = this.runFrame.bind(this);
+    this.getTensorServer = this.getTensorServer.bind(this);
+    this.getTensor = this.getTensor.bind(this);
+    this.handlecanvasClick = this.handlecanvasClick.bind(this);
     this.gotoPosition = this.gotoPosition.bind(this);
 
     this.boxes = [];
@@ -127,16 +105,24 @@ class CameraView extends Component<Props, State> {
       step: 0.1,
       decimal: 2,
       showSaveSettings: false,
+      poses: [],
     };
   }
 
-  regl?: REGL.Regl;
   animationFrame?: number;
   animationFrameTensor?: number;
   video: React.RefObject<any>;
   canvas: React.RefObject<any>;
+  ctx?: CanvasRenderingContext2D;
   pc?: RTCPeerConnection;
   boxes: { x1: number; x2: number; y1: number; y2: number; score: number }[];
+  target?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    boxHeight: number;
+  };
 
   async componentWillUnmount() {
     if (this.pc) {
@@ -144,13 +130,11 @@ class CameraView extends Component<Props, State> {
     }
     this.isStop = true;
     this.setState({ playing: false });
-
-    if (window['anime']) {
-      try {
-        window['anime'].cancel();
-      } catch (ex: any) {
-        console.warn(`Prevented unhandled exception: ${ex?.message}`);
-      }
+    if (this.animationFrame) {
+      cancelAnimationFrame(this.animationFrame);
+    }
+    if (this.animationFrameTensor) {
+      cancelAnimationFrame(this.animationFrameTensor);
     }
     await CameraService.disconnect(this.props.camera?.id || '');
   }
@@ -165,18 +149,107 @@ class CameraView extends Component<Props, State> {
     }
   }
 
+  async componentDidUpdate(prevProps, prevState) {
+    if (
+      !this.props.onClickPose &&
+      this.props.pos &&
+      this.props.pos.x != prevProps.pos?.x &&
+      this.props.pos.y != prevProps.pos?.y
+    ) {
+      this.target = {
+        x: this.props.pos.x,
+        y: this.props.pos.y,
+        height: this.props.pos.height,
+        width: this.props.pos.width,
+        boxHeight: this.props.pos.boxHeight,
+      };
+      if (this.props.camera?.tolerance) {
+        const diffX =
+          this.props.camera?.tolerance.x.max -
+          this.props.camera.tolerance.x.min;
+        const diffY =
+          this.props.camera?.tolerance.y.min -
+          this.props.camera.tolerance.y.max;
+
+        const resultX = (diffX * this.target.x) / this.target.width;
+        const resultY = (diffY * this.target.y) / this.target.height;
+
+        const verticalArea = this.target.y / this.target.height;
+        const horizontalArea = this.target.x / this.target.width;
+
+        let zoomFactor = 0;
+
+        // if (this.target.y <= 300) {
+        //   zoomFactor = 0.5;
+        // } else if (this.target.y >= 300 && this.target.y < 600) {
+        //   zoomFactor = 0.4;
+        // } else if (this.target.y >= 600 && this.target.y < 900) {
+        //   zoomFactor = 0.3;
+        // } else if (this.target.y >= 900 && this.target.y < 1200) {
+        //   zoomFactor = 0.2;
+        // } else {
+        //   zoomFactor = 0;
+        // }
+        if (this.target.y <= 400) {
+          zoomFactor = 0.5;
+          // } else if (this.target.y > 400 && this.target.y < 500) {
+          //   zoomFactor = 0.4;
+        } else if (this.target.y >= 400 && this.target.y < 600) {
+          zoomFactor = 0.3;
+        } else if (this.target.y >= 600 && this.target.y < 800) {
+          zoomFactor = 0.2;
+          //   zoomFactor = 0.4;
+        } else if (this.target.y >= 800 && this.target.y < 1000) {
+          zoomFactor = 0.1;
+        } else {
+          zoomFactor = 0;
+        }
+
+        const velocity = {
+          x: (
+            parseFloat(this.props.camera.tolerance.x.min.toString() || '0') +
+            resultX
+          ).toFixed(2),
+          y: (
+            parseFloat(this.props.camera.tolerance.y.min.toString() || '0') -
+            resultY
+          ).toFixed(2),
+          z: zoomFactor,
+        };
+        this.setState({ velocity });
+        await this.gotoPosition(velocity);
+      }
+    }
+  }
+
   async componentDidMount() {
+    await tf.setBackend('webgl');
     if (this.props.camera?.id) {
       await CameraService.connect(this.props.camera?.id);
     }
     this.animationFrame = undefined;
     this.animationFrameTensor = undefined;
+    const videoElement: HTMLVideoElement = this.video?.current;
+    const bodyFix = await bodyDetection.load({
+      architecture: this.props.settings.architecture || 'MobileNetV1',
+      outputStride: this.props.settings.outputStride || 16,
+      multiplier:
+        this.props.settings.architecture == 'MobileNetV1'
+          ? this.props.settings.multiplier || 0.75
+          : undefined,
+      quantBytes: this.props.settings.quantBytes || 2,
+    });
+
+    //const objectDetect = await objectDetection.load({ base: 'mobilenet_v2' });
 
     this.speed = this.props.settings.framePerSecond || 0.5;
     this.setState(
       {
+        bodyDetect: bodyFix,
         loaded: true,
         velocity: this.props['camera']?.position || this.state.velocity,
+        // streamSource: `http://${location.host}/api/camera/pipe/${this.props.camera.id}`,
+        // objectDetect,
       },
       async () => {
         await this.gotoPosition(this.state.velocity);
@@ -188,23 +261,345 @@ class CameraView extends Component<Props, State> {
   num = 0;
   speed = 0.5;
   isStop = false;
+
+  async getTensorServer(timeStamp) {
+    let timeInSecond = timeStamp / 1000;
+    if (timeInSecond - this.last >= this.speed) {
+      try {
+        const result = await CameraService.getTensor(
+          this.props.camera?.id || ''
+        );
+        let boxes: any = [];
+        for (let index = 0; index < result.value.length; index++) {
+          const points: any[] = result.value[index].keypoints;
+          // .filter(
+          //   (x) => x.score > 0.5
+          // );
+
+          if (points.length > 0) {
+            points.sort(function (a, b) {
+              return a.position.x - b.position.x;
+            });
+            const minX = points[0].position;
+            const maxX = points[points.length - 1].position;
+
+            points.sort(function (a, b) {
+              return a.position.y - b.position.y;
+            });
+            const minY = points[0].position;
+            const maxY = points[points.length - 1].position;
+            boxes.push({
+              x1: minX.x,
+              y1: minY.y,
+              x2: maxX.x,
+              y2: maxY.y,
+            });
+          }
+        }
+        this.boxes = boxes;
+        // this.setState({ boxes });
+      } catch {
+        this.boxes = [];
+        // this.setState({ boxes: [] });
+      }
+      this.last = timeInSecond;
+    }
+    if (!this.isStop) {
+      this.animationFrameTensor = requestAnimationFrame(this.getTensorServer);
+    }
+    // this.getTensor();
+  }
+
+  async getTensor(timeStamp) {
+    let timeInSecond = timeStamp / 1000;
+
+    if (timeInSecond - this.last >= this.speed) {
+      try {
+        const videoElement = this.video?.current;
+        if (videoElement) {
+          if (this.state.bodyDetect) {
+            const pose: bodyDetection.SemanticPersonSegmentation =
+              await this.state.bodyDetect.segmentPerson(videoElement, {
+                flipHorizontal: false,
+                internalResolution:
+                  this.props.settings.internalResolution || 'high',
+                segmentationThreshold:
+                  this.props.settings.segmentationThreshold || 0.7,
+                maxDetections: this.props.settings.maxDetections,
+                nmsRadius: this.props.settings.nmsRadius,
+                scoreThreshold: this.props.settings.scoreThreshold,
+              });
+
+            const poses: Pose[] = pose.allPoses; //.filter((x) => x.score > 0.2);
+
+            let boxes: any = [];
+
+            // if (this.boxesView.current) {
+            //   this.boxesView.current.innerHTML = '';
+            // }
+
+            for (let index = 0; index < poses.length; index++) {
+              const points: any[] = poses[index].keypoints;
+              // .filter(
+              //   (x) => x.score > 0.5
+              // );
+              if (points.length > 0) {
+                points.sort(function (a, b) {
+                  return a.position.x - b.position.x;
+                });
+                const minX = points[0].position;
+                const maxX = points[points.length - 1].position;
+
+                points.sort(function (a, b) {
+                  return a.position.y - b.position.y;
+                });
+                const minY = points[0].position;
+                const maxY = points[points.length - 1].position;
+
+                let scoreFactor = 0.2;
+
+                if (minY.y <= 300) {
+                  scoreFactor = 0.2;
+                } else if (minY.y >= 300 && minY.y < 600) {
+                  scoreFactor = 0.3;
+                } else if (minY.y >= 600 && minY.y < 900) {
+                  scoreFactor = 0.4;
+                } else if (minY.y >= 900 && minY.y < 1200) {
+                  scoreFactor = 0.5;
+                } else {
+                  scoreFactor = 0.5;
+                }
+
+                if (this.props.camera?.isPtz) {
+                  scoreFactor = 0.4;
+                }
+
+                if (poses[index].score >= scoreFactor) {
+                  if (
+                    this.props.boxesView &&
+                    this.props.camera?.isPtz 
+                    // points.find((x) => x.part == 'nose' && x.score > 0.4)
+                   ) {
+                    const elem = document.createElement('div');
+                    elem.className = 'img';
+                    elem.style.float = 'left';
+                    elem.onclick = () => {
+                      elem.remove();
+                    };
+                    this.props.boxesView.prepend(elem);
+                    const c = document.createElement('canvas');
+
+                    elem.append(c);
+                    c.style.border = '1px solid';
+                    // c.style.width = '300px';
+                    c.style.height = '300px';
+                    c.style.margin = '10px';
+                    c.style.display = 'flex';
+                    c.style.flexDirection = 'column';
+
+                    c.width = maxX.x - minX.x;
+                    c.height = maxY.y - minY.y;
+                    const ct = c.getContext('2d');
+                    const marginx = 150;
+                    const marginy = 250;
+                    ct?.drawImage(
+                      this.video.current,
+                      minX.x - marginx,
+                      minY.y - marginy,
+                      c.width + marginx * 2,
+                      c.height + marginy * 2,
+                      0,
+                      0,
+                      c.width,
+                      c.height
+                    );
+                  }
+
+                  boxes.push({
+                    x1: minX.x,
+                    y1: minY.y,
+                    x2: maxX.x,
+                    y2: maxY.y,
+                    score: poses[index].score,
+                  });
+                }
+              }
+            }
+            this.boxes = boxes;
+            this.travelPtz(boxes);
+          }
+        }
+      } catch (ex) {
+        this.boxes = [];
+      }
+
+      this.last = timeInSecond;
+    }
+    if (!this.isStop) {
+      this.animationFrameTensor = requestAnimationFrame(this.getTensor);
+    }
+  }
+
   isTravel = false;
+  async travelPtz(boxes: any[]) {
+    if (!this.isTravel) {
+      this.isTravel = true;
+      for (let index = 0; index < boxes.length; index++) {
+        await this.goTravelPos(boxes[index]);
+      }
+      this.isTravel = false;
+    }
+  }
+
+  async goTravelPos(box) {
+    return new Promise(async (resolve: any) => {
+      const element = box;
+      if (this.props.onClickPose) {
+        await this.props.onClickPose(
+          element.x1,
+          element.y1,
+          this.canvas.current.width,
+          this.canvas.current.height,
+          element.y2 - element.y1
+        );
+      }
+      setTimeout(() => {
+        resolve();
+      }, 2000);
+    });
+  }
+  isRun = false;
+  async runFrame(timeStamp) {
+    const videoElement: HTMLVideoElement = this.video?.current;
+    if (videoElement && this.canvas.current && this.ctx) {
+      this.ctx?.drawImage(videoElement, 0, 0);
+
+      const diff = 0;
+      for (let index = 0; index < this.boxes.length; index++) {
+        const box = this.boxes[index];
+        // for (let index = 0; index < this.boxes.length; index++) {
+        //   const box = this.boxes[index];
+        this.ctx?.beginPath();
+        this.ctx?.moveTo(box.x1, box.y1 - diff);
+        this.ctx?.lineTo(box.x2, box.y1 - diff);
+        this.ctx?.lineTo(box.x2, box.y2 - diff);
+        this.ctx?.lineTo(box.x1, box.y2 - diff);
+        this.ctx?.lineTo(box.x1, box.y1 - diff);
+        this.ctx.lineWidth = 8;
+        this.ctx.strokeStyle = 'red';
+        this.ctx.font = '48px serif';
+        this.ctx.fillText(
+          'S:' + box.score.toFixed(2) + ' Y:' + box.y1.toFixed(2),
+          box.x1,
+          box.y1 - 50
+        );
+        this.ctx.fillStyle = 'red';
+        // this.ctx.stroke();
+
+        this.ctx?.stroke();
+      }
+    }
+
+    if (!this.isStop) {
+      this.animationFrame = requestAnimationFrame(this.runFrame);
+    }
+  }
+
+  getRelativeMousePosition = (event, target) => {
+    target = target || event.target;
+    const rect = target.getBoundingClientRect();
+
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    };
+  };
+
+  getNoPaddingNoBorderCanvasRelativeMousePosition = (event, target) => {
+    target = target || event.target;
+    const pos = this.getRelativeMousePosition(event, target);
+
+    const d = target.width / target.clientWidth;
+    const d2 = target.height / target.clientHeight;
+
+    pos.x = pos.x * d;
+    pos.y = pos.y * d2;
+
+    return pos;
+  };
+
+  async handlecanvasClick(event: PointerEvent<HTMLCanvasElement>) {
+    const pos = this.getNoPaddingNoBorderCanvasRelativeMousePosition(
+      event,
+      event.target
+    );
+
+    if (this.props.onClickPose) {
+      await this.props.onClickPose(
+        pos.x,
+        pos.y,
+        this.canvas.current.width,
+        this.canvas.current.height,
+        100
+      );
+    }
+    // for (let index = 0; index < this.boxes.length; index++) {
+    //   const box = this.boxes[index];
+
+    // if (
+    //   pos.x > box.x1 &&
+    //   pos.x < box.x2 &&
+    //   pos.y > box.y1 &&
+    //   pos.y < box.y2
+    // ) {
+    // if (this.props.onClickPose) {
+    //   await this.props.onClickPose(
+    //     box.x1,
+    //     box.y1,
+    //     this.canvas.current.width,
+    //     this.canvas.current.height,
+    //     box.y2 - box.y1
+    //   );
+    // }
+    // }
+    // }
+  }
 
   render() {
     return this.state.loaded ? (
       <>
+        {/* <Button
+          onClick={async () => {
+            if (this.props.camera?.id)
+              await CameraService.getInfo(this.props.camera?.id);
+          }}
+        >
+          Get info
+        </Button> */}
         {!this.state.playing ? (
           <div style={{ width: '100%', height: '100%', display: 'flex' }}>
             <IconButton
               style={{ margin: 'auto' }}
               title="Kapat"
               onClick={async () => {
+                // await CameraService.getInfo(this.props['camera'].id);
+                // return;
+
                 this.setState(
                   {
                     playing: true,
+                    // streamSource: `http://${location.host}/api/camera/pipe/${this.props['camera'].id}`,
                   },
                   () => {
-                    this.pc = new RTCPeerConnection({});
+                    this.ctx = this.canvas.current.getContext('2d');
+
+                    this.pc = new RTCPeerConnection({
+                      // iceServers: [
+                      //   {
+                      // urls: ['stun:stun.l.google.com:19302'],
+                      // },
+                      // ],
+                    });
 
                     this.pc.onnegotiationneeded = async (ev) => {
                       if (this.pc) {
@@ -237,6 +632,8 @@ class CameraView extends Component<Props, State> {
                       let stream = new MediaStream();
                       stream.addTrack(event.track);
                       this.video.current.srcObject = stream;
+                      // stream.addTrack(event.track);
+                      // videoElem.srcObject = stream;
                     };
                   }
                 );
@@ -249,11 +646,14 @@ class CameraView extends Component<Props, State> {
           <>
             <canvas
               ref={this.canvas}
+              onPointerDown={this.handlecanvasClick}
               style={{
                 width: '100%',
+                // visibility: this.state.mode == 'video' ? 'hidden' : 'visible',
+                // display: this.state.mode == 'video' ? 'none' : 'block',
               }}
             ></canvas>
-            <div style={{ height: 500 }}>
+            <div style={{ overflow: 'hidden', height: 0 }}>
               {this.props['camera']?.isPtz ? (
                 <SpeedDial
                   style={{
@@ -610,99 +1010,21 @@ class CameraView extends Component<Props, State> {
                 controls={false}
                 style={{
                   width: '100%',
-                  // visibility: 'hidden', //canvas' ? 'hidden' : 'visible',
+                  visibility: 'hidden', //canvas' ? 'hidden' : 'visible',
                 }}
                 ref={this.video}
-                onPlayCapture={(ev) => {
-                  let gl = this.canvas.current.getContext('webgl2');
-                  this.regl = REGL(gl);
-                  let pos = [-1, -1, 1, -1, -1, 1, 1, 1, -1, 1, 1, -1];
-                  let texture: REGL.Texture2D;
-                  
-                  let lens = {
-                    a: 1.0,
-                    b: 1.0,
-                    Fx: 0.0,
-                    Fy: !this.props.camera?.isPtz ? 0.4 : 0.0,
-                    scale: 1.0,
-                  };
-
-                  const drawFrame = this.regl({
-                    frag: fragSingle,
-                    vert: vert,
-                    attributes: {
-                      position: pos,
-                    },
-                    uniforms: {
-                      uSampler: (ctx, { videoT1 }: any) => {
-                        return videoT1;
-                      },
-                      uLensS: () => {
-                        return [lens.a, lens.b, lens.scale];
-                      },
-                      uLensF: () => {
-                        return [lens.Fx, lens.Fy];
-                      },
-                      zoom: () => {
-                        return [1.0, 0.0, 0.0];
-                      },
-                    },
-                    count: pos.length / 2,
-                  });
-
-                  if (this.regl) {
-                    texture = this.regl.texture(this.video.current);
-                    window['anime'] = this.regl.frame(() => {
-                      try {
-                        if (
-                          this.video.current &&
-                          this.video.current.videoWidth > 32 &&
-                          this.video.current.currentTime > 0 &&
-                          !this.video.current.paused &&
-                          !this.video.current.ended &&
-                          this.video.current.readyState > 2
-                        ) {
-                          try {
-                            texture = texture.subimage(this.video.current);
-                          } catch {}
-                        } else if (!texture && this.regl) {
-                          texture = this.regl.texture();
-                        }
-                      } catch (ex) {
-                        if (this.regl) texture = this.regl.texture();
-                        console.warn(ex);
-                      }
-
-                      try {
-                        if (this.regl)
-                          drawFrame({
-                            videoT1: texture,
-                          });
-                      } catch {
-                        if (window['anime']) {
-                          try {
-                            window['anime'].cancel();
-                          } catch (ex: any) {
-                            console.warn(
-                              `Prevented unhandled exception: ${ex?.message}`
-                            );
-                          }
-                        }
-                      }
-                    });
-                  }
-                }}
                 onLoadedData={async () => {
+                  console.log('video load');
                   try {
                     this.canvas.current.width = this.video.current.videoWidth;
                     this.canvas.current.height = this.video.current.videoHeight;
                   } catch {}
-                  // if (!this.animationFrame) this.runFrame(0);
+                  if (!this.animationFrame) this.runFrame(0);
 
                   if (this.props.settings.type == 'server') {
-                    // this.getTensorServer(0);
+                    this.getTensorServer(0);
                   } else {
-                    // this.getTensor(0);
+                    this.getTensor(0);
                   }
                 }}
               ></video>
