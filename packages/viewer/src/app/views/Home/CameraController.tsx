@@ -4,7 +4,6 @@ import {
   ArrowDownward,
   ArrowForward,
   ArrowUpward,
-  DirectionsWalk,
   Remove,
   Save,
   Settings,
@@ -15,6 +14,7 @@ import {
   Button,
   ButtonGroup,
   Container,
+  Slider,
   SpeedDial,
   SpeedDialAction,
 } from '@mui/material';
@@ -26,6 +26,7 @@ type Props = {
   camera?: Camera;
   onSetTolerance: (tolerance) => Promise<void>;
   onSavePosition: (position) => Promise<void>;
+  onFocalChange: (val) => void;
 };
 
 type State = {
@@ -34,7 +35,13 @@ type State = {
   speed: number;
   step: number;
   decimal: number;
+  ptzLimits: {
+    x: { min: number; max: number };
+    y: { min: number; max: number };
+  };
+  zoomLimits: { min: number; max: number };
   showSaveSettings: boolean;
+  focal: { x: number; y: number; scale: number };
 };
 
 export default class CameraController extends Component<Props, State> {
@@ -49,7 +56,10 @@ export default class CameraController extends Component<Props, State> {
       speed: 1,
       step: 0.1,
       decimal: 2,
+      ptzLimits: { x: { min: -1, max: 1 }, y: { min: -1, max: 1 } },
+      zoomLimits: { min: 0, max: 1 },
       showSaveSettings: false,
+      focal: { x: 0.0, y: 0.0, scale: 1.0 },
     };
   }
 
@@ -62,6 +72,37 @@ export default class CameraController extends Component<Props, State> {
       });
       this.setState({ velocity });
     }
+  }
+
+  componentDidMount() {
+    const ptzLimits =
+      this.props.camera?.camInfo.defaultProfile.PTZConfiguration.PanTiltLimits;
+    const zoomLimits =
+      this.props.camera?.camInfo.defaultProfile.PTZConfiguration.ZoomLimits;
+
+    const minX = parseFloat(ptzLimits?.Range.XRange.Min);
+    const maxX = parseFloat(ptzLimits?.Range.XRange.Max);
+    const minY = parseFloat(ptzLimits?.Range.YRange.Min);
+    const maxY = parseFloat(ptzLimits?.Range.YRange.Max);
+    const minZoom = parseFloat(zoomLimits?.Range.XRange.Min);
+    const maxZoom = parseFloat(zoomLimits?.Range.XRange.Max);
+    this.setState({
+      ptzLimits: {
+        x: {
+          min: isNaN(minX) ? -1 : minX,
+          max: isNaN(maxX) ? 1 : maxX,
+        },
+        y: {
+          min: isNaN(minY) ? -1 : minY,
+          max: isNaN(maxY) ? 1 : maxY,
+        },
+      },
+      zoomLimits: {
+        min: isNaN(minZoom) ? -1 : minZoom,
+        max: isNaN(maxZoom) ? 1 : maxZoom,
+      },
+      velocity: this.props.camera?.position,
+    });
   }
 
   render() {
@@ -100,7 +141,10 @@ export default class CameraController extends Component<Props, State> {
 
                   const movement = cuurentValue + this.state.step;
 
-                  if (movement <= 1 && movement >= -1) {
+                  if (
+                    movement <= this.state.ptzLimits.y.max &&
+                    movement >= this.state.ptzLimits.y.min
+                  ) {
                     velocity.y = movement.toFixed(this.state.decimal);
                     await this.gotoPosition(velocity);
                   }
@@ -120,10 +164,13 @@ export default class CameraController extends Component<Props, State> {
                     cuurentValue = parseFloat(velocity.y);
                   } catch {}
 
-                  const mevement = cuurentValue - this.state.step;
+                  const movement = cuurentValue - this.state.step;
 
-                  if (mevement >= -1 && mevement <= 1) {
-                    velocity.y = mevement.toFixed(this.state.decimal);
+                  if (
+                    movement <= this.state.ptzLimits.y.max &&
+                    movement >= this.state.ptzLimits.y.min
+                  ) {
+                    velocity.y = movement.toFixed(this.state.decimal);
                     await this.gotoPosition(velocity);
                   }
                 }
@@ -143,10 +190,13 @@ export default class CameraController extends Component<Props, State> {
                     cuurentValue = parseFloat(velocity.x);
                   } catch {}
 
-                  const mevement = cuurentValue + this.state.step;
+                  const movement = cuurentValue + this.state.step;
 
-                  if (mevement >= -1 && mevement <= 1) {
-                    velocity.x = mevement.toFixed(this.state.decimal);
+                  if (
+                    movement <= this.state.ptzLimits.x.max &&
+                    movement >= this.state.ptzLimits.x.min
+                  ) {
+                    velocity.x = movement.toFixed(this.state.decimal);
                     await this.gotoPosition(velocity);
                   }
                 }
@@ -165,10 +215,13 @@ export default class CameraController extends Component<Props, State> {
                     cuurentValue = parseFloat(velocity.x);
                   } catch {}
 
-                  const mevement = cuurentValue - this.state.step;
+                  const movement = cuurentValue - this.state.step;
 
-                  if (mevement <= 1 && mevement >= -1) {
-                    velocity.x = mevement.toFixed(this.state.decimal);
+                  if (
+                    movement <= this.state.ptzLimits.x.max &&
+                    movement >= this.state.ptzLimits.x.min
+                  ) {
+                    velocity.x = movement.toFixed(this.state.decimal);
                     await this.gotoPosition(velocity);
                   }
                 }
@@ -185,10 +238,13 @@ export default class CameraController extends Component<Props, State> {
                     cuurentValue = parseFloat(velocity.z);
                   } catch {}
 
-                  const mevement = cuurentValue + this.state.step;
+                  const movement = cuurentValue + this.state.step;
 
-                  if (mevement <= 1 && mevement >= 0) {
-                    velocity.z = mevement.toFixed(this.state.decimal);
+                  if (
+                    movement <= this.state.zoomLimits.max &&
+                    movement >= this.state.zoomLimits.min
+                  ) {
+                    velocity.z = movement.toFixed(this.state.decimal);
                     await this.gotoPosition(velocity);
                   }
                 }
@@ -205,10 +261,13 @@ export default class CameraController extends Component<Props, State> {
                     cuurentValue = parseFloat(velocity.z);
                   } catch {}
 
-                  const mevement = cuurentValue - this.state.step;
+                  const movement = cuurentValue - this.state.step;
 
-                  if (mevement >= 0 && mevement <= 1) {
-                    velocity.z = mevement.toFixed(this.state.decimal);
+                  if (
+                    movement <= this.state.zoomLimits.max &&
+                    movement >= this.state.zoomLimits.min
+                  ) {
+                    velocity.z = movement.toFixed(this.state.decimal);
                     await this.gotoPosition(velocity);
                   }
                 }
@@ -284,10 +343,13 @@ export default class CameraController extends Component<Props, State> {
                     cuurentValue = parseFloat(velocity.z);
                   } catch {}
 
-                  const mevement = cuurentValue + this.state.step;
+                  const movement = cuurentValue + this.state.step;
 
-                  if (mevement <= 1 && mevement >= 0) {
-                    velocity.z = mevement.toFixed(this.state.decimal);
+                  if (
+                    movement <= this.state.zoomLimits.max &&
+                    movement >= this.state.zoomLimits.min
+                  ) {
+                    velocity.z = movement.toFixed(this.state.decimal);
                     await this.gotoPosition(velocity);
                   }
                 }
@@ -304,21 +366,55 @@ export default class CameraController extends Component<Props, State> {
                     cuurentValue = parseFloat(velocity.z);
                   } catch {}
 
-                  const mevement = cuurentValue - this.state.step;
+                  const movement = cuurentValue - this.state.step;
 
-                  if (mevement >= 0 && mevement <= 1) {
-                    velocity.z = mevement.toFixed(this.state.decimal);
+                  if (
+                    movement <= this.state.zoomLimits.max &&
+                    movement >= this.state.zoomLimits.min
+                  ) {
+                    velocity.z = movement.toFixed(this.state.decimal);
                     await this.gotoPosition(velocity);
                   }
+                }
+              }}
+            />
+
+            <SpeedDialAction
+              icon={<Remove />}
+              title={'Yavaşla'}
+              onClick={async () => {
+                const { step } = this.state;
+                const mevement = step - 0.01;
+
+                if (mevement <= 1 && mevement >= 0) {
+                  this.setState({
+                    step: parseFloat(mevement.toFixed(this.state.decimal)),
+                  });
+                }
+              }}
+            />
+            <SpeedDialAction
+              icon={<Add />}
+              title={'Hızlan'}
+              onClick={async () => {
+                const { step } = this.state;
+                const mevement = step + 0.01;
+
+                if (mevement <= 1 && mevement >= 0) {
+                  this.setState({
+                    step: parseFloat(mevement.toFixed(this.state.decimal)),
+                  });
                 }
               }}
             />
           </SpeedDial>
         )}
         <div
-          style={{
-            display: this.state.showSaveSettings ? 'block' : 'none',
-          }}
+          style={
+            {
+              // display: this.state.showSaveSettings ? 'block' : 'none',
+            }
+          }
         >
           <ButtonGroup
             variant="contained"
@@ -418,10 +514,67 @@ export default class CameraController extends Component<Props, State> {
             </Button>
           </ButtonGroup>
           <Container>
-            <div>X:{this.state.velocity?.x}</div>
-            <div>Y:{this.state.velocity?.y}</div>
-            <div>Z:{this.state.velocity?.z}</div>
-            <div>Step:{this.state.step}</div>
+            <div>
+              X:{this.state.velocity?.x} Y:{this.state.velocity?.y} Z:
+              {this.state.velocity?.z} Step:{this.state.step}
+            </div>
+            <div>
+              <Slider
+                size="small"
+                defaultValue={0.0}
+                max={2.0}
+                min={-2.0}
+                step={0.05}
+                aria-label="Small"
+                valueLabelDisplay="auto"
+                onChange={(ev, val) => {
+                  const { focal } = this.state;
+                  focal.x = val as number;
+                  this.setState({ focal });
+                  if (this.props.onFocalChange) {
+                    this.props.onFocalChange(focal);
+                  }
+                }}
+              />
+            </div>
+            <div>
+              <Slider
+                size="small"
+                defaultValue={0.0}
+                max={2.0}
+                min={-2.0}
+                step={0.05}
+                aria-label="Small"
+                valueLabelDisplay="auto"
+                onChange={(ev, val) => {
+                  const { focal } = this.state;
+                  focal.y = val as number;
+                  this.setState({ focal });
+                  if (this.props.onFocalChange) {
+                    this.props.onFocalChange(focal);
+                  }
+                }}
+              />
+            </div>
+            <div>
+              <Slider
+                size="small"
+                defaultValue={1.0}
+                max={2.0}
+                min={0.0}
+                step={0.05}
+                aria-label="Small"
+                valueLabelDisplay="auto"
+                onChange={(ev, val) => {
+                  const { focal } = this.state;
+                  focal.scale = val as number;
+                  this.setState({ focal });
+                  if (this.props.onFocalChange) {
+                    this.props.onFocalChange(focal);
+                  }
+                }}
+              />
+            </div>
           </Container>
         </div>
       </>

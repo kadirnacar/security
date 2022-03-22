@@ -40,6 +40,7 @@ class Settings extends Component<Props, SettingsState> {
 
   async onSave(item: Camera) {
     await this.props.DataActions?.updateItem('Camera', item);
+    await this.props.DataActions?.getList('Camera');
   }
 
   async onDelete(item: Camera) {

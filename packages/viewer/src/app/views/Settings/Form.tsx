@@ -35,6 +35,12 @@ class Form extends Component<Props, State> {
     if (this.props.camera) this.setState({ camera: this.props.camera });
   }
 
+  componentDidUpdate(prevProp, prevState) {
+    if (this.props.camera != prevProp.camera) {
+      this.setState({ camera: this.props.camera });
+    }
+  }
+
   handleChange = (event) => {
     let camera: any = this.state.camera;
     if (!camera) {
@@ -54,6 +60,7 @@ class Form extends Component<Props, State> {
   };
 
   render() {
+    // console.log(this.props.camera, this.state.camera);
     return (
       <Box sx={{ my: 2 }}>
         <Card>

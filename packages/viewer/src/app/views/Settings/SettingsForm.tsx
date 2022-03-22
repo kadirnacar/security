@@ -91,109 +91,15 @@ class SettingsForm extends Component<Props, State> {
           />
           <Divider />
           <CardContent>
-            <FormControl fullWidth margin="normal" variant="outlined">
-              <InputLabel>Görüntü Analiz Tipi</InputLabel>
-              <Select
-                value={this.state.settings?.type || 'client'}
-                label="Görüntü Analiz Tipi"
-                name="type"
-                onChange={this.handleChange}
-              >
-                <MenuItem value={'client'}>Önyüz</MenuItem>
-                <MenuItem value={'server'}>Server</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth margin="normal" variant="outlined">
-              <InputLabel>Analiz Modeli</InputLabel>
-              <Select
-                value={this.state.settings?.architecture || 'MobileNetV1'}
-                label="Analiz Modeli"
-                name="architecture"
-                onChange={this.handleChange}
-              >
-                <MenuItem value={'MobileNetV1'}>MobileNetV1</MenuItem>
-                <MenuItem value={'ResNet50'}>ResNet50</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth margin="normal" variant="outlined">
-              <InputLabel>Output Stride</InputLabel>
-              <Select
-                value={this.state.settings?.outputStride || 16}
-                label="Output Stride"
-                name="outputStride"
-                onChange={this.handleChange}
-              >
-                <MenuItem value={8}>8</MenuItem>
-                <MenuItem value={16}>16</MenuItem>
-                <MenuItem value={32}>32</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth margin="normal" variant="outlined">
-              <InputLabel>Multiplier</InputLabel>
-              <Select
-                value={this.state.settings?.multiplier || 0.75}
-                label="Multiplier"
-                name="multiplier"
-                onChange={this.handleChange}
-              >
-                <MenuItem value={0.5}>0.5</MenuItem>
-                <MenuItem value={0.75}>0.75</MenuItem>
-                <MenuItem value={1}>1</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth margin="normal" variant="outlined">
-              <InputLabel>Quant Bytes</InputLabel>
-              <Select
-                value={this.state.settings?.quantBytes || 2}
-                label="Quant Bytes"
-                name="quantBytes"
-                onChange={this.handleChange}
-              >
-                <MenuItem value={1}>1</MenuItem>
-                <MenuItem value={2}>2</MenuItem>
-                <MenuItem value={4}>4</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth margin="normal" variant="outlined">
-              <InputLabel>Internal Resolution</InputLabel>
-              <Select
-                value={this.state.settings?.internalResolution || 'high'}
-                label="Internal Resolution"
-                name="internalResolution"
-                onChange={this.handleChange}
-              >
-                <MenuItem value={'low'}>Low</MenuItem>
-                <MenuItem value={'medium'}>Medium</MenuItem>
-                <MenuItem value={'high'}>High</MenuItem>
-                <MenuItem value={'full'}>Full</MenuItem>
-              </Select>
-            </FormControl>
 
             <TextField
               fullWidth
-              label="Segmentation Threshold"
+              label="Max Boxes"
               margin="normal"
-              value={this.state.settings?.segmentationThreshold || '0.7'}
+              value={this.state.settings?.maxBoxes || '20'}
               onChange={this.handleChange}
-              inputProps={{ inputMode: 'numeric', min: 0, max: 1, step: 0.1 }}
-              name="segmentationThreshold"
-              type="number"
-              variant="outlined"
-            />
-
-            <TextField
-              fullWidth
-              label="Max Detections"
-              margin="normal"
-              value={this.state.settings?.maxDetections || 5}
-              onChange={this.handleChange}
-              inputProps={{ inputMode: 'numeric', min: 1, step: 1 }}
-              name="maxDetections"
+              inputProps={{ inputMode: 'numeric', min: 1, max: 50, step: 1 }}
+              name="maxBoxes"
               type="number"
               variant="outlined"
             />
@@ -202,9 +108,9 @@ class SettingsForm extends Component<Props, State> {
               fullWidth
               label="Score Threshold"
               margin="normal"
-              value={this.state.settings?.scoreThreshold || 0.3}
+              value={this.state.settings?.scoreThreshold || 0.5}
               onChange={this.handleChange}
-              inputProps={{ inputMode: 'numeric', min: 0, max: 1, step: 0.1 }}
+              inputProps={{ inputMode: 'numeric', min: 0.1, step: 0.1 }}
               name="scoreThreshold"
               type="number"
               variant="outlined"
@@ -212,12 +118,24 @@ class SettingsForm extends Component<Props, State> {
 
             <TextField
               fullWidth
-              label="Nms Radius"
+              label="Iou Threshold"
               margin="normal"
-              value={this.state.settings?.nmsRadius || 20}
+              value={this.state.settings?.iouThreshold || 0.3}
+              onChange={this.handleChange}
+              inputProps={{ inputMode: 'numeric', min: 0, step: 0.1 }}
+              name="iouThreshold"
+              type="number"
+              variant="outlined"
+            />
+
+            <TextField
+              fullWidth
+              label="Num Classes"
+              margin="normal"
+              value={this.state.settings?.numClasses || 80}
               onChange={this.handleChange}
               inputProps={{ inputMode: 'numeric', min: 0, step: 1 }}
-              name="nmsRadius"
+              name="numClasses"
               type="number"
               variant="outlined"
             />

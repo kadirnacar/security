@@ -28,6 +28,7 @@ function corsPrefetch(req: Request, res: express.Response, next: Function) {
   next();
 }
 app.use(express.static(path.join(__dirname, 'assets')));
+app.use(express.static(path.join(__dirname, 'model')));
 app.use(express.static(__dirname + '/web'));
 app.use(corsPrefetch as any);
 app.use(bodyParser.json({ limit: '50mb' }));

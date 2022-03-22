@@ -1,6 +1,6 @@
 import { PlayCircleFilled } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
-import { Camera } from '@security/models';
+import { Camera, Settings } from '@security/models';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -15,12 +15,14 @@ interface State {
   streamSource?: MediaStream;
   loaded: boolean;
   playing: boolean;
+  focal: any;
 }
 
 type Props = {
   camera?: Camera;
   DataActions?: DataActions<Camera>;
   Data?: DataState;
+  settings: Settings;
 };
 
 class CameraView extends Component<Props, State> {
@@ -32,6 +34,7 @@ class CameraView extends Component<Props, State> {
       streamSource: undefined,
       loaded: false,
       playing: false,
+      focal: { x: 0, y: 0, scale: 1 },
     };
   }
 
@@ -118,8 +121,13 @@ class CameraView extends Component<Props, State> {
             <VideoPlayer
               stream={this.state.streamSource}
               camera={this.props.camera}
+              settings={this.props.settings}
+              focal={this.state.focal}
             />
             <CameraController
+              onFocalChange={(val) => {
+                this.setState({ focal: val });
+              }}
               camera={this.props.camera}
               onSavePosition={async (position) => {
                 await this.props.DataActions?.updateItem('Camera', {

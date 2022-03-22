@@ -1,12 +1,9 @@
 import { Camera as CameraModel } from '@security/models';
 import { ChildProcess, spawn } from 'child_process';
 import { URL } from 'url';
-import * as WebSocket from 'ws';
 import * as OnvifManager from '../../onvif-nvt/onvif-nvt';
 import Camera = require('../../onvif-nvt/camera');
 import EventEmitter = require('events');
-import path = require('path');
-// var ffmpegPath = (path.join(__dirname, '../../../node_modules/@ffmpeg-installer/darwin-arm64/ffmpeg' )).replace('app.asar', 'app.asar.unpacked')
 
 export interface IServiceCamera {
   model: CameraModel;
@@ -15,8 +12,6 @@ export interface IServiceCamera {
 export class CameraService {
   static cameraModels: IServiceCamera[] = [];
 
-  static socketUsers: { [key: string]: { socket: WebSocket; streams: any[] } } =
-    {};
   static camStreams: { [camId: string]: { reader?: RtspReader } } = {};
 
   static async endProcess(process) {
@@ -30,15 +25,6 @@ export class CameraService {
       process.on('close', () => resolve());
       process.kill('SIGKILL');
     });
-  }
-
-  static IsJsonString(str) {
-    try {
-      JSON.parse(str);
-    } catch (e) {
-      return false;
-    }
-    return true;
   }
 
   static async rtspgo(id, sdp, res) {
@@ -75,12 +61,6 @@ export class CameraService {
     });
   }
 
-  static async setPipe(camId, res) {
-    if (this.camStreams[camId]) {
-      await this.camStreams[camId].reader.setPipe(res);
-    }
-  }
-
   static async stopRes(camId, userId, res) {
     if (this.camStreams[camId] && this.camStreams[camId][userId]) {
       await this.camStreams[camId][userId].stopStream();
@@ -107,12 +87,6 @@ export class CameraService {
     const connectedIndex = this.cameraModels.findIndex(
       (x) => x.model && x.model.id == cameraModel.id
     );
-    if (
-      this.camStreams[cameraModel.id] &&
-      this.camStreams[cameraModel.id].reader
-    ) {
-      // await this.camStreams[cameraModel.id].reader.stopStream();
-    }
 
     if (connectedIndex && connectedIndex > -1) {
       this.cameraModels.splice(connectedIndex, 1);
@@ -130,7 +104,6 @@ export class CameraService {
         const camItem = { model: cameraModel, camera: cam };
         this.cameraModels.push(camItem);
         const rtspReader = new RtspReader();
-        // await rtspReader.startStream(camItem);
         this.camStreams[cameraModel.id] = { reader: rtspReader };
       }
       return cam;
@@ -163,10 +136,6 @@ export class RtspReader extends EventEmitter {
       this.process.on('close', () => resolve());
       this.process.kill('SIGKILL');
     });
-  }
-
-  async setPipe(res) {
-    res.writeHead(200, { 'Content-Type': 'video/mp4' });
   }
 
   async startStream(camItem: IServiceCamera) {
