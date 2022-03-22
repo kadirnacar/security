@@ -101,7 +101,7 @@ export default class CameraController extends Component<Props, State> {
         min: isNaN(minZoom) ? -1 : minZoom,
         max: isNaN(maxZoom) ? 1 : maxZoom,
       },
-      velocity: this.props.camera?.position,
+      velocity: this.props.camera?.position || { x: 0, y: 0, z: 0 },
     });
   }
 
@@ -138,7 +138,7 @@ export default class CameraController extends Component<Props, State> {
                   try {
                     cuurentValue = parseFloat(velocity.y);
                   } catch {}
-
+                  console.log(cuurentValue);
                   const movement = cuurentValue + this.state.step;
 
                   if (
