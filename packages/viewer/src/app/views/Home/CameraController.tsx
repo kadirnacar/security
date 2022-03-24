@@ -130,7 +130,7 @@ export default class CameraController extends Component<Props, State> {
           >
             <SpeedDialAction
               icon={<ArrowUpward />}
-              title={'Yukarı'}
+              title={`Y: ${this.state.velocity?.y}`}
               onClick={async () => {
                 const { velocity } = this.state;
                 if (velocity) {
@@ -153,7 +153,7 @@ export default class CameraController extends Component<Props, State> {
             />
             <SpeedDialAction
               icon={<ArrowDownward />}
-              title={'Aşağı'}
+              title={`Y: ${this.state.velocity?.y}`}
               onClick={async () => {
                 const { velocity } = this.state;
 
@@ -179,7 +179,7 @@ export default class CameraController extends Component<Props, State> {
 
             <SpeedDialAction
               icon={<ArrowForward />}
-              title={'Sağ'}
+              title={`X: ${this.state.velocity?.x}`}
               onClick={async () => {
                 const { velocity } = this.state;
 
@@ -204,7 +204,7 @@ export default class CameraController extends Component<Props, State> {
             />
             <SpeedDialAction
               icon={<ArrowBack />}
-              title={'Sol'}
+              title={`X: ${this.state.velocity?.x}`}
               onClick={async () => {
                 const { velocity } = this.state;
 
@@ -229,7 +229,7 @@ export default class CameraController extends Component<Props, State> {
             />
             <SpeedDialAction
               icon={<ZoomIn />}
-              title={'Yaklaş'}
+              title={`Z: ${this.state.velocity?.z}`}
               onClick={async () => {
                 const { velocity } = this.state;
                 if (velocity) {
@@ -252,7 +252,7 @@ export default class CameraController extends Component<Props, State> {
             />
             <SpeedDialAction
               icon={<ZoomOut />}
-              title={'Uzaklaş'}
+              title={`Z: ${this.state.velocity?.z}`}
               onClick={async () => {
                 const { velocity } = this.state;
                 if (velocity) {
@@ -275,7 +275,7 @@ export default class CameraController extends Component<Props, State> {
             />
             <SpeedDialAction
               icon={<Remove />}
-              title={'Yavaşla'}
+              title={`S: ${this.state.step}`}
               onClick={async () => {
                 const { step } = this.state;
                 const mevement = step - 0.01;
@@ -289,7 +289,7 @@ export default class CameraController extends Component<Props, State> {
             />
             <SpeedDialAction
               icon={<Add />}
-              title={'Hızlan'}
+              title={`S: ${this.state.step}`}
               onClick={async () => {
                 const { step } = this.state;
                 const mevement = step + 0.01;
@@ -301,7 +301,7 @@ export default class CameraController extends Component<Props, State> {
                 }
               }}
             />
-            <SpeedDialAction
+            {/* <SpeedDialAction
               icon={<Settings />}
               title={'Kaydet'}
               onClick={async () => {
@@ -310,7 +310,7 @@ export default class CameraController extends Component<Props, State> {
                   showSaveSettings: !this.state.showSaveSettings,
                 });
               }}
-            />
+            /> */}
           </SpeedDial>
         ) : (
           <SpeedDial
@@ -409,7 +409,7 @@ export default class CameraController extends Component<Props, State> {
             />
           </SpeedDial>
         )}
-        <div
+        {/* <div
           style={
             {
               // display: this.state.showSaveSettings ? 'block' : 'none',
@@ -576,7 +576,7 @@ export default class CameraController extends Component<Props, State> {
               />
             </div>
           </Container>
-        </div>
+        </div> */}
       </>
     );
   }

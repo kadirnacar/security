@@ -24,10 +24,12 @@ import { DataActions } from '../../reducers/Data/actions';
 import { DataState } from '../../reducers/Data/state';
 import { ApplicationState } from '../../store';
 import { withRouter } from '../../withRouter';
+import CameraView from '../Home/CameraView';
 
 interface State {
   selectCamId?: any;
   activePursuit?: any;
+  activeCamera?: Camera;
 }
 
 interface Props {
@@ -39,7 +41,7 @@ interface Props {
 class Pursuit extends Component<Props, State> {
   constructor(props) {
     super(props);
-    this.state = { selectCamId: '' };
+    this.state = { selectCamId: '', activeCamera: undefined };
   }
 
   async componentDidMount() {}
@@ -49,20 +51,11 @@ class Pursuit extends Component<Props, State> {
       <>
         <Box sx={{ my: 2 }}>
           <Card>
-            <CardHeader
-              title="Takip"
-              action={
-                <>
-                  {/* <IconButton title="Kaydet" onClick={this.handleSave}>
-                    <Save />
-                  </IconButton> */}
-                </>
-              }
-            />
+            <CardHeader title="Takip" />
             <Divider />
             <CardContent>
               <Grid container spacing={2}>
-                <Grid item md={3}>
+                <Grid item md={2}>
                   <List>
                     <ListItem disablePadding>
                       <FormControl fullWidth variant="standard">
@@ -144,7 +137,14 @@ class Pursuit extends Component<Props, State> {
                                   this.state.activePursuit?.camId == cam.camId
                                 }
                                 onClick={() => {
-                                  this.setState({ activePursuit: cam });
+                                  const camera =
+                                    this.props.Data?.Camera.List.find(
+                                      (x) => x.id == cam.camId
+                                    );
+                                  this.setState({
+                                    activePursuit: cam,
+                                    activeCamera: camera,
+                                  });
                                 }}
                               >
                                 <ListItemIcon>
@@ -158,9 +158,41 @@ class Pursuit extends Component<Props, State> {
                       : null}
                   </List>
                 </Grid>
-                <Divider orientation="vertical" flexItem />
-                <Grid item md={8}>
-                  {this.state.activePursuit?.camId}
+                <Grid item md={10}>
+                  {this.state.activePursuit ? (
+                    <>
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                          <Box
+                            sx={{
+                              p: 2,
+                              border: '1px dashed grey',
+                              position: 'relative',
+                            }}
+                          >
+                            <CameraView
+                              camera={this.state.activeCamera}
+                              hideControls={true}
+                            />
+                          </Box>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Box
+                            sx={{
+                              p: 2,
+                              border: '1px dashed grey',
+                              position: 'relative',
+                            }}
+                          >
+                            <CameraView
+                              camera={this.props.camera}
+                              hideControls={false}
+                            />
+                          </Box>
+                        </Grid>
+                      </Grid>
+                    </>
+                  ) : null}
                 </Grid>
               </Grid>
             </CardContent>

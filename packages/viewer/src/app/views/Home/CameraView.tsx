@@ -23,6 +23,7 @@ type Props = {
   DataActions?: DataActions<Camera>;
   Data?: DataState;
   settings: Settings;
+  hideControls?: boolean;
 };
 
 class CameraView extends Component<Props, State> {
@@ -124,28 +125,30 @@ class CameraView extends Component<Props, State> {
               settings={this.props.settings}
               focal={this.state.focal}
             />
-            <CameraController
-              onFocalChange={(val) => {
-                this.setState({ focal: val });
-              }}
-              camera={this.props.camera}
-              onSavePosition={async (position) => {
-                await this.props.DataActions?.updateItem('Camera', {
-                  ...this.props.camera,
-                  ...{ position },
-                });
-              }}
-              onSetTolerance={async (tolerance) => {
-                await this.props.DataActions?.updateItem('Camera', {
-                  ...this.props.camera,
-                  ...{ tolerance },
-                });
-                await this.props.DataActions?.getById(
-                  'Camera',
-                  this.props.camera?.id || ''
-                );
-              }}
-            />
+            {!this.props.hideControls ? (
+              <CameraController
+                onFocalChange={(val) => {
+                  this.setState({ focal: val });
+                }}
+                camera={this.props.camera}
+                onSavePosition={async (position) => {
+                  await this.props.DataActions?.updateItem('Camera', {
+                    ...this.props.camera,
+                    ...{ position },
+                  });
+                }}
+                onSetTolerance={async (tolerance) => {
+                  await this.props.DataActions?.updateItem('Camera', {
+                    ...this.props.camera,
+                    ...{ tolerance },
+                  });
+                  await this.props.DataActions?.getById(
+                    'Camera',
+                    this.props.camera?.id || ''
+                  );
+                }}
+              />
+            ) : null}
           </>
         )}
       </>

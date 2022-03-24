@@ -180,23 +180,6 @@ class Home extends Component<Props, HomeState> {
                 >
                   <CameraView
                     camera={cam}
-                    boxesView={this.imageDiv.current}
-                    onClickPose={
-                      cam && !cam.isPtz
-                        ? (x, y, wi, he, boxHe) => {
-                            this.setState({
-                              pos: {
-                                x: x,
-                                y,
-                                width: wi,
-                                height: he,
-                                boxHeight: boxHe,
-                              },
-                            });
-                          }
-                        : undefined
-                    }
-                    pos={this.state.pos}
                     settings={this.props.Data?.Settings.CurrentItem}
                   />
                 </LayoutItem>
