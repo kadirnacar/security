@@ -433,20 +433,20 @@ export default class CameraController extends Component<Props, State> {
             </Button>
             <Button
               onClick={async () => {
-                if (this.props.camera) {
-                  let tolerance = this.props.camera.tolerance;
-                  if (!tolerance) {
-                    tolerance = {
-                      x: { max: 0, min: 0 },
-                      y: { max: 0, min: 0 },
-                    };
-                  }
-                  tolerance.x.min = this.state.velocity?.x;
-                  tolerance.y.min = this.state.velocity?.y;
-                  if (this.props.onSetTolerance) {
-                    await this.props.onSetTolerance(tolerance);
-                  }
-                }
+                // if (this.props.camera) {
+                //   let tolerance = this.props.camera.tolerance;
+                //   if (!tolerance) {
+                //     tolerance = {
+                //       x: { max: 0, min: 0 },
+                //       y: { max: 0, min: 0 },
+                //     };
+                //   }
+                //   tolerance.x.min = this.state.velocity?.x;
+                //   tolerance.y.min = this.state.velocity?.y;
+                //   if (this.props.onSetTolerance) {
+                //     await this.props.onSetTolerance(tolerance);
+                //   }
+                // }
               }}
             >
               <Save></Save>
@@ -473,21 +473,21 @@ export default class CameraController extends Component<Props, State> {
             </Button>
             <Button
               onClick={async () => {
-                if (this.props.camera) {
-                  let tolerance = this.props.camera.tolerance;
-                  if (!tolerance) {
-                    tolerance = {
-                      x: { max: 0, min: 0 },
-                      y: { max: 0, min: 0 },
-                    };
-                  }
+                // if (this.props.camera) {
+                //   let tolerance = this.props.camera.tolerance;
+                //   if (!tolerance) {
+                //     tolerance = {
+                //       x: { max: 0, min: 0 },
+                //       y: { max: 0, min: 0 },
+                //     };
+                //   }
 
-                  tolerance.x.max = this.state.velocity?.x;
-                  tolerance.y.max = this.state.velocity?.y;
-                  if (this.props.onSetTolerance) {
-                    await this.props.onSetTolerance(tolerance);
-                  }
-                }
+                //   tolerance.x.max = this.state.velocity?.x;
+                //   tolerance.y.max = this.state.velocity?.y;
+                //   if (this.props.onSetTolerance) {
+                //     await this.props.onSetTolerance(tolerance);
+                //   }
+                // }
               }}
             >
               <Save></Save>

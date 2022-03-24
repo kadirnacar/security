@@ -8,6 +8,7 @@ import Header from '../../components/Header';
 import Sidebar from '../../components/Sidebar';
 import Home from '../../views/Home';
 import Settings from '../../views/Settings';
+import SettingsForm from '../../views/Settings/Form';
 
 const drawerWidth = 240;
 
@@ -99,6 +100,7 @@ class Main extends Component<Props, State> {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/settings/*" element={<Settings />} />
+            <Route path="/camera/:id" element={<SettingsForm />} />
           </Routes>
         </main>
       </div>
