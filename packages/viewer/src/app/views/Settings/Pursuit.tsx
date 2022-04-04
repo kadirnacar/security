@@ -44,7 +44,9 @@ class Pursuit extends Component<Props, State> {
     this.state = { selectCamId: '', activeCamera: undefined };
   }
 
-  async componentDidMount() {}
+  async componentDidMount() {
+    await this.props.DataActions?.getItem('Settings')
+  }
 
   render() {
     return (
@@ -187,6 +189,7 @@ class Pursuit extends Component<Props, State> {
                             <CameraView
                               camera={this.props.camera}
                               hideControls={false}
+                              settings={this.props.Data?.Settings.CurrentItem}
                             />
                           </Box>
                         </Grid>

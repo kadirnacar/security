@@ -122,7 +122,7 @@ class CameraView extends Component<Props, State> {
             <VideoPlayer
               stream={this.state.streamSource}
               camera={this.props.camera}
-              settings={this.props.settings}
+              settings={this.props.Data?.Settings.CurrentItem}
               focal={this.state.focal}
             />
             {!this.props.hideControls ? (

@@ -22,11 +22,13 @@ import { DataActions } from '../../reducers/Data/actions';
 import { DataState } from '../../reducers/Data/state';
 import { ApplicationState } from '../../store';
 import { WithRouter, withRouter } from '../../withRouter';
+import CameraView from '../Home/CameraView';
 import Pursuit from './Pursuit';
 
 interface State {
   camera?: Camera;
   expand?: boolean;
+  expandView?: boolean;
 }
 
 interface Props {
@@ -40,11 +42,12 @@ class Form extends Component<Props & WithRouter, State> {
     this.handleChange = this.handleChange.bind(this);
     this.handleCheck = this.handleCheck.bind(this);
     this.handleSave = this.handleSave.bind(this);
-    this.state = { camera: undefined, expand: false };
+    this.state = { camera: undefined, expand: false, expandView: false };
   }
 
   async componentDidMount() {
     await this.props.DataActions?.getList('Camera', true);
+    await this.props.DataActions?.getItem('Settings');
     if (
       this.props.params &&
       this.props.params['id'] &&
@@ -228,7 +231,44 @@ class Form extends Component<Props & WithRouter, State> {
             </Collapse>
           </Card>
         </Box>
-        {this.state.camera?.isPtz ? <Pursuit camera={this.state.camera}/> : null}
+        <Box sx={{ my: 2 }}>
+          <Card>
+            <CardHeader
+              title="Kamera İzle"
+              style={{ cursor: 'pointer' }}
+              onClick={() => {
+                this.setState({ expandView: !this.state.expandView });
+              }}
+              action={
+                <>
+                  <IconButton
+                    title="Ayrıntılar"
+                    onClick={() => {
+                      this.setState({ expandView: !this.state.expandView });
+                    }}
+                  >
+                    <ExpandMore />
+                  </IconButton>
+                </>
+              }
+            />
+            <Divider />
+            <Collapse in={this.state.expandView} timeout="auto" unmountOnExit>
+              <CardContent
+                style={{ maxHeight: 600, height: 600, position: 'relative' }}
+              >
+                <CameraView
+                  camera={this.state.camera}
+                  hideControls={false}
+                  settings={this.props.Data?.Settings.CurrentItem}
+                />
+              </CardContent>
+            </Collapse>
+          </Card>
+        </Box>
+        {this.state.camera?.isPtz ? (
+          <Pursuit camera={this.state.camera} />
+        ) : null}
       </>
     );
   }

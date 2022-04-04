@@ -152,94 +152,94 @@ export default class VideoPlayer extends Component<Props, State> {
   }
   l = false;
   handleVideoPlay() {
-    if (!this.l) {
-      this.l = true;
-      this.yoloAnimationFrame(0);
+    // if (!this.l) {
+    //   this.l = true;
+    //   this.yoloAnimationFrame(0);
+    // }
+    if (this.regl || !this.props.settings) {
+      return;
     }
-    // if (this.regl) {
-    //   return;
-    // }
-    // if (this.canvas.current && this.video.current) {
-    //   this.regl = REGL(this.canvas.current);
-    //   let pos = [-1, -1, 1, -1, -1, 1, 1, 1, -1, 1, 1, -1];
-    //   let texture: REGL.Texture2D;
+    if (this.canvas.current && this.video.current) {
+      this.regl = REGL(this.canvas.current);
+      let pos = [-1, -1, 1, -1, -1, 1, 1, 1, -1, 1, 1, -1];
+      let texture: REGL.Texture2D;
 
-    //   const drawFrame = this.regl({
-    //     frag: getFragmentScript(this.props.settings?.maxBoxes),
-    //     vert: vert,
-    //     attributes: {
-    //       position: pos,
-    //     },
-    //     uniforms: {
-    //       uSampler: (ctx, { videoT1 }: any) => {
-    //         return videoT1;
-    //       },
-    //       uLensS: () => {
-    //         return [this.lens.a, this.lens.b, this.lens.scale];
-    //       },
-    //       uLensF: () => {
-    //         return [this.lens.Fx, this.lens.Fy];
-    //       },
-    //       resolution: (context, props) => {
-    //         return [context.viewportWidth, context.viewportHeight];
-    //       },
-    //       boxColor: () => {
-    //         return [1, 0, 0, 1];
-    //       },
-    //       box: () => {
-    //         return this.boxes;
-    //       },
-    //     },
-    //     count: pos.length / 2,
-    //   });
+      const drawFrame = this.regl({
+        frag: getFragmentScript(this.props.settings?.maxBoxes),
+        vert: vert,
+        attributes: {
+          position: pos,
+        },
+        uniforms: {
+          uSampler: (ctx, { videoT1 }: any) => {
+            return videoT1;
+          },
+          uLensS: () => {
+            return [this.lens.a, this.lens.b, this.lens.scale];
+          },
+          uLensF: () => {
+            return [this.lens.Fx, this.lens.Fy];
+          },
+          resolution: (context, props) => {
+            return [context.viewportWidth, context.viewportHeight];
+          },
+          boxColor: () => {
+            return [1, 0, 0, 1];
+          },
+          box: () => {
+            return this.boxes;
+          },
+        },
+        count: pos.length / 2,
+      });
 
-    //   if (this.regl) {
-    //     texture = this.regl.texture(this.video.current);
-    //     this.videoAnimate = this.regl.frame(() => {
-    //       try {
-    //         if (
-    //           this.video.current &&
-    //           this.video.current.videoWidth > 32 &&
-    //           this.video.current.currentTime > 0 &&
-    //           !this.video.current.paused &&
-    //           !this.video.current.ended &&
-    //           this.video.current.readyState > 2
-    //         ) {
-    //           try {
-    //             texture = texture.subimage(this.video.current);
-    //           } catch {}
-    //         } else if (!texture && this.regl) {
-    //           texture = this.regl.texture();
-    //         }
-    //       } catch (ex) {
-    //         if (this.regl) texture = this.regl.texture();
-    //         console.warn(ex);
-    //       }
-    //       for (
-    //         let index = this.boxes.length;
-    //         index < (this.props.settings?.maxBoxes || 10) * 4;
-    //         index++
-    //       ) {
-    //         this.boxes.push(-50);
-    //       }
-    //       try {
-    //         if (this.regl)
-    //           drawFrame({
-    //             videoT1: texture,
-    //           });
-    //       } catch {
-    //         if (this.videoAnimate) {
-    //           try {
-    //             this.videoAnimate.cancel();
-    //           } catch (ex: any) {
-    //             console.warn(`Prevented unhandled exception: ${ex?.message}`);
-    //           }
-    //         }
-    //       }
-    //     });
-    //     this.yoloAnimationFrame(0);
-    //   }
-    // }
+      if (this.regl) {
+        texture = this.regl.texture(this.video.current);
+        this.videoAnimate = this.regl.frame(() => {
+          try {
+            if (
+              this.video.current &&
+              this.video.current.videoWidth > 32 &&
+              this.video.current.currentTime > 0 &&
+              !this.video.current.paused &&
+              !this.video.current.ended &&
+              this.video.current.readyState > 2
+            ) {
+              try {
+                texture = texture.subimage(this.video.current);
+              } catch {}
+            } else if (!texture && this.regl) {
+              texture = this.regl.texture();
+            }
+          } catch (ex) {
+            if (this.regl) texture = this.regl.texture();
+            console.warn(ex);
+          }
+          for (
+            let index = this.boxes.length;
+            index < (this.props.settings?.maxBoxes || 10) * 4;
+            index++
+          ) {
+            this.boxes.push(-50);
+          }
+          try {
+            if (this.regl)
+              drawFrame({
+                videoT1: texture,
+              });
+          } catch {
+            if (this.videoAnimate) {
+              try {
+                this.videoAnimate.cancel();
+              } catch (ex: any) {
+                console.warn(`Prevented unhandled exception: ${ex?.message}`);
+              }
+            }
+          }
+        });
+        this.yoloAnimationFrame(0);
+      }
+    }
   }
 
   last = 0;
@@ -251,7 +251,7 @@ export default class VideoPlayer extends Component<Props, State> {
     let timeInSecond = timeStamp / 1000;
 
     if (timeInSecond - this.last >= this.speed) {
-      if (this.canvas.current && this.video.current) {
+      if (this.video.current) {
         const boxes = await this.yoloDetect.predict(this.video.current);
         // const boxes = await this.yoloDetect(this.video.current);
 
@@ -259,12 +259,13 @@ export default class VideoPlayer extends Component<Props, State> {
           .map((x) => [
             x.left,
             x.top,
-            (this.canvas.current?.width || 0) - x.right,
-            (this.canvas.current?.height || 0) - x.bottom,
+            (this.video.current?.videoWidth || 0) - x.right,
+            (this.video.current?.videoHeight || 0) - x.bottom,
           ])
           .flat();
         // console.log(boxes);
-        this.setState({ boxes });
+        // this.boxes = boxes;
+        // this.setState({ boxes });
       }
       this.last = timeInSecond;
     }
@@ -275,7 +276,20 @@ export default class VideoPlayer extends Component<Props, State> {
 
   render() {
     return (
-      <div style={{ position: 'relative' }}>
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          alignSelf: 'center',
+          alignContent: 'center',
+        }}
+      >
         {!this.state.loaded ? (
           <div
             style={{
@@ -294,12 +308,14 @@ export default class VideoPlayer extends Component<Props, State> {
         <canvas
           ref={this.canvas}
           style={{
-            width: '100%',
-            height: 0,
-            display: 'none',
+            width: 'auto',
+            height: 'auto',
+            maxWidth: '100%',
+            maxHeight: '100%',
+            margin: 'auto',
           }}
         ></canvas>
-        {this.state.boxes.map((x, i) => {
+        {/* {this.state.boxes.map((x, i) => {
           const v = this.video.current?.getBoundingClientRect();
           const vWidth = this.video.current?.videoWidth;
           const vHeight = this.video.current?.videoHeight;
@@ -316,13 +332,15 @@ export default class VideoPlayer extends Component<Props, State> {
               }}
             ></div>
           );
-        })}
+        })} */}
 
         <video
           autoPlay
           controls={false}
           style={{
-            width: '100%',
+            width: 0,
+            visibility: 'hidden',
+            height: 0,
           }}
           ref={this.video}
           onPlay={this.handleVideoPlay}
