@@ -4,17 +4,18 @@ import {
   ArrowDownward,
   ArrowForward,
   ArrowUpward,
+  AspectRatio,
+  PanoramaHorizontal,
+  PanoramaVertical,
   Remove,
-  Save,
   Settings,
+  Visibility,
   ZoomIn,
   ZoomOut,
 } from '@mui/icons-material';
 import {
-  Button,
-  ButtonGroup,
-  Container,
   Slider,
+  SliderValueLabel,
   SpeedDial,
   SpeedDialAction,
 } from '@mui/material';
@@ -24,9 +25,11 @@ import { CameraService } from '../../services/CameraService';
 
 type Props = {
   camera?: Camera;
-  onSetTolerance: (tolerance) => Promise<void>;
-  onSavePosition: (position) => Promise<void>;
-  onFocalChange: (val) => void;
+  showPanorama?: boolean;
+  panorama?: any;
+  onSetTolerance?: (tolerance) => Promise<void>;
+  onSavePosition?: (position) => Promise<void>;
+  onFocalChange?: (val) => void;
 };
 
 type State = {
@@ -86,6 +89,7 @@ export default class CameraController extends Component<Props, State> {
     const maxY = parseFloat(ptzLimits?.Range.YRange.Max);
     const minZoom = parseFloat(zoomLimits?.Range.XRange.Min);
     const maxZoom = parseFloat(zoomLimits?.Range.XRange.Max);
+    console.log(this.props.panorama);
     this.setState({
       ptzLimits: {
         x: {
@@ -102,6 +106,7 @@ export default class CameraController extends Component<Props, State> {
         max: isNaN(maxZoom) ? 1 : maxZoom,
       },
       velocity: this.props.camera?.position || { x: 0, y: 0, z: 0 },
+      focal: this.props.panorama || { x: 0.0, y: 0.0, scale: 1.0 },
     });
   }
 
@@ -409,174 +414,107 @@ export default class CameraController extends Component<Props, State> {
             />
           </SpeedDial>
         )}
-        {/* <div
-          style={
-            {
-              // display: this.state.showSaveSettings ? 'block' : 'none',
-            }
-          }
-        >
-          <ButtonGroup
-            variant="contained"
-            aria-label="outlined primary button group"
-          >
-            <Button
-              onClick={async () => {
-                this.props.camera?.position;
-                if (this.props.onSavePosition) {
-                  await this.props.onSavePosition(this.state.velocity);
-                }
-              }}
-            >
-              <Save />
-              Orgin
-            </Button>
-            <Button
-              onClick={async () => {
-                // if (this.props.camera) {
-                //   let tolerance = this.props.camera.tolerance;
-                //   if (!tolerance) {
-                //     tolerance = {
-                //       x: { max: 0, min: 0 },
-                //       y: { max: 0, min: 0 },
-                //     };
-                //   }
-                //   tolerance.x.min = this.state.velocity?.x;
-                //   tolerance.y.min = this.state.velocity?.y;
-                //   if (this.props.onSetTolerance) {
-                //     await this.props.onSetTolerance(tolerance);
-                //   }
-                // }
-              }}
-            >
-              <Save></Save>
-              <label>X</label>
-              <label
-                style={{
-                  fontSize: 12,
-                  verticalAlign: 'sub',
-                  height: 10,
-                }}
-              >
-                0
-              </label>
-              <label>Y</label>
-              <label
-                style={{
-                  fontSize: 12,
-                  verticalAlign: 'sub',
-                  height: 10,
-                }}
-              >
-                0
-              </label>
-            </Button>
-            <Button
-              onClick={async () => {
-                // if (this.props.camera) {
-                //   let tolerance = this.props.camera.tolerance;
-                //   if (!tolerance) {
-                //     tolerance = {
-                //       x: { max: 0, min: 0 },
-                //       y: { max: 0, min: 0 },
-                //     };
-                //   }
+        {this.props.showPanorama ? (
+          <SpeedDial
+            style={{
+              position: 'absolute',
+              zIndex: 9999,
+              right: 20,
+              bottom: 120,
+            }}
+            ariaLabel="Optik"
+            open={true}
+            // open={this.state.showMenu || false}
 
-                //   tolerance.x.max = this.state.velocity?.x;
-                //   tolerance.y.max = this.state.velocity?.y;
-                //   if (this.props.onSetTolerance) {
-                //     await this.props.onSetTolerance(tolerance);
-                //   }
-                // }
-              }}
-            >
-              <Save></Save>
-              <label>X</label>
-              <label
-                style={{
-                  fontSize: 12,
-                  verticalAlign: 'sub',
-                  height: 10,
-                }}
-              >
-                1
-              </label>
-              <label>Y</label>
-              <label
-                style={{
-                  fontSize: 12,
-                  verticalAlign: 'sub',
-                  height: 10,
-                }}
-              >
-                1
-              </label>
-            </Button>
-          </ButtonGroup>
-          <Container>
-            <div>
-              X:{this.state.velocity?.x} Y:{this.state.velocity?.y} Z:
-              {this.state.velocity?.z} Step:{this.state.step}
-            </div>
-            <div>
-              <Slider
-                size="small"
-                defaultValue={0.0}
-                max={2.0}
-                min={-2.0}
-                step={0.05}
-                aria-label="Small"
-                valueLabelDisplay="auto"
-                onChange={(ev, val) => {
-                  const { focal } = this.state;
-                  focal.x = val as number;
-                  this.setState({ focal });
-                  if (this.props.onFocalChange) {
-                    this.props.onFocalChange(focal);
-                  }
-                }}
-              />
-            </div>
-            <div>
-              <Slider
-                size="small"
-                defaultValue={0.0}
-                max={2.0}
-                min={-2.0}
-                step={0.05}
-                aria-label="Small"
-                valueLabelDisplay="auto"
-                onChange={(ev, val) => {
-                  const { focal } = this.state;
-                  focal.y = val as number;
-                  this.setState({ focal });
-                  if (this.props.onFocalChange) {
-                    this.props.onFocalChange(focal);
-                  }
-                }}
-              />
-            </div>
-            <div>
-              <Slider
-                size="small"
-                defaultValue={1.0}
-                max={2.0}
-                min={0.0}
-                step={0.05}
-                aria-label="Small"
-                valueLabelDisplay="auto"
-                onChange={(ev, val) => {
-                  const { focal } = this.state;
-                  focal.scale = val as number;
-                  this.setState({ focal });
-                  if (this.props.onFocalChange) {
-                    this.props.onFocalChange(focal);
-                  }
-                }}
-              />
-            </div>
-          </Container>
-        </div> */}
+            icon={<Visibility />}
+            onClose={() => {
+              this.setState({ showMenu: false });
+            }}
+            onOpen={() => {
+              this.setState({ showMenu: true });
+            }}
+            direction={'up'}
+          >
+            <SpeedDialAction
+              icon={<PanoramaHorizontal />}
+              style={{ margin: '12px 0px' }}
+              tooltipTitle={
+                <Slider
+                  style={{ width: 200 }}
+                  size="small"
+                  value={this.state.focal.x}
+                  max={2.0}
+                  min={-2.0}
+                  step={0.01}
+                  valueLabelDisplay="on"
+                  onChange={(ev, val) => {
+                    const { focal } = this.state;
+                    focal.x = val as number;
+                    this.setState({ focal });
+                    if (this.props.onFocalChange) {
+                      this.props.onFocalChange(focal);
+                    }
+                  }}
+                />
+              }
+              tooltipOpen={true}
+              open={true}
+              onClick={async () => {}}
+            />
+            <SpeedDialAction
+              icon={<PanoramaVertical />}
+              style={{ margin: '12px 0px' }}
+              tooltipTitle={
+                <Slider
+                  style={{ width: 200 }}
+                  size="small"
+                  value={this.state.focal.y}
+                  max={2.0}
+                  min={-2.0}
+                  step={0.01}
+                  valueLabelDisplay="on"
+                  onChange={(ev, val) => {
+                    const { focal } = this.state;
+                    focal.y = val as number;
+                    this.setState({ focal });
+                    if (this.props.onFocalChange) {
+                      this.props.onFocalChange(focal);
+                    }
+                  }}
+                />
+              }
+              tooltipOpen={true}
+              open={true}
+              onClick={async () => {}}
+            />
+            <SpeedDialAction
+              icon={<AspectRatio />}
+              style={{ margin: '12px 0px' }}
+              tooltipTitle={
+                <Slider
+                  style={{ width: 200 }}
+                  size="small"
+                  value={this.state.focal.scale}
+                  max={2.0}
+                  min={0.0}
+                  step={0.01}
+                  valueLabelDisplay="on"
+                  onChange={(ev, val) => {
+                    const { focal } = this.state;
+                    focal.scale = val as number;
+                    this.setState({ focal });
+                    if (this.props.onFocalChange) {
+                      this.props.onFocalChange(focal);
+                    }
+                  }}
+                />
+              }
+              tooltipOpen={true}
+              open={true}
+              onClick={async () => {}}
+            />
+          </SpeedDial>
+        ) : null}
       </>
     );
   }

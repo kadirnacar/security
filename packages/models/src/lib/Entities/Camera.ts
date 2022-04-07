@@ -15,4 +15,5 @@ export interface Camera {
   position?: { x: number; y: number; z: number };
   cameras?: { camId: string; tolerance?: ITolerance }[];
   camInfo?: any;
+  panorama?: { x: number; y: number; scale: number };
 }

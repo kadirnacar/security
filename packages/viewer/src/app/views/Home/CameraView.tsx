@@ -15,7 +15,7 @@ interface State {
   streamSource?: MediaStream;
   loaded: boolean;
   playing: boolean;
-  focal: any;
+  focal?: any;
 }
 
 type Props = {
@@ -24,6 +24,7 @@ type Props = {
   Data?: DataState;
   settings: Settings;
   hideControls?: boolean;
+  showPanorama?: boolean;
 };
 
 class CameraView extends Component<Props, State> {
@@ -57,6 +58,7 @@ class CameraView extends Component<Props, State> {
 
     this.setState({
       loaded: true,
+      focal: this.props.camera?.panorama || { x: 0, y: 0, scale: 1 },
     });
   }
 
@@ -127,9 +129,15 @@ class CameraView extends Component<Props, State> {
             />
             {!this.props.hideControls ? (
               <CameraController
-                onFocalChange={(val) => {
+                onFocalChange={async (val) => {
                   this.setState({ focal: val });
+                  await this.props.DataActions?.updateItem('Camera', {
+                    id: this.props.camera?.id,
+                    panorama: val,
+                  });
                 }}
+                panorama={this.state.focal}
+                showPanorama={this.props.showPanorama}
                 camera={this.props.camera}
                 onSavePosition={async (position) => {
                   await this.props.DataActions?.updateItem('Camera', {

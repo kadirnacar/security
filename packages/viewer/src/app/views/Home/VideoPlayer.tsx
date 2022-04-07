@@ -251,8 +251,8 @@ export default class VideoPlayer extends Component<Props, State> {
     let timeInSecond = timeStamp / 1000;
 
     if (timeInSecond - this.last >= this.speed) {
-      if (this.video.current) {
-        const boxes = await this.yoloDetect.predict(this.video.current);
+      if (this.canvas.current) {
+        const boxes = await this.yoloDetect.predict(this.canvas.current);
         // const boxes = await this.yoloDetect(this.video.current);
 
         this.boxes = boxes

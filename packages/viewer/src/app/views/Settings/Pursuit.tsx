@@ -45,7 +45,7 @@ class Pursuit extends Component<Props, State> {
   }
 
   async componentDidMount() {
-    await this.props.DataActions?.getItem('Settings')
+    await this.props.DataActions?.getItem('Settings');
   }
 
   render() {

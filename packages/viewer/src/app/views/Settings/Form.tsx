@@ -260,6 +260,7 @@ class Form extends Component<Props & WithRouter, State> {
                 <CameraView
                   camera={this.state.camera}
                   hideControls={false}
+                  showPanorama={true}
                   settings={this.props.Data?.Settings.CurrentItem}
                 />
               </CardContent>
