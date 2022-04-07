@@ -35,15 +35,15 @@ vec4 draw_rect(in vec2 bottomLeft, in vec2 topRight, in float lineWidth, in vec2
     vec2 lineWidth_ = vec2(lineWidth / resolution.x, lineWidth / resolution.y);
 
     vec2 topRight_ = topRight; //vec2(1.0) - topRight;
-    
+
     vec2 leftBottom = smoothstep(bottomLeft, bottomLeft + lineWidth_, texCoord);
     vec2 rightTop = smoothstep(topRight_, topRight_ + lineWidth_, 1.0 - texCoord);
-    
+
     vec2 leftBottomInside = smoothstep(bottomLeft - lineWidth_, bottomLeft , texCoord);
-    vec2 rightTopInside = smoothstep(topRight_ - lineWidth_, topRight_, 1.0 - texCoord);  
-    
-    float pctOuter = leftBottom.x * rightTop.x * leftBottom.y * rightTop.y; 
-    float pctInside = leftBottomInside.x * rightTopInside.x * leftBottomInside.y * rightTopInside.y; 
+    vec2 rightTopInside = smoothstep(topRight_ - lineWidth_, topRight_, 1.0 - texCoord);
+
+    float pctOuter = leftBottom.x * rightTop.x * leftBottom.y * rightTop.y;
+    float pctInside = leftBottomInside.x * rightTopInside.x * leftBottomInside.y * rightTopInside.y;
 
     float pct = pctInside - pctOuter;
     vec4 finalColor = mix(Mon, boxColor,  pct * boxColor.a);
@@ -66,13 +66,13 @@ void main() {
   vec4 MonA = texture2D(uSampler, vMapping);
 
   for (int i = 0; i < 10; i++) {
-  
+
     float pH = box[i].x / resolution.x;
     float pV = box[i].y / resolution.y;
-  
+
     float pH1 = box[i].z / resolution.x;
     float pV1 = box[i].w / resolution.y;
-  
+
     MonA = draw_rect(vec2(pH, pV), vec2(pH1, pV1), 10.0, uv, MonA);
   }
 
@@ -114,6 +114,7 @@ export default class VideoPlayer extends Component<Props, State> {
   canvas: React.RefObject<HTMLCanvasElement>;
   regl?: REGL.Regl;
   videoAnimate?: REGL.Cancellable;
+  yoloAnimate?: any;
   yoloDetect?;
   boxes: any[] = [];
   lens = {
@@ -149,8 +150,17 @@ export default class VideoPlayer extends Component<Props, State> {
         console.warn(`Prevented unhandled exception: ${ex?.message}`);
       }
     }
+    if (this.yoloAnimate) {
+      try {
+        cancelAnimationFrame(this.yoloAnimate);
+      } catch (ex: any) {
+        console.warn(`Prevented unhandled exception: ${ex?.message}`);
+      }
+    }
   }
+
   l = false;
+
   handleVideoPlay() {
     // if (!this.l) {
     //   this.l = true;
@@ -195,6 +205,7 @@ export default class VideoPlayer extends Component<Props, State> {
 
       if (this.regl) {
         texture = this.regl.texture(this.video.current);
+
         this.videoAnimate = this.regl.frame(() => {
           try {
             if (
@@ -215,6 +226,7 @@ export default class VideoPlayer extends Component<Props, State> {
             if (this.regl) texture = this.regl.texture();
             console.warn(ex);
           }
+
           for (
             let index = this.boxes.length;
             index < (this.props.settings?.maxBoxes || 10) * 4;
@@ -222,11 +234,13 @@ export default class VideoPlayer extends Component<Props, State> {
           ) {
             this.boxes.push(-50);
           }
+
           try {
             if (this.regl)
               drawFrame({
                 videoT1: texture,
               });
+            // await this.yoloAnimationFrame(0);
           } catch {
             if (this.videoAnimate) {
               try {
@@ -237,7 +251,7 @@ export default class VideoPlayer extends Component<Props, State> {
             }
           }
         });
-        this.yoloAnimationFrame(0);
+        this.yoloAnimate = requestAnimationFrame(this.yoloAnimationFrame);
       }
     }
   }
@@ -246,32 +260,89 @@ export default class VideoPlayer extends Component<Props, State> {
   num = 0;
   speed = 0.5;
   isStop = false;
+  cachedBoxes: any[] = [];
+
+  intersect(boxA, boxB) {
+    const xA = Math.max(boxA.left, boxB.left);
+    const yA = Math.max(boxA.top, boxB.top);
+    const xB = Math.min(boxA.right, boxB.right);
+    const yB = Math.min(boxA.bottom, boxB.bottom);
+
+    const interArea = Math.max(0, xB - xA + 1) * Math.max(0, yB - yA + 1);
+
+    const boxAArea =
+      (boxA.right - boxA.left + 1) * (boxA.bottom - boxA.top + 1);
+
+    return interArea / boxAArea;
+    // const xA = Math.max(boxA[0], boxB[0]);
+    // const yA = Math.max(boxA[1], boxB[1]);
+    // const xB = Math.min(boxA[2], boxB[2]);
+    // const yB = Math.min(boxA[3], boxB[3]);
+
+    // const interArea = Math.max(0, xB - xA + 1) * Math.max(0, yB - yA + 1);
+
+    // const boxAArea = (boxA[2] - boxA[0] + 1) * (boxA[3] - boxA[1] + 1);
+
+    // return interArea / boxAArea;
+  }
+
+  chunkArray(arr, chunkSize) {
+    return [].concat.apply(
+      [],
+      arr.map(function (elem, i) {
+        return i % chunkSize ? [] : [arr.slice(i, i + chunkSize)];
+      })
+    );
+  }
 
   async yoloAnimationFrame(timeStamp) {
     let timeInSecond = timeStamp / 1000;
-
-    if (timeInSecond - this.last >= this.speed) {
-      if (this.canvas.current) {
-        const boxes = await this.yoloDetect.predict(this.canvas.current);
-        // const boxes = await this.yoloDetect(this.video.current);
-
+    // if (timeInSecond - this.last >= this.speed) {
+    if (this.canvas.current) {
+      // const boxes = await this.yoloDetect.predict(this.canvas.current);
+      this.yoloDetect.predict(this.canvas.current).then((boxes) => {
         this.boxes = boxes
           .map((x) => [
             x.left,
             x.top,
+            // x.right,
+            // x.bottom
             (this.video.current?.videoWidth || 0) - x.right,
             (this.video.current?.videoHeight || 0) - x.bottom,
           ])
           .flat();
+        if (boxes.length > 0) {
+          boxes.forEach((x) => {
+            // const pert = this.intersect(x, boxes[0]);
+            let res = 0;
+            const d = this.cachedBoxes.findIndex((y) => {
+              res = this.intersect(x, y);
+              // console.log(res, y);
+              return res > 0.7;
+            });
+            if (d == -1) {
+              this.cachedBoxes.push(x);
+            } else {
+              this.cachedBoxes[d] = x;
+            }
+            // if (pert < 0.7) {
+            //   this.cachedBoxes.push(x);
+            // }
+            console.log(res, this.cachedBoxes);
+          });
+          // this.cachedBoxes = boxes;
+        }
         // console.log(boxes);
-        // this.boxes = boxes;
-        // this.setState({ boxes });
-      }
+      });
+      // const boxes = await this.yoloDetect(this.video.current);
+
+      // this.boxes = boxes;
+      // this.setState({ boxes });
+      // }
       this.last = timeInSecond;
     }
+    this.yoloAnimate = requestAnimationFrame(this.yoloAnimationFrame);
     // console.log(timeStamp);
-
-    requestAnimationFrame(this.yoloAnimationFrame);
   }
 
   render() {

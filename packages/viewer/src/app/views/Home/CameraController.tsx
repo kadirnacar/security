@@ -89,7 +89,7 @@ export default class CameraController extends Component<Props, State> {
     const maxY = parseFloat(ptzLimits?.Range.YRange.Max);
     const minZoom = parseFloat(zoomLimits?.Range.XRange.Min);
     const maxZoom = parseFloat(zoomLimits?.Range.XRange.Max);
-    console.log(this.props.panorama);
+    console.log(this.props.camera?.position);
     this.setState({
       ptzLimits: {
         x: {
