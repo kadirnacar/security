@@ -3,6 +3,7 @@ import { Camera, Settings } from '@security/models';
 import React, { Component } from 'react';
 import REGL from 'regl';
 import yolo from 'tfjs-yolo';
+import cv from 'opencv.js';
 
 let vert = `
 precision mediump float;
@@ -82,7 +83,7 @@ void main() {
 }
 `;
 
-interface IGlRect {
+export interface IGlRect {
   left: number;
   right: number;
   top: number;
@@ -95,6 +96,7 @@ type Props = {
   settings?: Settings;
   focal?: any;
   activateDetection?: boolean;
+  onDrawRect?: (rect: IGlRect, canvas: HTMLCanvasElement) => void;
 };
 
 type State = {
@@ -129,6 +131,7 @@ export default class VideoPlayer extends Component<Props, State> {
   boxes: IGlRect[] = [];
   drawingRect?: IGlRect;
   drawRects: IGlRect[] = [];
+  isDrawing: boolean = false;
 
   lens = {
     a: 1.0,
@@ -440,10 +443,10 @@ export default class VideoPlayer extends Component<Props, State> {
               };
               this.drawingRect = drawingRect;
             }
+            this.isDrawing = true;
           }}
           onPointerUp={(ev) => {
-            if (this.canvas.current) {
-
+            if (this.canvas.current && this.video.current) {
               if (this.drawingRect) {
                 const box = (ev.target as HTMLElement).getBoundingClientRect();
                 const ratioX = this.canvas.current?.width / box.width;
@@ -454,13 +457,83 @@ export default class VideoPlayer extends Component<Props, State> {
                 const d = this.drawingRect || {};
                 d.right = right;
                 d.bottom = bottom;
-                this.drawRects.push(d);
+                // this.drawRects.push(d);
                 this.drawingRect = undefined;
+
+                let canvas = document.createElement('canvas');
+                let canvasOrj = document.createElement('canvas');
+
+                canvasOrj.width = this.canvas.current.width;
+                canvasOrj.height = this.canvas.current.height;
+
+                canvas.width = d.right - d.left;
+                canvas.height = d.bottom - d.top;
+
+                let ctx = canvas.getContext('2d');
+                let ctxOrj = canvasOrj.getContext('2d');
+
+                if (ctx) {
+                  ctx.drawImage(
+                    this.video.current,
+                    d.left,
+                    d.top,
+                    canvas.width,
+                    canvas.height,
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                  );
+                }
+
+                if (ctxOrj) {
+                  ctxOrj.drawImage(
+                    this.video.current,
+                    0,
+                    0,
+                    canvasOrj.width,
+                    canvasOrj.height
+                  );
+                }
+
+                let src: any = cv.imread(canvasOrj);
+                let templ = cv.imread(canvas);
+                // let dst = new cv.Mat();
+
+                let result_cols = src.cols - templ.cols + 1;
+                let result_rows = src.rows - templ.rows + 1;
+
+                var dst = new cv.Mat(result_cols, result_rows, cv.CV_32FC1);
+                let mask = new cv.Mat();
+
+                cv.matchTemplate(src, templ, dst, cv.TM_CCORR_NORMED, mask);
+                cv.normalize(dst, dst, 0, 1, cv.NORM_MINMAX, -1, new cv.Mat());
+
+                let result = cv.minMaxLoc(dst, mask);
+
+                let maxPoint = result.maxLoc;
+                let color = new cv.Scalar(255, 0, 0, 255);
+
+                let point = new cv.Point(
+                  maxPoint.x + templ.cols,
+                  maxPoint.y + templ.rows
+                );
+                cv.rectangle(src, maxPoint, point, color, 2, cv.LINE_8, 0);
+                console.log(maxPoint, point, d);
+                // cv.imshow('canvasOutput', src);
+
+                src.delete();
+                mask.delete();
+
+                if (this.props.onDrawRect) {
+                  this.props.onDrawRect(d, canvas);
+                }
               }
             }
+            this.isDrawing = false;
           }}
           onPointerMove={(ev) => {
-            if (this.canvas.current) {
+            if (this.canvas.current && this.isDrawing) {
               if (this.drawingRect) {
                 const box = (ev.target as HTMLElement).getBoundingClientRect();
                 const ratioX = this.canvas.current?.width / box.width;

@@ -263,6 +263,7 @@ class Form extends Component<Props & WithRouter, State> {
                   showPtz={this.state.camera?.isPtz}
                   showPanorama={!this.state.camera?.isPtz}
                   settings={this.props.Data?.Settings.CurrentItem}
+                  
                 />
               </CardContent>
             </Collapse>

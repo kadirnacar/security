@@ -14,6 +14,7 @@
         "main": "packages/viewer/src/main.tsx",
         "polyfills": "packages/viewer/src/polyfills.ts",
         "tsConfig": "packages/viewer/tsconfig.app.json",
+        "webpackConfig": "packages/viewer/webpack.config.js",
         "assets": [
           "packages/viewer/src/favicon.ico",
           "packages/viewer/src/assets"
@@ -40,7 +41,6 @@
     },
     "serve": {
       "executor": "@nrwl/web:dev-server",
-      "webpackConfig":"",
       "options": {
         "buildTarget": "viewer:build",
         "proxyConfig": "packages/viewer/proxy.conf.json",

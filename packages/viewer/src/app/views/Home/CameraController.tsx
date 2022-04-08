@@ -1,4 +1,5 @@
 import {
+  Delete,
   HighlightAlt,
   PanoramaHorizontal,
   Photo,
@@ -19,11 +20,15 @@ import {
 } from '@mui/material';
 import { Camera } from '@security/models';
 import React, { Component } from 'react';
+import { IGlRect } from './VideoPlayer';
 
 type Props = {
   camera?: Camera;
   panorama?: any;
   onFocalChange?: (val) => void;
+  onClearImages?: () => void;
+  onClickImage?: (item) => void;
+  images?: { rect: IGlRect; canvas: HTMLCanvasElement }[];
 };
 
 type State = {
@@ -71,7 +76,9 @@ export default class CameraController extends Component<Props, State> {
     });
   }
 
-  handlePhoto() {}
+  handlePhoto(item) {
+    console.log(item)
+  }
 
   render() {
     return (
@@ -89,29 +96,29 @@ export default class CameraController extends Component<Props, State> {
           </Tabs>
         </Box>
         <TabPanel value={this.state.activeTab} index={0}>
-          <IconButton title="Çek" onClick={this.handlePhoto}>
-            <Photo />
+          <IconButton title="Çek" onClick={this.props.onClearImages}>
+            <Delete />
           </IconButton>
 
-          <ImageList cols={3} rowHeight={164}>
-            <ImageListItem>
-              <img
-                // src={`${item.img}?w=164&h=164&fit=crop&auto=format`}
-                // srcSet={`${item.img}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
-                // alt={item.title}
-                loading="lazy"
-              />
-            </ImageListItem>
-            {/* {itemData.map((item) => (
-              <ImageListItem key={item.img}>
+          <ImageList cols={3} variant="masonry">
+            {this.props.images ? (
+              this.props.images?.map((item, index) => (
+                <ImageListItem key={index}>
+                  <img
+                    src={item.canvas.toDataURL()}
+                    // srcSet={`${item.img}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
+                    // alt={item.title}
+                    loading="lazy"
+                  />
+                </ImageListItem>
+              ))
+            ) : (
+              <ImageListItem>
                 <img
-                  src={`${item.img}?w=164&h=164&fit=crop&auto=format`}
-                  srcSet={`${item.img}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
-                  alt={item.title}
                   loading="lazy"
                 />
               </ImageListItem>
-            ))} */}
+            )}
           </ImageList>
         </TabPanel>
         <TabPanel value={this.state.activeTab} index={1}>

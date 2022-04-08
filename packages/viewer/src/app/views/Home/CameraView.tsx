@@ -10,13 +10,14 @@ import { CameraService } from '../../services/CameraService';
 import { ApplicationState } from '../../store';
 import CameraController from './CameraController';
 import PtzController from './PtzController';
-import VideoPlayer from './VideoPlayer';
+import VideoPlayer, { IGlRect } from './VideoPlayer';
 
 interface State {
   streamSource?: MediaStream;
   loaded: boolean;
   playing: boolean;
   focal?: any;
+  images: { rect: IGlRect; canvas: HTMLCanvasElement }[];
 }
 
 type Props = {
@@ -26,6 +27,7 @@ type Props = {
   settings: Settings;
   hideControls?: boolean;
   showPtz?: boolean;
+  onDrawRect?: (rect: IGlRect, canvas: HTMLCanvasElement) => void;
 };
 
 class CameraView extends Component<Props, State> {
@@ -38,6 +40,7 @@ class CameraView extends Component<Props, State> {
       loaded: false,
       playing: false,
       focal: { x: 0, y: 0, scale: 1 },
+      images: [],
     };
   }
 
@@ -127,6 +130,10 @@ class CameraView extends Component<Props, State> {
                       panorama: val,
                     });
                   }}
+                  onClearImages={() => {
+                    this.setState({ images: [] });
+                  }}
+                  images={this.state.images}
                   panorama={this.state.focal}
                   camera={this.props.camera}
                   // onSavePosition={async (position) => {
@@ -176,6 +183,14 @@ class CameraView extends Component<Props, State> {
                 camera={this.props.camera}
                 settings={this.props.Data?.Settings.CurrentItem}
                 focal={this.state.focal}
+                onDrawRect={(rect, canvas) => {
+                  const { images } = this.state;
+                  images.push({ canvas: canvas, rect: rect });
+                  this.setState({ images });
+                  if (this.props.onDrawRect) {
+                    this.props.onDrawRect(rect, canvas);
+                  }
+                }}
               />
               {this.props.showPtz ? (
                 <PtzController camera={this.props.camera}></PtzController>
