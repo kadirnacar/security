@@ -24,6 +24,8 @@ uniform vec2 uLensF;
 uniform vec2 resolution;
 uniform vec4 box[${boxNum}];
 uniform vec4 boxColor;
+uniform vec4 iMouse;
+uniform float showSplitter;
 
 
 vec2 GLCoord2TextureCoord(vec2 glCoord) {
@@ -65,7 +67,7 @@ void main() {
 
   vec4 MonA = texture2D(uSampler, vMapping);
 
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < ${boxNum}; i++) {
 
     float pH = box[i].x / resolution.x;
     float pV = box[i].y / resolution.y;
@@ -75,16 +77,24 @@ void main() {
 
     MonA = draw_rect(vec2(pH, pV), vec2(pH1, pV1), 10.0, uv, MonA);
   }
-
+  
   gl_FragColor = MonA;
 }
 `;
+
+interface IGlRect {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
 
 type Props = {
   stream?: MediaStream;
   camera?: Camera;
   settings?: Settings;
   focal?: any;
+  activateDetection?: boolean;
 };
 
 type State = {
@@ -116,7 +126,10 @@ export default class VideoPlayer extends Component<Props, State> {
   videoAnimate?: REGL.Cancellable;
   yoloAnimate?: any;
   yoloDetect?;
-  boxes: any[] = [];
+  boxes: IGlRect[] = [];
+  drawingRect?: IGlRect;
+  drawRects: IGlRect[] = [];
+
   lens = {
     a: 1.0,
     b: 1.0,
@@ -126,16 +139,21 @@ export default class VideoPlayer extends Component<Props, State> {
   };
 
   async componentDidMount() {
-    this.yoloDetect = await yolo.v3('model/v3/model.json');
+    if (this.props.activateDetection) {
+      this.yoloDetect = await yolo.v3('model/v3/model.json');
+    }
     // this.yoloDetect = await yolo.v3tiny('model/v3tiny/model.json');
     // this.yoloDetect = await yolov3({ modelUrl: 'model/yolov3/model.json' });
     this.speed = this.props.settings?.framePerSecond || 0.5;
     this.setState({ loaded: true });
   }
 
-  componentDidUpdate(prevProp, prevState) {
+  async componentDidUpdate(prevProp, prevState) {
     if (this.video.current && !this.l) {
       this.video.current.srcObject = this.props.stream || null;
+    }
+    if (this.props.activateDetection && !this.yoloDetect) {
+      this.yoloDetect = await yolo.v3('model/v3/model.json');
     }
     this.lens.Fx = this.props.focal.x;
     this.lens.Fy = this.props.focal.y;
@@ -173,6 +191,10 @@ export default class VideoPlayer extends Component<Props, State> {
       this.regl = REGL(this.canvas.current);
       let pos = [-1, -1, 1, -1, -1, 1, 1, 1, -1, 1, 1, -1];
       let texture: REGL.Texture2D;
+      const x = this.canvas.current?.width / 2;
+      const y = this.canvas.current?.height / 2 - 10;
+      const z = this.canvas.current?.width / 2;
+      const w = this.canvas.current?.height / 2;
 
       const drawFrame = this.regl({
         frag: getFragmentScript(this.props.settings?.maxBoxes),
@@ -183,6 +205,12 @@ export default class VideoPlayer extends Component<Props, State> {
         uniforms: {
           uSampler: (ctx, { videoT1 }: any) => {
             return videoT1;
+          },
+          showSplitter: () => {
+            return 0;
+          },
+          iMouse: ({ viewportHeight }) => {
+            return [x, viewportHeight - y, z, viewportHeight - w];
           },
           uLensS: () => {
             return [this.lens.a, this.lens.b, this.lens.scale];
@@ -197,7 +225,46 @@ export default class VideoPlayer extends Component<Props, State> {
             return [1, 0, 0, 1];
           },
           box: () => {
-            return this.boxes;
+            const flatBoxes = this.boxes
+              .map((x) => [
+                x.left,
+                x.top,
+                // x.right,
+                // x.bottom
+                (this.video.current?.videoWidth || 0) - x.right,
+                (this.video.current?.videoHeight || 0) - x.bottom,
+              ])
+              .flat()
+              .concat(
+                this.drawRects
+                  .map((x) => [
+                    x.left,
+                    x.top,
+                    // x.right,
+                    // x.bottom
+                    (this.video.current?.videoWidth || 0) - x.right,
+                    (this.video.current?.videoHeight || 0) - x.bottom,
+                  ])
+                  .flat()
+              );
+            if (this.drawingRect) {
+              flatBoxes.push(this.drawingRect.left);
+              flatBoxes.push(this.drawingRect.top);
+              flatBoxes.push(
+                (this.video.current?.videoWidth || 0) - this.drawingRect.right
+              );
+              flatBoxes.push(
+                (this.video.current?.videoHeight || 0) - this.drawingRect.bottom
+              );
+            }
+            for (
+              let index = flatBoxes.length;
+              index < (this.props.settings?.maxBoxes || 10) * 4;
+              index++
+            ) {
+              flatBoxes.push(-50);
+            }
+            return flatBoxes;
           },
         },
         count: pos.length / 2,
@@ -227,13 +294,13 @@ export default class VideoPlayer extends Component<Props, State> {
             console.warn(ex);
           }
 
-          for (
-            let index = this.boxes.length;
-            index < (this.props.settings?.maxBoxes || 10) * 4;
-            index++
-          ) {
-            this.boxes.push(-50);
-          }
+          // for (
+          //   let index = this.boxes.length;
+          //   index < (this.props.settings?.maxBoxes || 10) * 4;
+          //   index++
+          // ) {
+          //   this.boxes.push(-50);
+          // }
 
           try {
             if (this.regl)
@@ -297,52 +364,24 @@ export default class VideoPlayer extends Component<Props, State> {
 
   async yoloAnimationFrame(timeStamp) {
     let timeInSecond = timeStamp / 1000;
-    // if (timeInSecond - this.last >= this.speed) {
-    if (this.canvas.current) {
-      // const boxes = await this.yoloDetect.predict(this.canvas.current);
-      this.yoloDetect.predict(this.canvas.current).then((boxes) => {
-        this.boxes = boxes
-          .map((x) => [
-            x.left,
-            x.top,
-            // x.right,
-            // x.bottom
-            (this.video.current?.videoWidth || 0) - x.right,
-            (this.video.current?.videoHeight || 0) - x.bottom,
-          ])
-          .flat();
-        if (boxes.length > 0) {
-          boxes.forEach((x) => {
-            // const pert = this.intersect(x, boxes[0]);
-            let res = 0;
-            const d = this.cachedBoxes.findIndex((y) => {
-              res = this.intersect(x, y);
-              // console.log(res, y);
-              return res > 0.7;
-            });
-            if (d == -1) {
-              this.cachedBoxes.push(x);
-            } else {
-              this.cachedBoxes[d] = x;
-            }
-            // if (pert < 0.7) {
-            //   this.cachedBoxes.push(x);
-            // }
-            console.log(res, this.cachedBoxes);
-          });
-          // this.cachedBoxes = boxes;
-        }
-        // console.log(boxes);
-      });
-      // const boxes = await this.yoloDetect(this.video.current);
+    if (timeInSecond - this.last >= this.speed) {
+      if (
+        this.canvas.current &&
+        this.props.activateDetection &&
+        this.yoloDetect
+      ) {
+        // const boxes = await this.yoloDetect.predict(this.canvas.current);
+        this.yoloDetect.predict(this.canvas.current).then((boxes) => {
+          this.boxes = boxes;
+          this.yoloAnimate = requestAnimationFrame(this.yoloAnimationFrame);
+        });
+        // const boxes = await this.yoloDetect(this.video.current);
 
-      // this.boxes = boxes;
-      // this.setState({ boxes });
-      // }
+        // this.boxes = boxes;
+        // this.setState({ boxes });
+      }
       this.last = timeInSecond;
     }
-    this.yoloAnimate = requestAnimationFrame(this.yoloAnimationFrame);
-    // console.log(timeStamp);
   }
 
   render() {
@@ -384,6 +423,57 @@ export default class VideoPlayer extends Component<Props, State> {
             maxWidth: '100%',
             maxHeight: '100%',
             margin: 'auto',
+          }}
+          onPointerDown={(ev) => {
+            if (this.canvas.current) {
+              const box = (ev.target as HTMLElement).getBoundingClientRect();
+              const ratioX = this.canvas.current?.width / box.width;
+              const ratioY = this.canvas.current?.height / box.height;
+              const left = (ev.clientX - box.left) * ratioX;
+              const top = (ev.clientY - box.top) * ratioY;
+
+              let drawingRect: IGlRect = {
+                left: left,
+                top: top,
+                right: left,
+                bottom: top,
+              };
+              this.drawingRect = drawingRect;
+            }
+          }}
+          onPointerUp={(ev) => {
+            if (this.canvas.current) {
+
+              if (this.drawingRect) {
+                const box = (ev.target as HTMLElement).getBoundingClientRect();
+                const ratioX = this.canvas.current?.width / box.width;
+                const ratioY = this.canvas.current?.height / box.height;
+                const right = (ev.clientX - box.left) * ratioX;
+                const bottom = (ev.clientY - box.top) * ratioY;
+
+                const d = this.drawingRect || {};
+                d.right = right;
+                d.bottom = bottom;
+                this.drawRects.push(d);
+                this.drawingRect = undefined;
+              }
+            }
+          }}
+          onPointerMove={(ev) => {
+            if (this.canvas.current) {
+              if (this.drawingRect) {
+                const box = (ev.target as HTMLElement).getBoundingClientRect();
+                const ratioX = this.canvas.current?.width / box.width;
+                const ratioY = this.canvas.current?.height / box.height;
+                const right = (ev.clientX - box.left) * ratioX;
+                const bottom = (ev.clientY - box.top) * ratioY;
+
+                const d = this.drawingRect || {};
+                d.right = right;
+                d.bottom = bottom;
+                this.drawingRect = d;
+              }
+            }
           }}
         ></canvas>
         {/* {this.state.boxes.map((x, i) => {

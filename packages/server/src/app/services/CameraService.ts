@@ -4,10 +4,11 @@ import { URL } from 'url';
 import * as OnvifManager from '../../onvif-nvt/onvif-nvt';
 import Camera = require('../../onvif-nvt/camera');
 import EventEmitter = require('events');
-
+import * as onvif from 'node-onvif';
 export interface IServiceCamera {
   model: CameraModel;
   camera: Camera;
+  nodeCam: any;
 }
 export class CameraService {
   static cameraModels: IServiceCamera[] = [];
@@ -101,7 +102,14 @@ export class CameraService {
       );
 
       if (cam) {
-        const camItem = { model: cameraModel, camera: cam };
+        let device = new onvif.OnvifDevice({
+          xaddr: cam.serviceAddress.href,
+          user: cameraModel.username,
+          pass: cameraModel.password,
+        });
+        await device.init();
+
+        const camItem = { model: cameraModel, camera: cam, nodeCam: device };
         this.cameraModels.push(camItem);
         const rtspReader = new RtspReader();
         this.camStreams[cameraModel.id] = { reader: rtspReader };
@@ -115,6 +123,25 @@ export class CameraService {
   public static getCamera(id: string) {
     const camItem = this.cameraModels.find((x) => x.model && x.model.id == id);
     return camItem;
+  }
+
+  public static async getSnapshot(id: string) {
+    return new Promise((resolve) => {
+      const camItem = this.getCamera(id);
+      if (camItem && camItem.nodeCam) {
+        camItem.nodeCam
+          .fetchSnapshot()
+          .then((res) => {
+            resolve(res.body);
+          })
+          .catch((error) => {
+            console.error(error);
+            resolve(null);
+          });
+      } else {
+        resolve(null);
+      }
+    });
   }
 }
 

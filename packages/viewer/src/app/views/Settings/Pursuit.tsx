@@ -164,7 +164,7 @@ class Pursuit extends Component<Props, State> {
                   {this.state.activePursuit ? (
                     <>
                       <Grid container spacing={2}>
-                        <Grid item xs={6}>
+                        <Grid item xs={12}>
                           <Box
                             sx={{
                               p: 2,
@@ -174,11 +174,12 @@ class Pursuit extends Component<Props, State> {
                           >
                             <CameraView
                               camera={this.state.activeCamera}
-                              hideControls={true}
+                              hideControls={false}
+                              showPanorama={!this.state.activeCamera?.isPtz}
                             />
                           </Box>
                         </Grid>
-                        <Grid item xs={6}>
+                        {/* <Grid item xs={6}>
                           <Box
                             sx={{
                               p: 2,
@@ -192,7 +193,7 @@ class Pursuit extends Component<Props, State> {
                               settings={this.props.Data?.Settings.CurrentItem}
                             />
                           </Box>
-                        </Grid>
+                        </Grid> */}
                       </Grid>
                     </>
                   ) : null}

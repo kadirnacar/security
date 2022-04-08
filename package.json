@@ -57,6 +57,7 @@
     "golang": "^0.1.5-stable",
     "json-to-url": "^1.0.5",
     "lowdb": "^1.0.0",
+    "node-onvif": "^0.1.7",
     "onvif-nvt": "^0.3.3",
     "query-string": "^7.1.1",
     "react": "17.0.2",

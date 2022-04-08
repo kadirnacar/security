@@ -68,6 +68,7 @@ export class CameraRouter {
     try {
       const id = req.params['id'];
       const dataRepo = CameraService.getCamera(id);
+
       res.status(200).send(dataRepo);
     } catch (err) {
       next(err);
@@ -83,11 +84,24 @@ export class CameraRouter {
     }
   }
 
+  public async getSnapshot(req: Request, res: Response, next) {
+    try {
+      const id = req.params['id'];
+      const dataRepo = await CameraService.getSnapshot(id);
+      // res.status(200).send(dataRepo);
+      res.contentType('image/jpeg');
+      res.end(dataRepo, 'binary');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async init() {
     this.router.post('/connect/:id', this.connect.bind(this));
     this.router.post('/disconnect/:id', this.disconnect.bind(this));
     this.router.post('/pos/:id', this.setPos.bind(this));
     this.router.get('/info/:id', this.getCamInfo.bind(this));
+    this.router.get('/snapshot/:id', this.getSnapshot.bind(this));
     this.router.post('/rtspgo/:id', this.rtspgo.bind(this));
   }
 }
