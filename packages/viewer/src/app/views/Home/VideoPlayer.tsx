@@ -1,9 +1,10 @@
 import { CircularProgress } from '@mui/material';
 import { Camera, Settings } from '@security/models';
+import cv from 'opencv.js';
 import React, { Component } from 'react';
 import REGL from 'regl';
 import yolo from 'tfjs-yolo';
-import cv from 'opencv.js';
+import { generateGuid } from '../../utils';
 
 let vert = `
 precision mediump float;
@@ -96,7 +97,9 @@ type Props = {
   settings?: Settings;
   focal?: any;
   activateDetection?: boolean;
-  onDrawRect?: (rect: IGlRect, canvas: HTMLCanvasElement) => void;
+  onDrawRect?: (id: string, rect: IGlRect, canvas: HTMLCanvasElement) => void;
+  searchCanvas?: { id: string; canvas: HTMLCanvasElement };
+  boxes: any[];
 };
 
 type State = {
@@ -113,6 +116,7 @@ export default class VideoPlayer extends Component<Props, State> {
 
     this.video = React.createRef<HTMLVideoElement>();
     this.canvas = React.createRef<HTMLCanvasElement>();
+    this.canvas2 = React.createRef<HTMLCanvasElement>();
     this.image = React.createRef<HTMLImageElement>();
 
     this.state = {
@@ -121,9 +125,15 @@ export default class VideoPlayer extends Component<Props, State> {
     };
   }
 
+  static defaultProps = {
+    boxes: [],
+  };
+
   image: React.RefObject<HTMLImageElement>;
   video: React.RefObject<HTMLVideoElement>;
   canvas: React.RefObject<HTMLCanvasElement>;
+  canvas2: React.RefObject<HTMLCanvasElement>;
+  context2: CanvasRenderingContext2D | null = null;
   regl?: REGL.Regl;
   videoAnimate?: REGL.Cancellable;
   yoloAnimate?: any;
@@ -161,6 +171,46 @@ export default class VideoPlayer extends Component<Props, State> {
     this.lens.Fx = this.props.focal.x;
     this.lens.Fy = this.props.focal.y;
     this.lens.scale = this.props.focal.scale;
+
+    if (this.props.searchCanvas != prevProp.searchCanvas) {
+      if (
+        this.video.current &&
+        this.canvas.current &&
+        this.props.searchCanvas
+      ) {
+        let src: any = cv.imread(this.canvas2.current);
+        let templ = cv.imread(this.props.searchCanvas.canvas);
+
+        let result_cols = src.cols - templ.cols + 1;
+        let result_rows = src.rows - templ.rows + 1;
+
+        var dst = new cv.Mat(result_cols, result_rows, cv.CV_32FC1);
+        let mask = new cv.Mat();
+
+        cv.matchTemplate(src, templ, dst, cv.TM_CCORR_NORMED, mask);
+        cv.normalize(dst, dst, 0, 1, cv.NORM_MINMAX, -1, new cv.Mat());
+
+        let result = cv.minMaxLoc(dst, mask);
+
+        let maxPoint = result.maxLoc;
+        let color = new cv.Scalar(255, 0, 0, 255);
+
+        let point = new cv.Point(
+          maxPoint.x + templ.cols,
+          maxPoint.y + templ.rows
+        );
+        cv.rectangle(src, maxPoint, point, color, 2, cv.LINE_8, 0);
+
+        this.boxes.push({
+          right: point.x,
+          left: maxPoint.x,
+          top: maxPoint.y,
+          bottom: point.y,
+        });
+        src.delete();
+        mask.delete();
+      }
+    }
   }
 
   async componentWillUnmount() {
@@ -232,8 +282,6 @@ export default class VideoPlayer extends Component<Props, State> {
               .map((x) => [
                 x.left,
                 x.top,
-                // x.right,
-                // x.bottom
                 (this.video.current?.videoWidth || 0) - x.right,
                 (this.video.current?.videoHeight || 0) - x.bottom,
               ])
@@ -243,12 +291,20 @@ export default class VideoPlayer extends Component<Props, State> {
                   .map((x) => [
                     x.left,
                     x.top,
-                    // x.right,
-                    // x.bottom
                     (this.video.current?.videoWidth || 0) - x.right,
                     (this.video.current?.videoHeight || 0) - x.bottom,
                   ])
                   .flat()
+                  .concat(
+                    this.props.boxes
+                      .map((x) => [
+                        x.left,
+                        x.top,
+                        (this.video.current?.videoWidth || 0) - x.right,
+                        (this.video.current?.videoHeight || 0) - x.bottom,
+                      ])
+                      .flat()
+                  )
               );
             if (this.drawingRect) {
               flatBoxes.push(this.drawingRect.left);
@@ -297,20 +353,20 @@ export default class VideoPlayer extends Component<Props, State> {
             console.warn(ex);
           }
 
-          // for (
-          //   let index = this.boxes.length;
-          //   index < (this.props.settings?.maxBoxes || 10) * 4;
-          //   index++
-          // ) {
-          //   this.boxes.push(-50);
-          // }
-
           try {
             if (this.regl)
-              drawFrame({
-                videoT1: texture,
-              });
-            // await this.yoloAnimationFrame(0);
+              if (this.context2 && this.video.current && this.canvas.current) {
+                this.context2.drawImage(
+                  this.video.current,
+                  0,
+                  0,
+                  this.canvas.current.width,
+                  this.canvas.current.height
+                );
+              }
+            drawFrame({
+              videoT1: texture,
+            });
           } catch {
             if (this.videoAnimate) {
               try {
@@ -344,16 +400,6 @@ export default class VideoPlayer extends Component<Props, State> {
       (boxA.right - boxA.left + 1) * (boxA.bottom - boxA.top + 1);
 
     return interArea / boxAArea;
-    // const xA = Math.max(boxA[0], boxB[0]);
-    // const yA = Math.max(boxA[1], boxB[1]);
-    // const xB = Math.min(boxA[2], boxB[2]);
-    // const yB = Math.min(boxA[3], boxB[3]);
-
-    // const interArea = Math.max(0, xB - xA + 1) * Math.max(0, yB - yA + 1);
-
-    // const boxAArea = (boxA[2] - boxA[0] + 1) * (boxA[3] - boxA[1] + 1);
-
-    // return interArea / boxAArea;
   }
 
   chunkArray(arr, chunkSize) {
@@ -445,7 +491,7 @@ export default class VideoPlayer extends Component<Props, State> {
             }
             this.isDrawing = true;
           }}
-          onPointerUp={(ev) => {
+          onPointerUp={async (ev) => {
             if (this.canvas.current && this.video.current) {
               if (this.drawingRect) {
                 const box = (ev.target as HTMLElement).getBoundingClientRect();
@@ -461,16 +507,11 @@ export default class VideoPlayer extends Component<Props, State> {
                 this.drawingRect = undefined;
 
                 let canvas = document.createElement('canvas');
-                let canvasOrj = document.createElement('canvas');
-
-                canvasOrj.width = this.canvas.current.width;
-                canvasOrj.height = this.canvas.current.height;
 
                 canvas.width = d.right - d.left;
                 canvas.height = d.bottom - d.top;
 
                 let ctx = canvas.getContext('2d');
-                let ctxOrj = canvasOrj.getContext('2d');
 
                 if (ctx) {
                   ctx.drawImage(
@@ -486,47 +527,9 @@ export default class VideoPlayer extends Component<Props, State> {
                   );
                 }
 
-                if (ctxOrj) {
-                  ctxOrj.drawImage(
-                    this.video.current,
-                    0,
-                    0,
-                    canvasOrj.width,
-                    canvasOrj.height
-                  );
-                }
-
-                let src: any = cv.imread(canvasOrj);
-                let templ = cv.imread(canvas);
-                // let dst = new cv.Mat();
-
-                let result_cols = src.cols - templ.cols + 1;
-                let result_rows = src.rows - templ.rows + 1;
-
-                var dst = new cv.Mat(result_cols, result_rows, cv.CV_32FC1);
-                let mask = new cv.Mat();
-
-                cv.matchTemplate(src, templ, dst, cv.TM_CCORR_NORMED, mask);
-                cv.normalize(dst, dst, 0, 1, cv.NORM_MINMAX, -1, new cv.Mat());
-
-                let result = cv.minMaxLoc(dst, mask);
-
-                let maxPoint = result.maxLoc;
-                let color = new cv.Scalar(255, 0, 0, 255);
-
-                let point = new cv.Point(
-                  maxPoint.x + templ.cols,
-                  maxPoint.y + templ.rows
-                );
-                cv.rectangle(src, maxPoint, point, color, 2, cv.LINE_8, 0);
-                console.log(maxPoint, point, d);
-                // cv.imshow('canvasOutput', src);
-
-                src.delete();
-                mask.delete();
-
                 if (this.props.onDrawRect) {
-                  this.props.onDrawRect(d, canvas);
+                  const id = generateGuid();
+                  await this.props.onDrawRect(id || '', d, canvas);
                 }
               }
             }
@@ -549,24 +552,17 @@ export default class VideoPlayer extends Component<Props, State> {
             }
           }}
         ></canvas>
-        {/* {this.state.boxes.map((x, i) => {
-          const v = this.video.current?.getBoundingClientRect();
-          const vWidth = this.video.current?.videoWidth;
-          const vHeight = this.video.current?.videoHeight;
-          return (
-            <div
-              key={i}
-              style={{
-                border: '2px solid #ff0000',
-                position: 'absolute',
-                top: (x.top * (v?.height || 1)) / (vHeight || 1),
-                left: (x.left * (v?.width || 1)) / (vWidth || 1),
-                width: (x.width * (v?.width || 1)) / (vWidth || 1),
-                height: (x.height * (v?.height || 1)) / (vHeight || 1),
-              }}
-            ></div>
-          );
-        })} */}
+
+        <canvas
+          ref={this.canvas2}
+          style={{
+            width: 'auto',
+            height: 'auto',
+            maxWidth: '100%',
+            maxHeight: '100%',
+            margin: 'auto',
+          }}
+        ></canvas>
 
         <video
           autoPlay
@@ -575,6 +571,9 @@ export default class VideoPlayer extends Component<Props, State> {
             width: 0,
             visibility: 'hidden',
             height: 0,
+            // width: 200,
+            // height: 200,
+            // position: 'absolute',
           }}
           ref={this.video}
           onPlay={this.handleVideoPlay}
@@ -583,6 +582,12 @@ export default class VideoPlayer extends Component<Props, State> {
               if (this.canvas.current && this.video.current) {
                 this.canvas.current.width = this.video.current.videoWidth;
                 this.canvas.current.height = this.video.current.videoHeight;
+              }
+              if (this.canvas2.current && this.video.current) {
+                this.canvas2.current.width = this.video.current.videoWidth;
+                this.canvas2.current.height = this.video.current.videoHeight;
+
+                this.context2 = this.canvas2.current.getContext('2d');
               }
             } catch {}
           }}

@@ -30,18 +30,20 @@ interface State {
   selectCamId?: any;
   activePursuit?: any;
   activeCamera?: Camera;
+  canvases: { id: string; canvas: HTMLCanvasElement }[];
 }
 
 interface Props {
   camera?: Camera;
   DataActions?: DataActions<Camera>;
   Data?: DataState;
+  searchCanvas?: { id: string; canvas: HTMLCanvasElement }[];
 }
 
-class Pursuit extends Component<Props, State> {
+export class Pursuit extends Component<Props, State> {
   constructor(props) {
     super(props);
-    this.state = { selectCamId: '', activeCamera: undefined };
+    this.state = { selectCamId: '', activeCamera: undefined, canvases: [] };
   }
 
   async componentDidMount() {
@@ -176,6 +178,7 @@ class Pursuit extends Component<Props, State> {
                               camera={this.state.activeCamera}
                               hideControls={false}
                               showPanorama={!this.state.activeCamera?.isPtz}
+                              searchCanvas={this.props.searchCanvas}
                             />
                           </Box>
                         </Grid>

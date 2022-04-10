@@ -1,4 +1,5 @@
 import {
+  Close,
   Delete,
   HighlightAlt,
   PanoramaHorizontal,
@@ -27,7 +28,8 @@ type Props = {
   panorama?: any;
   onFocalChange?: (val) => void;
   onClearImages?: () => void;
-  onClickImage?: (item) => void;
+  onRemoveImage?: (img, index) => void;
+  onClickImage?: (item, index) => void;
   images?: { rect: IGlRect; canvas: HTMLCanvasElement }[];
 };
 
@@ -77,7 +79,7 @@ export default class CameraController extends Component<Props, State> {
   }
 
   handlePhoto(item) {
-    console.log(item)
+    console.log(item);
   }
 
   render() {
@@ -92,7 +94,7 @@ export default class CameraController extends Component<Props, State> {
           >
             <Tab label={<PhotoCamera />} />
             <Tab label={<Visibility />} />
-            <Tab label={<HighlightAlt />} />
+            {/* <Tab label={<HighlightAlt />} /> */}
           </Tabs>
         </Box>
         <TabPanel value={this.state.activeTab} index={0}>
@@ -104,19 +106,28 @@ export default class CameraController extends Component<Props, State> {
             {this.props.images ? (
               this.props.images?.map((item, index) => (
                 <ImageListItem key={index}>
+                  <IconButton
+                    style={{ position: 'absolute', right: 0 }}
+                    onClick={() => {
+                      if (this.props.onRemoveImage) {
+                        this.props.onRemoveImage(item, index);
+                      }
+                    }}
+                  >
+                    <Close />
+                  </IconButton>
                   <img
                     src={item.canvas.toDataURL()}
                     // srcSet={`${item.img}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
                     // alt={item.title}
                     loading="lazy"
+                    onClick={this.props.onClickImage?.bind(this, item, index)}
                   />
                 </ImageListItem>
               ))
             ) : (
               <ImageListItem>
-                <img
-                  loading="lazy"
-                />
+                <img loading="lazy" />
               </ImageListItem>
             )}
           </ImageList>
@@ -182,9 +193,6 @@ export default class CameraController extends Component<Props, State> {
               }
             }}
           />
-        </TabPanel>
-        <TabPanel value={this.state.activeTab} index={2}>
-          Item Two
         </TabPanel>
       </>
     );

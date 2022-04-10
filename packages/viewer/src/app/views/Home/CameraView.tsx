@@ -17,7 +17,9 @@ interface State {
   loaded: boolean;
   playing: boolean;
   focal?: any;
-  images: { rect: IGlRect; canvas: HTMLCanvasElement }[];
+  images: { id: string; rect: IGlRect; canvas: HTMLCanvasElement }[];
+  searchCanvases?: { id: string; canvas: HTMLCanvasElement }[];
+  selectedBoxes?: any[];
 }
 
 type Props = {
@@ -27,7 +29,9 @@ type Props = {
   settings: Settings;
   hideControls?: boolean;
   showPtz?: boolean;
-  onDrawRect?: (rect: IGlRect, canvas: HTMLCanvasElement) => void;
+  searchCanvas?: { id: string; canvas: HTMLCanvasElement };
+  onDrawRect?: (id: string, canvas: HTMLCanvasElement) => void;
+  activateDetection?: boolean;
 };
 
 class CameraView extends Component<Props, State> {
@@ -41,6 +45,7 @@ class CameraView extends Component<Props, State> {
       playing: false,
       focal: { x: 0, y: 0, scale: 1 },
       images: [],
+      selectedBoxes: [],
     };
   }
 
@@ -133,6 +138,14 @@ class CameraView extends Component<Props, State> {
                   onClearImages={() => {
                     this.setState({ images: [] });
                   }}
+                  onRemoveImage={(img, index) => {
+                    const { images } = this.state;
+                    images.splice(index, 1);
+                    this.setState({ images });
+                  }}
+                  onClickImage={(item, index) => {
+                    this.setState({ selectedBoxes: [item.rect] });
+                  }}
                   images={this.state.images}
                   panorama={this.state.focal}
                   camera={this.props.camera}
@@ -179,17 +192,21 @@ class CameraView extends Component<Props, State> {
           ) : (
             <>
               <VideoPlayer
+                activateDetection={this.props.activateDetection}
                 stream={this.state.streamSource}
                 camera={this.props.camera}
                 settings={this.props.Data?.Settings.CurrentItem}
                 focal={this.state.focal}
-                onDrawRect={(rect, canvas) => {
+                searchCanvas={this.props.searchCanvas}
+                boxes={this.state.selectedBoxes}
+                onDrawRect={(id, rect, canvas) => {
                   const { images } = this.state;
-                  images.push({ canvas: canvas, rect: rect });
-                  this.setState({ images });
+                  console.log(this.props.camera);
+                  images.push({ id, canvas: canvas, rect: rect });
                   if (this.props.onDrawRect) {
-                    this.props.onDrawRect(rect, canvas);
+                    this.props.onDrawRect(id, canvas);
                   }
+                  this.setState({ images });
                 }}
               />
               {this.props.showPtz ? (

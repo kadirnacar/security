@@ -29,6 +29,7 @@ interface State {
   camera?: Camera;
   expand?: boolean;
   expandView?: boolean;
+  searchCanvas?: any;
 }
 
 interface Props {
@@ -42,7 +43,12 @@ class Form extends Component<Props & WithRouter, State> {
     this.handleChange = this.handleChange.bind(this);
     this.handleCheck = this.handleCheck.bind(this);
     this.handleSave = this.handleSave.bind(this);
-    this.state = { camera: undefined, expand: false, expandView: false };
+
+    this.state = {
+      camera: undefined,
+      expand: false,
+      expandView: false,
+    };
   }
 
   async componentDidMount() {
@@ -263,14 +269,19 @@ class Form extends Component<Props & WithRouter, State> {
                   showPtz={this.state.camera?.isPtz}
                   showPanorama={!this.state.camera?.isPtz}
                   settings={this.props.Data?.Settings.CurrentItem}
-                  
+                  onDrawRect={(id, canvas) => {
+                    this.setState({ searchCanvas: { id, canvas } });
+                  }}
                 />
               </CardContent>
             </Collapse>
           </Card>
         </Box>
         {this.state.camera?.isPtz ? (
-          <Pursuit camera={this.state.camera} />
+          <Pursuit
+            searchCanvas={this.state.searchCanvas}
+            camera={this.state.camera}
+          />
         ) : null}
       </>
     );

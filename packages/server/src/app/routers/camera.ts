@@ -49,13 +49,18 @@ export class CameraRouter {
     try {
       const id = req.params['id'];
       const data = req.body;
-
-      const camera = CameraService.getCamera(id)?.camera;
+      const camItem = CameraService.getCamera(id);
+      const camera = camItem?.camera;
       if (camera) {
         if (data.action === 'home') {
           await camera.ptz.gotoHomePosition();
         } else if (data.velocity && camera.ptz) {
           await camera.ptz.absoluteMove(null, data.velocity, data.speed);
+          const dataRepo = Services.Camera;
+          await dataRepo.save({
+            id: camItem.model.id,
+            position: data.velocity,
+          });
         }
       }
       res.status(200).send({});

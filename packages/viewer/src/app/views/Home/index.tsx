@@ -181,6 +181,8 @@ class Home extends Component<Props, HomeState> {
                   <CameraView
                     camera={cam}
                     settings={this.props.Data?.Settings.CurrentItem}
+                    hideControls={true}
+                    showPtz={true}
                   />
                 </LayoutItem>
               </Paper>
