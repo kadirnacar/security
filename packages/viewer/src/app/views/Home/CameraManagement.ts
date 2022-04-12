@@ -16,12 +16,13 @@ export class CameraManagement {
   }
 
   onDrawRect?: (boxes: IGlRect[]) => void;
-
+  videoLoaded = false;
   canvas: HTMLCanvasElement;
   video: HTMLVideoElement;
   maxBoxes: number = 10;
   regl?: REGL.Regl;
   boxes: IGlRect[] = [];
+  selectedBoxIndex = -1;
   drawingRect?: IGlRect;
   videoAnimate?: REGL.Cancellable;
   yoloAnimate?: any;
@@ -74,6 +75,10 @@ export class CameraManagement {
     this.boxes = boxes;
   }
 
+  setSelectedBoxIndex(index) {
+    this.selectedBoxIndex = index;
+  }
+
   setSpeed(speed) {
     this.speed = speed;
   }
@@ -118,6 +123,7 @@ export class CameraManagement {
       };
       this.drawingStartPoint = { x: left, y: top };
       this.drawingRect = drawingRect;
+      this.selectedBoxIndex = this.boxes.length + 1;
     }
     this.isDrawing = true;
   }
@@ -171,10 +177,14 @@ export class CameraManagement {
         this.drawingRect.image = canvas;
         this.boxes.push(this.drawingRect);
         this.drawingRect = undefined;
+        this.selectedBoxIndex = this.boxes.length;
 
-        if (this.onDrawRect) {
-          this.onDrawRect(this.boxes);
-        }
+        new Promise((resolve) => {
+          if (this.onDrawRect) {
+            this.onDrawRect(this.boxes);
+            resolve(null);
+          }
+        });
       }
     }
     this.isDrawing = false;
@@ -222,6 +232,11 @@ export class CameraManagement {
   }
 
   handleVideoLoadeddata() {
+    if (this.videoLoaded) {
+      return;
+    }
+    this.videoLoaded = true;
+    console.log('video load');
     try {
       if (this.canvas && this.video) {
         this.canvas.width = this.video.videoWidth;
@@ -269,6 +284,12 @@ export class CameraManagement {
           },
           boxColor: () => {
             return [1, 0, 0, 1];
+          },
+          selectedBoxColor: () => {
+            return [1, 1, 1, 1];
+          },
+          selectedIndex: () => {
+            return this.selectedBoxIndex;
           },
           box: () => {
             const flatBoxes = this.boxes
@@ -456,6 +477,8 @@ uniform vec2 uLensF;
 uniform vec2 resolution;
 uniform vec4 box[${boxNum}];
 uniform vec4 boxColor;
+uniform vec4 selectedBoxColor;
+uniform int selectedIndex;
 uniform vec4 iMouse;
 uniform float showSplitter;
 
@@ -464,7 +487,7 @@ vec2 GLCoord2TextureCoord(vec2 glCoord) {
 	return glCoord  * vec2(1.0, -1.0) / 2.0 + vec2(0.5, 0.5);
 }
 
-vec4 draw_rect(in vec2 bottomLeft, in vec2 topRight, in float lineWidth, in vec2 texCoord, in vec4 Mon)
+vec4 draw_rect(in vec2 bottomLeft, in vec2 topRight, in float lineWidth, in vec2 texCoord, in vec4 Mon, in int index)
 {
     vec2 lineWidth_ = vec2(lineWidth / resolution.x, lineWidth / resolution.y);
 
@@ -480,22 +503,27 @@ vec4 draw_rect(in vec2 bottomLeft, in vec2 topRight, in float lineWidth, in vec2
     float pctInside = leftBottomInside.x * rightTopInside.x * leftBottomInside.y * rightTopInside.y;
 
     float pct = pctInside - pctOuter;
-    vec4 finalColor = mix(Mon, boxColor,  pct * boxColor.a);
+
+    float a = floor((float(index) + 1.0) / float(selectedIndex));
+    float b = floor(float(selectedIndex) / (float(index) + 1.0));
+    vec4 color = vec4(clamp(a * b, 0.0, 1.0), 1.0, 1.0, 1.0);
+
+    vec4 finalColor = mix(Mon, boxColor * clamp(a * b, 0.0, 1.0),  pct);
     return finalColor;
 }
 
 void main() {
   float scale = uLensS.z;
-	vec2 vPos = vec2(uv.x * 2.0 - 1.0, (1.0 - uv.y * 2.0));
-	float Fx = uLensF.x;
-	float Fy = uLensF.y;
+  vec2 vPos = vec2(uv.x * 2.0 - 1.0, (1.0 - uv.y * 2.0));
+  float Fx = uLensF.x;
+  float Fy = uLensF.y;
 
-	vec2 vMapping = vPos.xy;
-	vMapping.x = vMapping.x + ((pow(vPos.y, 2.0) / scale) * vPos.x / scale) * -Fx;
-	vMapping.y = vMapping.y + ((pow(vPos.x, 2.0) / scale) * vPos.y / scale) * -Fy;
-	vMapping = vMapping * uLensS.xy;
+  vec2 vMapping = vPos.xy;
+  vMapping.x = vMapping.x + ((pow(vPos.y, 2.0) / scale) * vPos.x / scale) * -Fx;
+  vMapping.y = vMapping.y + ((pow(vPos.x, 2.0) / scale) * vPos.y / scale) * -Fy;
+  vMapping = vMapping * uLensS.xy;
 
-	vMapping = GLCoord2TextureCoord(vMapping / scale);
+  vMapping = GLCoord2TextureCoord(vMapping / scale);
 
   vec4 MonA = texture2D(uSampler, vMapping);
 
@@ -507,7 +535,7 @@ void main() {
     float pH1 = box[i].z / resolution.x;
     float pV1 = box[i].w / resolution.y;
 
-    MonA = draw_rect(vec2(pH, pV), vec2(pH1, pV1), 10.0, uv, MonA);
+    MonA = draw_rect(vec2(pH, pV), vec2(pH1, pV1), 10.0, uv, MonA, i);
   }
   
   gl_FragColor = MonA;

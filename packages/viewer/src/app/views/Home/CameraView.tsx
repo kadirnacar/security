@@ -20,7 +20,7 @@ interface State {
   focal?: any;
   images: IGlRect[];
   searchCanvases?: { id: string; canvas: HTMLCanvasElement }[];
-  selectedBoxes?: any[];
+  selectedBoxIndex: number;
 }
 
 type Props = {
@@ -46,7 +46,7 @@ class CameraView extends Component<Props, State> {
       playing: false,
       focal: { x: 0, y: 0, scale: 1 },
       images: [],
-      selectedBoxes: [],
+      selectedBoxIndex: -1,
     };
   }
 
@@ -146,11 +146,10 @@ class CameraView extends Component<Props, State> {
                     this.setState({ images });
                   }}
                   onClickImage={(item, index) => {
-                    this.setState({ selectedBoxes: [item.rect] });
+                    this.setState({ selectedBoxIndex: index + 1 });
                   }}
                   onCheckPhoto={() => {
                     this.videoPlayer.takePhoto();
-                    console.log(this.videoPlayer);
                   }}
                   images={this.state.images}
                   panorama={this.state.focal}
@@ -192,12 +191,15 @@ class CameraView extends Component<Props, State> {
                 focal={this.state.focal}
                 searchCanvas={this.props.searchCanvas}
                 boxes={this.state.images}
+                selectedBoxIndex={this.state.selectedBoxIndex}
                 onDrawRect={(rect) => {
                   if (this.props.onDrawRect) {
                     this.props.onDrawRect(rect);
                   }
-
-                  this.setState({ images: rect, selectedBoxes: [rect] });
+                  this.setState({
+                    images: rect,
+                    selectedBoxIndex: rect.length,
+                  });
                 }}
               />
               {this.props.showPtz ? (

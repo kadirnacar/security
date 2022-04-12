@@ -14,12 +14,12 @@ type Props = {
   onDrawRect?: (rect: IGlRect[]) => void;
   searchCanvas?: { id: string; canvas: HTMLCanvasElement };
   boxes: IGlRect[];
+  selectedBoxIndex?: number;
   childRef: (item) => void;
 };
 
 type State = {
   loaded: boolean;
-  boxes: any[];
 };
 
 export default class VideoPlayer extends Component<Props, State> {
@@ -28,27 +28,22 @@ export default class VideoPlayer extends Component<Props, State> {
 
     this.video = React.createRef<HTMLVideoElement>();
     this.canvas = React.createRef<HTMLCanvasElement>();
-    this.image = React.createRef<HTMLImageElement>();
 
     if (this.props.childRef) {
       this.props.childRef(this);
     }
     this.state = {
       loaded: false,
-      boxes: [],
     };
   }
 
   static defaultProps = {
     boxes: [],
+    selectedBoxIndex: -1,
   };
 
-  image: React.RefObject<HTMLImageElement>;
   video: React.RefObject<HTMLVideoElement>;
   canvas: React.RefObject<HTMLCanvasElement>;
-  context2: CanvasRenderingContext2D | null = null;
-  boxes: IGlRect[] = [];
-
   cameraManagement?: CameraManagement;
 
   async componentDidMount() {
@@ -66,6 +61,7 @@ export default class VideoPlayer extends Component<Props, State> {
 
     if (this.props.activateDetection && this.cameraManagement) {
       this.cameraManagement.initDetection();
+      this.cameraManagement.setSelectedBoxIndex(this.props.selectedBoxIndex);
       this.cameraManagement.setSpeed(
         this.props.settings?.framePerSecond || 0.5
       );
@@ -94,6 +90,7 @@ export default class VideoPlayer extends Component<Props, State> {
       }
       this.cameraManagement.setLens(this.props.focal);
       this.cameraManagement.setBoxes(this.props.boxes);
+      this.cameraManagement.setSelectedBoxIndex(this.props.selectedBoxIndex);
     }
   }
 
