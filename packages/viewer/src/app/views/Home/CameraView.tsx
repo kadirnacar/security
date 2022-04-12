@@ -4,13 +4,14 @@ import { Camera, Settings } from '@security/models';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
+import { IGlRect } from '../../models/IGlRect';
 import { DataActions } from '../../reducers/Data/actions';
 import { DataState } from '../../reducers/Data/state';
 import { CameraService } from '../../services/CameraService';
 import { ApplicationState } from '../../store';
 import CameraController from './CameraController';
 import PtzController from './PtzController';
-import VideoPlayer, { IGlRect } from './VideoPlayer';
+import VideoPlayer from './VideoPlayer';
 
 interface State {
   streamSource?: MediaStream;
@@ -147,7 +148,7 @@ class CameraView extends Component<Props, State> {
                   onClickImage={(item, index) => {
                     this.setState({ selectedBoxes: [item.rect] });
                   }}
-                  onCheckPhoto={()=>{
+                  onCheckPhoto={() => {
                     this.videoPlayer.takePhoto();
                     console.log(this.videoPlayer);
                   }}

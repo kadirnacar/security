@@ -4,6 +4,7 @@ import cv from 'opencv.js';
 import React, { Component } from 'react';
 import REGL from 'regl';
 import yolo from 'tfjs-yolo';
+import { IGlRect } from '../../models/IGlRect';
 import { generateGuid } from '../../utils';
 
 let vert = `
@@ -83,13 +84,6 @@ void main() {
   gl_FragColor = MonA;
 }
 `;
-
-export interface IGlRect {
-  left: number;
-  right: number;
-  top: number;
-  bottom: number;
-}
 
 type Props = {
   stream?: MediaStream;
@@ -214,6 +208,20 @@ export default class VideoPlayer extends Component<Props, State> {
         });
         src.delete();
         mask.delete();
+
+        if (this.props.onDrawRect) {
+          const id = generateGuid();
+          this.props.onDrawRect(
+            id || '',
+            {
+              right: point.x,
+              left: maxPoint.x,
+              top: maxPoint.y,
+              bottom: point.y,
+            },
+            this.props.searchCanvas.canvas
+          );
+        }
       }
     }
   }

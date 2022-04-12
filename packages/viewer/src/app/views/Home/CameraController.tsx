@@ -1,28 +1,23 @@
 import {
   Close,
   Delete,
-  HighlightAlt,
-  PanoramaHorizontal,
-  Photo,
   PhotoCamera,
   Screenshot,
   Visibility,
 } from '@mui/icons-material';
 import {
   Box,
-  Grid,
   IconButton,
   ImageList,
   ImageListItem,
   Slider,
-  Stack,
   Tab,
   Tabs,
   Typography,
 } from '@mui/material';
 import { Camera } from '@security/models';
 import React, { Component } from 'react';
-import { IGlRect } from './VideoPlayer';
+import { IGlRect } from '../../models/IGlRect';
 
 type Props = {
   camera?: Camera;

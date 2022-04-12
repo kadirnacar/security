@@ -270,7 +270,13 @@ class Form extends Component<Props & WithRouter, State> {
                   showPanorama={!this.state.camera?.isPtz}
                   settings={this.props.Data?.Settings.CurrentItem}
                   onDrawRect={(id, canvas) => {
-                    this.setState({ searchCanvas: { id, canvas } });
+                    this.setState({
+                      searchCanvas: {
+                        id,
+                        canvas,
+                        pos: this.state.camera?.position,
+                      },
+                    });
                   }}
                 />
               </CardContent>

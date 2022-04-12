@@ -154,7 +154,7 @@ export default class PtzController extends Component<Props, State> {
             ? [
                 <SpeedDialAction
                   key={0}
-                  icon={<ArrowUpward />}
+                  icon={<ArrowDownward />}
                   title={`Y: ${this.state.velocity?.y}`}
                   onClick={async () => {
                     const { velocity } = this.state;
@@ -178,7 +178,7 @@ export default class PtzController extends Component<Props, State> {
                 />,
                 <SpeedDialAction
                   key={1}
-                  icon={<ArrowDownward />}
+                  icon={<ArrowUpward />}
                   title={`Y: ${this.state.velocity?.y}`}
                   onClick={async () => {
                     const { velocity } = this.state;
