@@ -27,7 +27,7 @@ type Props = {
   onRemoveImage?: (img, index) => void;
   onClickImage?: (item, index) => void;
   onCheckPhoto?: () => void;
-  images?: { rect: IGlRect; canvas: HTMLCanvasElement }[];
+  images?: IGlRect[];
 };
 
 type State = {
@@ -116,7 +116,7 @@ export default class CameraController extends Component<Props, State> {
                     <Close />
                   </IconButton>
                   <img
-                    src={item.canvas.toDataURL()}
+                    src={item.image?.toDataURL()}
                     // srcSet={`${item.img}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
                     // alt={item.title}
                     loading="lazy"

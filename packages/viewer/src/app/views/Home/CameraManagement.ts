@@ -2,6 +2,7 @@ import cv from 'opencv.js';
 import REGL from 'regl';
 import yolo from 'tfjs-yolo';
 import { IGlRect } from '../../models/IGlRect';
+import { generateGuid } from '../../utils';
 
 export class CameraManagement {
   constructor(
@@ -14,12 +15,13 @@ export class CameraManagement {
     this.maxBoxes = maxBoxes;
   }
 
+  onDrawRect?: (boxes: IGlRect[]) => void;
+
   canvas: HTMLCanvasElement;
   video: HTMLVideoElement;
   maxBoxes: number = 10;
   regl?: REGL.Regl;
   boxes: IGlRect[] = [];
-  drawRects: IGlRect[] = [];
   drawingRect?: IGlRect;
   videoAnimate?: REGL.Cancellable;
   yoloAnimate?: any;
@@ -64,6 +66,14 @@ export class CameraManagement {
     );
   }
 
+  getBoxes() {
+    return this.boxes;
+  }
+
+  setBoxes(boxes) {
+    this.boxes = boxes;
+  }
+
   setSpeed(speed) {
     this.speed = speed;
   }
@@ -100,6 +110,7 @@ export class CameraManagement {
       const top = (ev.clientY - box.top) * ratioY;
 
       let drawingRect: IGlRect = {
+        id: generateGuid(),
         left: left,
         top: top,
         right: left,
@@ -157,11 +168,13 @@ export class CameraManagement {
           );
         }
         this.isDrawing = false;
+        this.drawingRect.image = canvas;
+        this.boxes.push(this.drawingRect);
+        this.drawingRect = undefined;
 
-        // if (this.props.onDrawRect) {
-        //   const id = generateGuid();
-        //   await this.props.onDrawRect(id || '', d, canvas);
-        // }
+        if (this.onDrawRect) {
+          this.onDrawRect(this.boxes);
+        }
       }
     }
     this.isDrawing = false;
@@ -265,27 +278,17 @@ export class CameraManagement {
                 (this.video?.videoWidth || 0) - x.right,
                 (this.video?.videoHeight || 0) - x.bottom,
               ])
-              .flat()
-              .concat(
-                this.drawRects
-                  .map((x) => [
-                    x.left,
-                    x.top,
-                    (this.video?.videoWidth || 0) - x.right,
-                    (this.video?.videoHeight || 0) - x.bottom,
-                  ])
-                  .flat()
-                //   .concat(
-                //     this.props.boxes
-                //       .map((x) => [
-                //         x.left,
-                //         x.top,
-                //         (this.video?.videoWidth || 0) - x.right,
-                //         (this.video?.videoHeight || 0) - x.bottom,
-                //       ])
-                //       .flat()
-                //   )
-              );
+              .flat();
+            //   .concat(
+            //     this.props.boxes
+            //       .map((x) => [
+            //         x.left,
+            //         x.top,
+            //         (this.video?.videoWidth || 0) - x.right,
+            //         (this.video?.videoHeight || 0) - x.bottom,
+            //       ])
+            //       .flat()
+            //   );
             if (this.drawingRect) {
               flatBoxes.push(this.drawingRect.left);
               flatBoxes.push(this.drawingRect.top);
@@ -407,6 +410,7 @@ export class CameraManagement {
       cv.rectangle(src, maxPoint, point, color, 2, cv.LINE_8, 0);
 
       this.boxes.push({
+        id: generateGuid(),
         right: point.x,
         left: maxPoint.x,
         top: maxPoint.y,

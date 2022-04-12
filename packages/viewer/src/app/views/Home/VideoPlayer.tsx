@@ -11,9 +11,9 @@ type Props = {
   settings?: Settings;
   focal?: any;
   activateDetection?: boolean;
-  onDrawRect?: (id: string, rect: IGlRect, canvas: HTMLCanvasElement) => void;
+  onDrawRect?: (rect: IGlRect[]) => void;
   searchCanvas?: { id: string; canvas: HTMLCanvasElement };
-  boxes: any[];
+  boxes: IGlRect[];
   childRef: (item) => void;
 };
 
@@ -28,7 +28,6 @@ export default class VideoPlayer extends Component<Props, State> {
 
     this.video = React.createRef<HTMLVideoElement>();
     this.canvas = React.createRef<HTMLCanvasElement>();
-    this.canvas2 = React.createRef<HTMLCanvasElement>();
     this.image = React.createRef<HTMLImageElement>();
 
     if (this.props.childRef) {
@@ -47,7 +46,6 @@ export default class VideoPlayer extends Component<Props, State> {
   image: React.RefObject<HTMLImageElement>;
   video: React.RefObject<HTMLVideoElement>;
   canvas: React.RefObject<HTMLCanvasElement>;
-  canvas2: React.RefObject<HTMLCanvasElement>;
   context2: CanvasRenderingContext2D | null = null;
   boxes: IGlRect[] = [];
 
@@ -61,6 +59,9 @@ export default class VideoPlayer extends Component<Props, State> {
         this.props.settings?.maxBoxes
       );
       this.cameraManagement.init();
+      this.cameraManagement.onDrawRect =
+        this.handleCameraManagementDrawRect.bind(this);
+      this.cameraManagement.setBoxes(this.props.boxes);
     }
 
     if (this.props.activateDetection && this.cameraManagement) {
@@ -70,6 +71,12 @@ export default class VideoPlayer extends Component<Props, State> {
       );
     }
     this.setState({ loaded: true });
+  }
+
+  async handleCameraManagementDrawRect(boxes: IGlRect[]) {
+    if (this.props.onDrawRect) {
+      await this.props.onDrawRect(boxes);
+    }
   }
 
   async componentDidUpdate(prevProp, prevState) {
@@ -86,6 +93,7 @@ export default class VideoPlayer extends Component<Props, State> {
         this.cameraManagement.searchImage(this.props.searchCanvas);
       }
       this.cameraManagement.setLens(this.props.focal);
+      this.cameraManagement.setBoxes(this.props.boxes);
     }
   }
 
@@ -153,11 +161,16 @@ export default class VideoPlayer extends Component<Props, State> {
 
       if (this.props.onDrawRect) {
         const id = generateGuid();
-        await this.props.onDrawRect(
-          id || '',
-          { left: 0, top: 0, right: 0, bottom: 0 },
-          canvas
-        );
+        await this.props.onDrawRect([
+          {
+            id,
+            left: 0,
+            top: 0,
+            right: 0,
+            bottom: 0,
+            image: canvas,
+          },
+        ]);
       }
     }
   }
@@ -195,17 +208,6 @@ export default class VideoPlayer extends Component<Props, State> {
         ) : null}
         <canvas
           ref={this.canvas}
-          style={{
-            width: 'auto',
-            height: 'auto',
-            maxWidth: '100%',
-            maxHeight: '100%',
-            margin: 'auto',
-          }}
-        ></canvas>
-
-        <canvas
-          ref={this.canvas2}
           style={{
             width: 'auto',
             height: 'auto',
