@@ -55,7 +55,21 @@ function TabPanel(props: TabPanelProps) {
       // aria-labelledby={`simple-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 1 }}>{children}</Box>}
+      {value === index && (
+        <Box
+          sx={{ p: 1 }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            overflow: 'auto',
+          }}
+        >
+          {children}
+        </Box>
+      )}
     </div>
   );
 }
@@ -103,16 +117,7 @@ export default class CameraController extends Component<Props, State> {
           <IconButton title="Çek" onClick={this.props.onCheckPhoto}>
             <Screenshot />
           </IconButton>
-          <Box
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              overflow: 'auto',
-            }}
-          >
+          <Box>
             <ImageList cols={3} variant="masonry">
               {this.props.images ? (
                 this.props.images?.map((item, index) => (
