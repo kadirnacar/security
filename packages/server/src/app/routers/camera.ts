@@ -55,7 +55,7 @@ export class CameraRouter {
         if (data.action === 'home') {
           await camera.ptz.gotoHomePosition();
         } else if (data.velocity && camera.ptz) {
-          await camera.ptz.absoluteMove(null, data.velocity, data.speed);
+          const a = await camera.ptz.absoluteMove(null, data.velocity, data.speed);
           const dataRepo = Services.Camera;
           await dataRepo.save({
             id: camItem.model.id,

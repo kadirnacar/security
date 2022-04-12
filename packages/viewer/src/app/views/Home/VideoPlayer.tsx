@@ -159,12 +159,13 @@ export default class VideoPlayer extends Component<Props, State> {
       if (this.props.onDrawRect) {
         const id = generateGuid();
         await this.props.onDrawRect([
+          ...this.props.boxes,
           {
             id,
             left: 0,
             top: 0,
-            right: 0,
-            bottom: 0,
+            right: canvas.width,
+            bottom: canvas.height,
             image: canvas,
           },
         ]);

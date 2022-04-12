@@ -145,6 +145,7 @@ class CameraView extends Component<Props, State> {
                     images.splice(index, 1);
                     this.setState({ images });
                   }}
+                  selectedBoxIndex={this.state.selectedBoxIndex}
                   onClickImage={(item, index) => {
                     this.setState({ selectedBoxIndex: index + 1 });
                   }}

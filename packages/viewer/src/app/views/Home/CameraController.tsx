@@ -22,6 +22,7 @@ import { IGlRect } from '../../models/IGlRect';
 type Props = {
   camera?: Camera;
   panorama?: any;
+  selectedBoxIndex?: number;
   onFocalChange?: (val) => void;
   onClearImages?: () => void;
   onRemoveImage?: (img, index) => void;
@@ -49,6 +50,7 @@ function TabPanel(props: TabPanelProps) {
     <div
       role="tabpanel"
       hidden={value !== index}
+      style={{ position: 'relative', width: '100%', height: '100%' }}
       // id={`simple-tabpanel-${index}`}
       // aria-labelledby={`simple-tab-${index}`}
       {...other}
@@ -101,35 +103,54 @@ export default class CameraController extends Component<Props, State> {
           <IconButton title="Çek" onClick={this.props.onCheckPhoto}>
             <Screenshot />
           </IconButton>
-          <ImageList cols={3} variant="masonry">
-            {this.props.images ? (
-              this.props.images?.map((item, index) => (
-                <ImageListItem key={index}>
-                  <IconButton
-                    style={{ position: 'absolute', right: 0 }}
-                    onClick={() => {
-                      if (this.props.onRemoveImage) {
-                        this.props.onRemoveImage(item, index);
-                      }
+          <Box
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              overflow: 'auto',
+            }}
+          >
+            <ImageList cols={3} variant="masonry">
+              {this.props.images ? (
+                this.props.images?.map((item, index) => (
+                  <ImageListItem
+                    key={index}
+                    style={{
+                      border:
+                        this.props.selectedBoxIndex == index + 1
+                          ? '1px solid red'
+                          : '',
                     }}
                   >
-                    <Close />
-                  </IconButton>
-                  <img
-                    src={item.image?.toDataURL()}
-                    // srcSet={`${item.img}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
-                    // alt={item.title}
-                    loading="lazy"
-                    onClick={this.props.onClickImage?.bind(this, item, index)}
-                  />
+                    <IconButton
+                      style={{ position: 'absolute', right: 0 }}
+                      onClick={() => {
+                        if (this.props.onRemoveImage) {
+                          this.props.onRemoveImage(item, index);
+                        }
+                      }}
+                    >
+                      <Close />
+                    </IconButton>
+                    <img
+                      src={item.image?.toDataURL()}
+                      // srcSet={`${item.img}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
+                      // alt={item.title}
+                      loading="lazy"
+                      onClick={this.props.onClickImage?.bind(this, item, index)}
+                    />
+                  </ImageListItem>
+                ))
+              ) : (
+                <ImageListItem>
+                  <img loading="lazy" />
                 </ImageListItem>
-              ))
-            ) : (
-              <ImageListItem>
-                <img loading="lazy" />
-              </ImageListItem>
-            )}
-          </ImageList>
+              )}
+            </ImageList>
+          </Box>
         </TabPanel>
         <TabPanel value={this.state.activeTab} index={1}>
           <Typography id="input-slider" gutterBottom>

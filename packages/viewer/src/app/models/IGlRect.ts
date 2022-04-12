@@ -6,3 +6,18 @@ export interface IGlRect {
   bottom: number;
   image?: HTMLCanvasElement;
 }
+
+export interface ILimit {
+  min: number;
+  max: number;
+}
+export interface IPtzLimit {
+  x: ILimit;
+  y: ILimit;
+}
+
+export interface ICamPosition {
+  x: any;
+  y: any;
+  z: any;
+}

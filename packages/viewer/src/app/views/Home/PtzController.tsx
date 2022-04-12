@@ -12,6 +12,7 @@ import {
 import { SpeedDial, SpeedDialAction } from '@mui/material';
 import { Camera } from '@security/models';
 import React, { Component } from 'react';
+import { ICamPosition, ILimit, IPtzLimit } from '../../models/IGlRect';
 import { CameraService } from '../../services/CameraService';
 
 type Props = {
@@ -19,15 +20,12 @@ type Props = {
 };
 
 type State = {
-  velocity?: { x?: any; y?: any; z?: any };
+  velocity?: ICamPosition;
   speed: number;
   step: number;
   decimal: number;
-  ptzLimits: {
-    x: { min: number; max: number };
-    y: { min: number; max: number };
-  };
-  zoomLimits: { min: number; max: number };
+  ptzLimits: IPtzLimit;
+  zoomLimits: ILimit;
 };
 
 export default class PtzController extends Component<Props, State> {
@@ -163,7 +161,6 @@ export default class PtzController extends Component<Props, State> {
                       try {
                         cuurentValue = parseFloat(velocity.y);
                       } catch {}
-                      console.log(cuurentValue);
                       const movement = cuurentValue + this.state.step;
 
                       if (
@@ -225,6 +222,13 @@ export default class PtzController extends Component<Props, State> {
                       ) {
                         velocity.x = movement.toFixed(this.state.decimal);
                         await this.gotoPosition(velocity);
+                      } else {
+                        velocity.x = (
+                          this.state.ptzLimits.x.min +
+                          (Math.abs(movement) -
+                            Math.abs(this.state.ptzLimits.x.max))
+                        ).toFixed(this.state.decimal);
+                        await this.gotoPosition(velocity);
                       }
                     }
                   }}
@@ -244,12 +248,18 @@ export default class PtzController extends Component<Props, State> {
                       } catch {}
 
                       const movement = cuurentValue - this.state.step;
-
                       if (
                         movement <= this.state.ptzLimits.x.max &&
                         movement >= this.state.ptzLimits.x.min
                       ) {
                         velocity.x = movement.toFixed(this.state.decimal);
+                        await this.gotoPosition(velocity);
+                      } else {
+                        velocity.x = (
+                          this.state.ptzLimits.x.max -
+                          (Math.abs(movement) -
+                            Math.abs(this.state.ptzLimits.x.min))
+                        ).toFixed(this.state.decimal);
                         await this.gotoPosition(velocity);
                       }
                     }
