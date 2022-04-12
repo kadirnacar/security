@@ -183,6 +183,7 @@ class Home extends Component<Props, HomeState> {
                     settings={this.props.Data?.Settings.CurrentItem}
                     hideControls={true}
                     showPtz={true}
+                    activateDetection={true}
                   />
                 </LayoutItem>
               </Paper>

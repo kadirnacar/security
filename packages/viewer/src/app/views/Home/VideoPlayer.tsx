@@ -100,6 +100,7 @@ type Props = {
   onDrawRect?: (id: string, rect: IGlRect, canvas: HTMLCanvasElement) => void;
   searchCanvas?: { id: string; canvas: HTMLCanvasElement };
   boxes: any[];
+  childRef: (item) => void;
 };
 
 type State = {
@@ -119,6 +120,9 @@ export default class VideoPlayer extends Component<Props, State> {
     this.canvas2 = React.createRef<HTMLCanvasElement>();
     this.image = React.createRef<HTMLImageElement>();
 
+    if (this.props.childRef) {
+      this.props.childRef(this);
+    }
     this.state = {
       loaded: false,
       boxes: [],
@@ -140,6 +144,7 @@ export default class VideoPlayer extends Component<Props, State> {
   yoloDetect?;
   boxes: IGlRect[] = [];
   drawingRect?: IGlRect;
+  drawingStartPoint?: { x: number; y: number };
   drawRects: IGlRect[] = [];
   isDrawing: boolean = false;
 
@@ -433,6 +438,44 @@ export default class VideoPlayer extends Component<Props, State> {
     }
   }
 
+  async takePhoto() {
+    if (this.canvas.current && this.video.current) {
+      let canvas = document.createElement('canvas');
+
+      canvas.width = this.canvas.current?.width;
+      canvas.height = this.canvas.current?.height;
+
+      if (canvas.width <= 50 || canvas.height <= 50) {
+        return;
+      }
+      let ctx = canvas.getContext('2d');
+
+      if (ctx) {
+        ctx.drawImage(
+          this.video.current,
+          0,
+          0,
+          canvas.width,
+          canvas.height,
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+      }
+      this.isDrawing = false;
+
+      if (this.props.onDrawRect) {
+        const id = generateGuid();
+        await this.props.onDrawRect(
+          id || '',
+          { left: 0, top: 0, right: 0, bottom: 0 },
+          canvas
+        );
+      }
+    }
+  }
+
   render() {
     return (
       <div
@@ -487,30 +530,41 @@ export default class VideoPlayer extends Component<Props, State> {
                 right: left,
                 bottom: top,
               };
+              this.drawingStartPoint = { x: left, y: top };
               this.drawingRect = drawingRect;
             }
             this.isDrawing = true;
           }}
           onPointerUp={async (ev) => {
             if (this.canvas.current && this.video.current) {
-              if (this.drawingRect) {
+              if (this.drawingRect && this.drawingStartPoint) {
                 const box = (ev.target as HTMLElement).getBoundingClientRect();
                 const ratioX = this.canvas.current?.width / box.width;
                 const ratioY = this.canvas.current?.height / box.height;
-                const right = (ev.clientX - box.left) * ratioX;
-                const bottom = (ev.clientY - box.top) * ratioY;
+                const mousePosX = (ev.clientX - box.left) * ratioX;
+                const mousePosY = (ev.clientY - box.top) * ratioY;
 
                 const d = this.drawingRect || {};
-                d.right = right;
-                d.bottom = bottom;
-                // this.drawRects.push(d);
-                this.drawingRect = undefined;
+                if (mousePosX <= this.drawingStartPoint.x) {
+                  d.left = mousePosX;
+                } else {
+                  d.right = mousePosX;
+                }
+
+                if (mousePosY <= this.drawingStartPoint.y) {
+                  d.top = mousePosY;
+                } else {
+                  d.bottom = mousePosY;
+                }
 
                 let canvas = document.createElement('canvas');
 
                 canvas.width = d.right - d.left;
                 canvas.height = d.bottom - d.top;
 
+                if (canvas.width <= 50 || canvas.height <= 50) {
+                  return;
+                }
                 let ctx = canvas.getContext('2d');
 
                 if (ctx) {
@@ -526,6 +580,7 @@ export default class VideoPlayer extends Component<Props, State> {
                     canvas.height
                   );
                 }
+                this.isDrawing = false;
 
                 if (this.props.onDrawRect) {
                   const id = generateGuid();
@@ -537,16 +592,40 @@ export default class VideoPlayer extends Component<Props, State> {
           }}
           onPointerMove={(ev) => {
             if (this.canvas.current && this.isDrawing) {
-              if (this.drawingRect) {
+              if (this.drawingRect && this.drawingStartPoint) {
                 const box = (ev.target as HTMLElement).getBoundingClientRect();
                 const ratioX = this.canvas.current?.width / box.width;
                 const ratioY = this.canvas.current?.height / box.height;
-                const right = (ev.clientX - box.left) * ratioX;
-                const bottom = (ev.clientY - box.top) * ratioY;
-
+                const mousePosX = (ev.clientX - box.left) * ratioX;
+                const mousePosY = (ev.clientY - box.top) * ratioY;
                 const d = this.drawingRect || {};
-                d.right = right;
-                d.bottom = bottom;
+
+                if (mousePosX <= this.drawingStartPoint.x) {
+                  d.left = mousePosX;
+                } else {
+                  d.right = mousePosX;
+                }
+
+                if (mousePosY <= this.drawingStartPoint.y) {
+                  d.top = mousePosY;
+                } else {
+                  d.bottom = mousePosY;
+                }
+
+                // if (d.right < d.left) {
+                //   const left = d.right;
+                //   const right = d.left;
+                //   d.left = left;
+                //   d.right = right;
+                // }
+
+                // if (d.bottom < d.top) {
+                //   const top = d.bottom;
+                //   const bottom = d.top;
+                //   d.top = top;
+                //   d.bottom = bottom;
+                // }
+
                 this.drawingRect = d;
               }
             }

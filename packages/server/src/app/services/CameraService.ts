@@ -57,8 +57,17 @@ export class CameraService {
       }
     });
 
-    goProcess.stderr.on('data', (chunk) => {
-      console.log('stderr', chunk.toString('utf8'));
+    goProcess.stderr.on('data', async (chunk) => {
+      const msg: string = chunk.toString('utf8');
+      console.log('stderr', msg);
+
+      if (msg.includes('Stream Codec Not Found')) {
+        goProcess.kill();
+        await this.endProcess(goProcess);
+      } else if (msg.includes('Stream Exit Rtsp Disconnect')) {
+        goProcess.kill();
+        await this.endProcess(goProcess);
+      }
     });
   }
 

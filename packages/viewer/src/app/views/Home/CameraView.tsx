@@ -50,6 +50,7 @@ class CameraView extends Component<Props, State> {
   }
 
   pc?: RTCPeerConnection;
+  videoPlayer?;
 
   async componentWillUnmount() {
     if (this.pc) {
@@ -146,6 +147,10 @@ class CameraView extends Component<Props, State> {
                   onClickImage={(item, index) => {
                     this.setState({ selectedBoxes: [item.rect] });
                   }}
+                  onCheckPhoto={()=>{
+                    this.videoPlayer.takePhoto();
+                    console.log(this.videoPlayer);
+                  }}
                   images={this.state.images}
                   panorama={this.state.focal}
                   camera={this.props.camera}
@@ -192,6 +197,9 @@ class CameraView extends Component<Props, State> {
           ) : (
             <>
               <VideoPlayer
+                childRef={(item) => {
+                  this.videoPlayer = item;
+                }}
                 activateDetection={this.props.activateDetection}
                 stream={this.state.streamSource}
                 camera={this.props.camera}
@@ -201,12 +209,11 @@ class CameraView extends Component<Props, State> {
                 boxes={this.state.selectedBoxes}
                 onDrawRect={(id, rect, canvas) => {
                   const { images } = this.state;
-                  console.log(this.props.camera);
                   images.push({ id, canvas: canvas, rect: rect });
                   if (this.props.onDrawRect) {
                     this.props.onDrawRect(id, canvas);
                   }
-                  this.setState({ images });
+                  this.setState({ images, selectedBoxes: [rect] });
                 }}
               />
               {this.props.showPtz ? (

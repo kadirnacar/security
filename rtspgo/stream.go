@@ -29,6 +29,7 @@ func RTSPWorkerLoop(name, url string, OnDemand, DisableAudio, Debug bool) {
 		if err != nil {
 			log.Println(err)
 			Config.LastError = err
+			return
 		}
 		if OnDemand && !Config.HasViewer(name) {
 			log.Println(ErrorStreamExitNoViewer)
@@ -43,6 +44,7 @@ func RTSPWorker(name, url string, OnDemand, DisableAudio, Debug bool) error {
 	//add next TimeOut
 	RTSPClient, err := rtspv2.Dial(rtspv2.RTSPClientOptions{URL: url, DisableAudio: DisableAudio, DialTimeout: 3 * time.Second, ReadWriteTimeout: 3 * time.Second, Debug: Debug})
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 

@@ -5,6 +5,7 @@ import {
   PanoramaHorizontal,
   Photo,
   PhotoCamera,
+  Screenshot,
   Visibility,
 } from '@mui/icons-material';
 import {
@@ -30,6 +31,7 @@ type Props = {
   onClearImages?: () => void;
   onRemoveImage?: (img, index) => void;
   onClickImage?: (item, index) => void;
+  onCheckPhoto?: () => void;
   images?: { rect: IGlRect; canvas: HTMLCanvasElement }[];
 };
 
@@ -98,10 +100,12 @@ export default class CameraController extends Component<Props, State> {
           </Tabs>
         </Box>
         <TabPanel value={this.state.activeTab} index={0}>
-          <IconButton title="Çek" onClick={this.props.onClearImages}>
+          <IconButton title="Temizle" onClick={this.props.onClearImages}>
             <Delete />
           </IconButton>
-
+          <IconButton title="Çek" onClick={this.props.onCheckPhoto}>
+            <Screenshot />
+          </IconButton>
           <ImageList cols={3} variant="masonry">
             {this.props.images ? (
               this.props.images?.map((item, index) => (
