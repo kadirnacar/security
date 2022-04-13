@@ -132,7 +132,7 @@ class CameraView extends Component<Props, State> {
               <Grid item xs={3} key={0}>
                 <CameraController
                   onFocalChange={async (val) => {
-                    this.setState({ focal: val });
+                    // this.setState({ focal: val });
                     await this.props.DataActions?.updateItem('Camera', {
                       id: this.props.camera?.id,
                       panorama: val,
@@ -207,7 +207,7 @@ class CameraView extends Component<Props, State> {
                 stream={this.state.streamSource}
                 camera={this.props.camera}
                 settings={this.props.Data?.Settings.CurrentItem}
-                focal={this.state.focal}
+                focal={this.props.camera?.panorama}
                 searchCanvas={this.props.searchCanvas}
                 boxes={this.state.images}
                 selectedBoxIndex={this.state.selectedBoxIndex}

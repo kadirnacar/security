@@ -162,7 +162,6 @@ export default class PtzController extends Component<Props, State> {
                   title={`Y: ${this.state.velocity?.y}`}
                   onClick={async () => {
                     const { velocity } = this.state;
-                    debugger;
                     if (velocity) {
                       let cuurentValue: number = 0;
                       try {

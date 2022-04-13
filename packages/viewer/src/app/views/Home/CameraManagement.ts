@@ -124,6 +124,7 @@ export class CameraManagement {
         right: left,
         bottom: top,
         camPos: this.camera.position,
+        resulation: { width: this.canvas.width, height: this.canvas.height },
       };
       this.drawingStartPoint = { x: left, y: top };
       this.drawingRect = drawingRect;
@@ -440,7 +441,7 @@ export class CameraManagement {
       cv.normalize(dst, dst, 0, 1, cv.NORM_MINMAX, -1, new cv.Mat());
 
       let result = cv.minMaxLoc(dst, mask);
-
+      console.log(result);
       let maxPoint = result.maxLoc;
       let color = new cv.Scalar(255, 0, 0, 255);
 

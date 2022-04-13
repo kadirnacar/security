@@ -6,6 +6,11 @@ export interface IGlRect {
   bottom: number;
   image?: HTMLCanvasElement;
   camPos?: ICamPosition;
+  resulation?: IResulation;
+}
+export interface IResulation {
+  width: number;
+  height: number;
 }
 
 export interface ILimit {

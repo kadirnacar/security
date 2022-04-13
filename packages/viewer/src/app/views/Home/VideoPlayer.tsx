@@ -178,6 +178,7 @@ export default class VideoPlayer extends Component<Props, State> {
             y: this.props.camera?.position?.y,
             z: this.props.camera?.position?.z,
           },
+          resulation: { width: canvas.width, height: canvas.height },
         });
         await this.props.onDrawRect(this.props.boxes);
       }

@@ -1,4 +1,10 @@
 export { Camera } from './Entities/Camera';
-export { Users } from './Entities/User';
+export {
+  ICamPosition,
+  IGlRect,
+  ILimit,
+  IPtzLimit,
+  IResulation,
+} from './Entities/IGlRect';
 export { Settings } from './Entities/Settings';
-export { ICamPosition, IGlRect, ILimit, IPtzLimit } from './Entities/IGlRect';
+export { Users } from './Entities/User';
