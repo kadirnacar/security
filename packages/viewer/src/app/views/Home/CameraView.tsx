@@ -1,10 +1,9 @@
 import { PlayCircleFilled } from '@mui/icons-material';
 import { CircularProgress, Divider, Grid, IconButton } from '@mui/material';
-import { Camera, Settings } from '@security/models';
+import { Camera, IGlRect, Settings } from '@security/models';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
-import { IGlRect } from '../../models/IGlRect';
 import { DataActions } from '../../reducers/Data/actions';
 import { DataState } from '../../reducers/Data/state';
 import { CameraService } from '../../services/CameraService';
@@ -32,6 +31,8 @@ type Props = {
   showPtz?: boolean;
   searchCanvas?: { id: string; canvas: HTMLCanvasElement };
   onDrawRect?: (rect: IGlRect[]) => void;
+  onFindRect?: (rect: IGlRect) => void;
+  onSearched?: () => void;
   activateDetection?: boolean;
 };
 
@@ -128,7 +129,7 @@ class CameraView extends Component<Props, State> {
       >
         {!this.props.hideControls
           ? [
-              <Grid item xs={4} key={0}>
+              <Grid item xs={3} key={0}>
                 <CameraController
                   onFocalChange={async (val) => {
                     this.setState({ focal: val });
@@ -146,8 +147,25 @@ class CameraView extends Component<Props, State> {
                     this.setState({ images });
                   }}
                   selectedBoxIndex={this.state.selectedBoxIndex}
-                  onClickImage={(item, index) => {
+                  onClickImage={async (item, index) => {
+                    if (this.props.camera?.isPtz) {
+                      const speed = 2.0;
+                      await CameraService.pos(
+                        this.props.camera?.id || '',
+                        item.camPos,
+                        {
+                          x: speed,
+                          y: speed,
+                          z: speed,
+                        }
+                      );
+                    }
                     this.setState({ selectedBoxIndex: index + 1 });
+                  }}
+                  onClickFindImage={(item, index) => {
+                    if (this.props.onFindRect) {
+                      this.props.onFindRect(item);
+                    }
                   }}
                   onCheckPhoto={() => {
                     this.videoPlayer.takePhoto();
@@ -166,7 +184,7 @@ class CameraView extends Component<Props, State> {
           : null}
         <Grid
           item
-          xs={this.props.hideControls ? 12 : 8}
+          xs={this.props.hideControls ? 12 : 9}
           style={{ height: '100%' }}
         >
           {!this.state.playing ? (
@@ -193,18 +211,40 @@ class CameraView extends Component<Props, State> {
                 searchCanvas={this.props.searchCanvas}
                 boxes={this.state.images}
                 selectedBoxIndex={this.state.selectedBoxIndex}
-                onDrawRect={(rect) => {
-                  if (this.props.onDrawRect) {
-                    this.props.onDrawRect(rect);
+                onSearched={() => {
+                  this.setState({ searchCanvases: undefined });
+                  if (this.props.onSearched) {
+                    this.props.onSearched();
                   }
+                }}
+                onDrawRect={(rect) => {
+                  console.log(rect);
                   this.setState({
                     images: rect,
                     selectedBoxIndex: rect.length,
                   });
+                  if (this.props.onDrawRect) {
+                    this.props.onDrawRect(rect);
+                  }
                 }}
               />
               {this.props.showPtz ? (
-                <PtzController camera={this.props.camera}></PtzController>
+                <PtzController
+                  camera={this.props.camera}
+                  onChangePos={async (pos) => {
+                    // if (this.props.camera)
+                    // await this.props.DataActions?.getById(
+                    //   'Camera',
+                    //   this.props.camera.id || ''
+                    // );
+                    const d = this.props.Data?.Camera.List.find(
+                      (x) => x.id == this.props.camera?.id
+                    );
+                    if (d) {
+                      d.position = pos;
+                    }
+                  }}
+                ></PtzController>
               ) : null}
             </>
           )}

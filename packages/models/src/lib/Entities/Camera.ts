@@ -1,7 +1,4 @@
-export interface ITolerance {
-  x: { min: number; max: number };
-  y: { min: number; max: number };
-}
+import { ICamPosition, IPtzLimit } from './IGlRect';
 
 export interface Camera {
   id?: string;
@@ -12,8 +9,8 @@ export interface Camera {
   username?: string;
   password?: string;
   isPtz?: boolean;
-  position?: { x: number; y: number; z: number };
-  cameras?: { camId: string; tolerance?: ITolerance }[];
+  position?: ICamPosition;
+  cameras?: { camId: string; tolerance?: IPtzLimit }[];
   camInfo?: any;
-  panorama?: { x: number; y: number; scale: number };
+  panorama?: ICamPosition;
 }

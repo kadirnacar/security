@@ -10,13 +10,13 @@ import {
   ZoomOut,
 } from '@mui/icons-material';
 import { SpeedDial, SpeedDialAction } from '@mui/material';
-import { Camera } from '@security/models';
+import { Camera, ICamPosition, ILimit, IPtzLimit } from '@security/models';
 import React, { Component } from 'react';
-import { ICamPosition, ILimit, IPtzLimit } from '../../models/IGlRect';
 import { CameraService } from '../../services/CameraService';
 
 type Props = {
   camera?: Camera;
+  onChangePos?: (pos: ICamPosition) => void;
 };
 
 type State = {
@@ -52,6 +52,10 @@ export default class PtzController extends Component<Props, State> {
         z: this.state.speed,
       });
       this.setState({ velocity });
+
+      if (this.props.onChangePos) {
+        this.props.onChangePos(velocity);
+      }
     }
   }
 
@@ -67,7 +71,7 @@ export default class PtzController extends Component<Props, State> {
     const maxY = parseFloat(ptzLimits?.Range.YRange.Max);
     const minZoom = parseFloat(zoomLimits?.Range.XRange.Min);
     const maxZoom = parseFloat(zoomLimits?.Range.XRange.Max);
-
+    console.log(this.props.camera?.position);
     this.setState({
       ptzLimits: {
         x: {
@@ -108,12 +112,13 @@ export default class PtzController extends Component<Props, State> {
             onClick={async () => {
               const { velocity } = this.state;
               if (velocity) {
-                let cuurentValue = 0;
+                let cuurentValue: number = 0;
                 try {
                   cuurentValue = parseFloat(velocity.z);
                 } catch {}
 
-                const movement = cuurentValue + this.state.step;
+                const movement =
+                  (isNaN(cuurentValue) ? 0 : cuurentValue) + this.state.step;
 
                 if (
                   movement <= this.state.zoomLimits.max &&
@@ -131,12 +136,13 @@ export default class PtzController extends Component<Props, State> {
             onClick={async () => {
               const { velocity } = this.state;
               if (velocity) {
-                let cuurentValue = 0;
+                let cuurentValue: number = 0;
                 try {
                   cuurentValue = parseFloat(velocity.z);
                 } catch {}
 
-                const movement = cuurentValue - this.state.step;
+                const movement =
+                  (isNaN(cuurentValue) ? 0 : cuurentValue) - this.state.step;
 
                 if (
                   movement <= this.state.zoomLimits.max &&
@@ -156,12 +162,15 @@ export default class PtzController extends Component<Props, State> {
                   title={`Y: ${this.state.velocity?.y}`}
                   onClick={async () => {
                     const { velocity } = this.state;
+                    debugger;
                     if (velocity) {
-                      let cuurentValue = 0;
+                      let cuurentValue: number = 0;
                       try {
                         cuurentValue = parseFloat(velocity.y);
                       } catch {}
-                      const movement = cuurentValue + this.state.step;
+                      const movement =
+                        (isNaN(cuurentValue) ? 0 : cuurentValue) +
+                        this.state.step;
 
                       if (
                         movement <= this.state.ptzLimits.y.max &&
@@ -181,13 +190,15 @@ export default class PtzController extends Component<Props, State> {
                     const { velocity } = this.state;
 
                     if (velocity) {
-                      let cuurentValue = 0;
+                      let cuurentValue: number = 0;
 
                       try {
                         cuurentValue = parseFloat(velocity.y);
                       } catch {}
 
-                      const movement = cuurentValue - this.state.step;
+                      const movement =
+                        (isNaN(cuurentValue) ? 0 : cuurentValue) -
+                        this.state.step;
 
                       if (
                         movement <= this.state.ptzLimits.y.max &&
@@ -208,13 +219,15 @@ export default class PtzController extends Component<Props, State> {
                     const { velocity } = this.state;
 
                     if (velocity) {
-                      let cuurentValue = 0;
+                      let cuurentValue: number = 0;
 
                       try {
                         cuurentValue = parseFloat(velocity.x);
                       } catch {}
 
-                      const movement = cuurentValue + this.state.step;
+                      const movement =
+                        (isNaN(cuurentValue) ? 0 : cuurentValue) +
+                        this.state.step;
 
                       if (
                         movement <= this.state.ptzLimits.x.max &&
@@ -241,13 +254,15 @@ export default class PtzController extends Component<Props, State> {
                     const { velocity } = this.state;
 
                     if (velocity) {
-                      let cuurentValue = 0;
+                      let cuurentValue: number = 0;
 
                       try {
                         cuurentValue = parseFloat(velocity.x);
                       } catch {}
 
-                      const movement = cuurentValue - this.state.step;
+                      const movement =
+                        (isNaN(cuurentValue) ? 0 : cuurentValue) -
+                        this.state.step;
                       if (
                         movement <= this.state.ptzLimits.x.max &&
                         movement >= this.state.ptzLimits.x.min

@@ -1,6 +1,7 @@
 import {
   Close,
   Delete,
+  FindInPage,
   PhotoCamera,
   Screenshot,
   Visibility,
@@ -15,9 +16,8 @@ import {
   Tabs,
   Typography,
 } from '@mui/material';
-import { Camera } from '@security/models';
+import { Camera, ICamPosition, IGlRect } from '@security/models';
 import React, { Component } from 'react';
-import { IGlRect } from '../../models/IGlRect';
 
 type Props = {
   camera?: Camera;
@@ -27,12 +27,13 @@ type Props = {
   onClearImages?: () => void;
   onRemoveImage?: (img, index) => void;
   onClickImage?: (item, index) => void;
+  onClickFindImage?: (item, index) => void;
   onCheckPhoto?: () => void;
   images?: IGlRect[];
 };
 
 type State = {
-  focal: { x: number; y: number; scale: number };
+  focal: ICamPosition;
   activeTab: number;
 };
 
@@ -51,8 +52,6 @@ function TabPanel(props: TabPanelProps) {
       role="tabpanel"
       hidden={value !== index}
       style={{ position: 'relative', width: '100%', height: '100%' }}
-      // id={`simple-tabpanel-${index}`}
-      // aria-labelledby={`simple-tab-${index}`}
       {...other}
     >
       {value === index && (
@@ -80,14 +79,14 @@ export default class CameraController extends Component<Props, State> {
 
     this.handlePhoto = this.handlePhoto.bind(this);
     this.state = {
-      focal: { x: 0.0, y: 0.0, scale: 1.0 },
+      focal: { x: 0.0, y: 0.0, z: 1.0 },
       activeTab: 0,
     };
   }
 
   componentDidMount() {
     this.setState({
-      focal: this.props.panorama || { x: 0.0, y: 0.0, scale: 1.0 },
+      focal: this.props.panorama || { x: 0.0, y: 0.0, z: 1.0 },
     });
   }
 
@@ -139,6 +138,16 @@ export default class CameraController extends Component<Props, State> {
                       }}
                     >
                       <Close />
+                    </IconButton>
+                    <IconButton
+                      style={{ position: 'absolute', right: 25 }}
+                      onClick={() => {
+                        if (this.props.onClickFindImage) {
+                          this.props.onClickFindImage(item, index);
+                        }
+                      }}
+                    >
+                      <FindInPage />
                     </IconButton>
                     <img
                       src={item.image?.toDataURL()}
@@ -204,14 +213,14 @@ export default class CameraController extends Component<Props, State> {
           <Slider
             style={{ width: '100%' }}
             size="medium"
-            value={this.state.focal.scale}
+            value={this.state.focal.z}
             max={2.0}
             min={0.0}
             step={0.01}
             valueLabelDisplay="on"
             onChange={(ev, val) => {
               const { focal } = this.state;
-              focal.scale = val as number;
+              focal.z = val as number;
               this.setState({ focal });
               if (this.props.onFocalChange) {
                 this.props.onFocalChange(focal);

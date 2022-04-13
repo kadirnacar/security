@@ -1,7 +1,6 @@
 import { CircularProgress } from '@mui/material';
-import { Camera, Settings } from '@security/models';
+import { Camera, IGlRect, Settings } from '@security/models';
 import React, { Component } from 'react';
-import { IGlRect } from '../../models/IGlRect';
 import { generateGuid } from '../../utils';
 import { CameraManagement } from './CameraManagement';
 
@@ -12,6 +11,7 @@ type Props = {
   focal?: any;
   activateDetection?: boolean;
   onDrawRect?: (rect: IGlRect[]) => void;
+  onSearched?: () => void;
   searchCanvas?: { id: string; canvas: HTMLCanvasElement };
   boxes: IGlRect[];
   selectedBoxIndex?: number;
@@ -47,24 +47,25 @@ export default class VideoPlayer extends Component<Props, State> {
   cameraManagement?: CameraManagement;
 
   async componentDidMount() {
-    if (this.canvas.current && this.video.current) {
+    if (this.canvas.current && this.video.current && this.props.camera) {
       this.cameraManagement = new CameraManagement(
         this.canvas.current,
         this.video.current,
+        this.props.camera,
         this.props.settings?.maxBoxes
       );
       this.cameraManagement.init();
       this.cameraManagement.onDrawRect =
         this.handleCameraManagementDrawRect.bind(this);
       this.cameraManagement.setBoxes(this.props.boxes);
-    }
 
-    if (this.props.activateDetection && this.cameraManagement) {
-      this.cameraManagement.initDetection();
-      this.cameraManagement.setSelectedBoxIndex(this.props.selectedBoxIndex);
-      this.cameraManagement.setSpeed(
-        this.props.settings?.framePerSecond || 0.5
-      );
+      if (this.props.activateDetection) {
+        this.cameraManagement.initDetection();
+        this.cameraManagement.setSelectedBoxIndex(this.props.selectedBoxIndex);
+        this.cameraManagement.setSpeed(
+          this.props.settings?.framePerSecond || 0.5
+        );
+      }
     }
     this.setState({ loaded: true });
   }
@@ -86,7 +87,14 @@ export default class VideoPlayer extends Component<Props, State> {
       }
 
       if (this.props.searchCanvas != prevProp.searchCanvas) {
-        this.cameraManagement.searchImage(this.props.searchCanvas);
+        setTimeout(async () => {
+          if (this.cameraManagement) {
+            await this.cameraManagement.searchImage(this.props.searchCanvas);
+            if (this.props.onSearched) {
+              this.props.onSearched();
+            }
+          }
+        }, 500);
       }
       this.cameraManagement.setLens(this.props.focal);
       this.cameraManagement.setBoxes(this.props.boxes);
@@ -158,17 +166,20 @@ export default class VideoPlayer extends Component<Props, State> {
 
       if (this.props.onDrawRect) {
         const id = generateGuid();
-        await this.props.onDrawRect([
-          ...this.props.boxes,
-          {
-            id,
-            left: 0,
-            top: 0,
-            right: canvas.width,
-            bottom: canvas.height,
-            image: canvas,
+        this.props.boxes.push({
+          id,
+          left: 0,
+          top: 0,
+          right: canvas.width,
+          bottom: canvas.height,
+          image: canvas,
+          camPos: {
+            x: this.props.camera?.position?.x,
+            y: this.props.camera?.position?.y,
+            z: this.props.camera?.position?.z,
           },
-        ]);
+        });
+        await this.props.onDrawRect(this.props.boxes);
       }
     }
   }

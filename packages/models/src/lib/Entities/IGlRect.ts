@@ -5,6 +5,7 @@ export interface IGlRect {
   top: number;
   bottom: number;
   image?: HTMLCanvasElement;
+  camPos?: ICamPosition;
 }
 
 export interface ILimit {

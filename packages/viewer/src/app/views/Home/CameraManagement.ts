@@ -1,24 +1,27 @@
+import { Camera, ICamPosition, IGlRect } from '@security/models';
 import cv from 'opencv.js';
 import REGL from 'regl';
 import yolo from 'tfjs-yolo';
-import { IGlRect } from '../../models/IGlRect';
 import { generateGuid } from '../../utils';
 
 export class CameraManagement {
   constructor(
     canvas: HTMLCanvasElement,
     video: HTMLVideoElement,
+    camera: Camera,
     maxBoxes: number = 10
   ) {
     this.canvas = canvas;
     this.video = video;
     this.maxBoxes = maxBoxes;
+    this.camera = camera;
   }
 
   onDrawRect?: (boxes: IGlRect[]) => void;
   videoLoaded = false;
   canvas: HTMLCanvasElement;
   video: HTMLVideoElement;
+  camera: Camera;
   maxBoxes: number = 10;
   regl?: REGL.Regl;
   boxes: IGlRect[] = [];
@@ -83,10 +86,10 @@ export class CameraManagement {
     this.speed = speed;
   }
 
-  setLens(lens) {
+  setLens(lens: ICamPosition) {
     this.lens.Fx = lens.x;
     this.lens.Fy = lens.y;
-    this.lens.scale = lens.scale;
+    this.lens.scale = lens.z;
   }
 
   stop() {
@@ -120,6 +123,7 @@ export class CameraManagement {
         top: top,
         right: left,
         bottom: top,
+        camPos: this.camera.position,
       };
       this.drawingStartPoint = { x: left, y: top };
       this.drawingRect = drawingRect;
@@ -179,12 +183,9 @@ export class CameraManagement {
         this.drawingRect = undefined;
         this.selectedBoxIndex = this.boxes.length;
 
-        new Promise((resolve) => {
-          if (this.onDrawRect) {
-            this.onDrawRect(this.boxes);
-            resolve(null);
-          }
-        });
+        if (this.onDrawRect) {
+          this.onDrawRect(this.boxes);
+        }
       }
     }
     this.isDrawing = false;
@@ -406,9 +407,28 @@ export class CameraManagement {
 
   searchImage(searchCanvas) {
     if (this.video && searchCanvas && this.canvas) {
-      let src: any = cv.imread(this.video);
+      let orjCanvas = document.createElement('canvas');
+      orjCanvas.width = this.canvas.width;
+      orjCanvas.height = this.canvas.height;
+      //   document.body.append(orjCanvas);
+      let ctx = orjCanvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(
+          this.video,
+          0,
+          0,
+          orjCanvas.width,
+          orjCanvas.height,
+          0,
+          0,
+          orjCanvas.width,
+          orjCanvas.height
+        );
+      }
+      let src: any = cv.imread(orjCanvas);
+
       //   let src: any = cv.imread(this.canvas2.current);
-      let templ = cv.imread(searchCanvas);
+      let templ = cv.imread(searchCanvas.image);
 
       let result_cols = src.cols - templ.cols + 1;
       let result_rows = src.rows - templ.rows + 1;
@@ -428,7 +448,7 @@ export class CameraManagement {
         maxPoint.x + templ.cols,
         maxPoint.y + templ.rows
       );
-      cv.rectangle(src, maxPoint, point, color, 2, cv.LINE_8, 0);
+      //   cv.rectangle(src, maxPoint, point, color, 2, cv.LINE_8, 0);
 
       this.boxes.push({
         id: generateGuid(),
@@ -436,8 +456,10 @@ export class CameraManagement {
         left: maxPoint.x,
         top: maxPoint.y,
         bottom: point.y,
+        image: searchCanvas.image,
       });
       src.delete();
+      templ.delete();
       mask.delete();
 
       //   if (this.props.onDrawRect) {

@@ -13,11 +13,12 @@ import {
   IconButton,
   TextField,
 } from '@mui/material';
-import { Camera } from '@security/models';
+import { Camera, IGlRect } from '@security/models';
 import React, { Component } from 'react';
 import ReactJson from 'react-json-view';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
+
 import { DataActions } from '../../reducers/Data/actions';
 import { DataState } from '../../reducers/Data/state';
 import { ApplicationState } from '../../store';
@@ -29,7 +30,7 @@ interface State {
   camera?: Camera;
   expand?: boolean;
   expandView?: boolean;
-  searchCanvas?: any;
+  searchCanvas?: IGlRect;
 }
 
 interface Props {
@@ -269,13 +270,14 @@ class Form extends Component<Props & WithRouter, State> {
                   showPtz={this.state.camera?.isPtz}
                   showPanorama={!this.state.camera?.isPtz}
                   settings={this.props.Data?.Settings.CurrentItem}
-                  onDrawRect={(id, canvas) => {
+                  onSearched={() => {
                     this.setState({
-                      searchCanvas: {
-                        id,
-                        canvas,
-                        pos: this.state.camera?.position,
-                      },
+                      searchCanvas: undefined,
+                    });
+                  }}
+                  onFindRect={(rect) => {
+                    this.setState({
+                      searchCanvas: rect,
                     });
                   }}
                 />
