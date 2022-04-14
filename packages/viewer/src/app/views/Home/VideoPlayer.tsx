@@ -1,5 +1,11 @@
 import { CircularProgress } from '@mui/material';
-import { Camera, IGlRect, Settings } from '@security/models';
+import {
+  Camera,
+  ICamPosition,
+  IGlRect,
+  IResulation,
+  Settings,
+} from '@security/models';
 import React, { Component } from 'react';
 import { generateGuid } from '../../utils';
 import { CameraManagement } from './CameraManagement';
@@ -10,10 +16,17 @@ type Props = {
   settings?: Settings;
   focal?: any;
   activateDetection?: boolean;
-  onDrawRect?: (rect: IGlRect[]) => void;
+  onDrawRect?: (rects: IGlRect[]) => void;
+  onSearchRect?: (rects: IGlRect[]) => void;
   onSearched?: () => void;
-  searchCanvas?: { id: string; canvas: HTMLCanvasElement };
+  searchCanvas?: {
+    id: string;
+    canvas: HTMLCanvasElement;
+    camPos: ICamPosition;
+    resulation: IResulation;
+  };
   boxes: IGlRect[];
+  searchBoxes: IGlRect[];
   selectedBoxIndex?: number;
   childRef: (item) => void;
 };
@@ -39,6 +52,7 @@ export default class VideoPlayer extends Component<Props, State> {
 
   static defaultProps = {
     boxes: [],
+    searchBoxes: [],
     selectedBoxIndex: -1,
   };
 
@@ -57,7 +71,10 @@ export default class VideoPlayer extends Component<Props, State> {
       this.cameraManagement.init();
       this.cameraManagement.onDrawRect =
         this.handleCameraManagementDrawRect.bind(this);
+      this.cameraManagement.onSearchRect =
+        this.handleCameraManagementSearchRect.bind(this);
       this.cameraManagement.setBoxes(this.props.boxes);
+      this.cameraManagement.setSearchBoxes(this.props.searchBoxes);
 
       if (this.props.activateDetection) {
         this.cameraManagement.initDetection();
@@ -68,6 +85,12 @@ export default class VideoPlayer extends Component<Props, State> {
       }
     }
     this.setState({ loaded: true });
+  }
+
+  async handleCameraManagementSearchRect(boxes: IGlRect[]) {
+    if (this.props.onSearchRect) {
+      await this.props.onSearchRect(boxes);
+    }
   }
 
   async handleCameraManagementDrawRect(boxes: IGlRect[]) {
@@ -98,6 +121,7 @@ export default class VideoPlayer extends Component<Props, State> {
       }
       this.cameraManagement.setLens(this.props.focal);
       this.cameraManagement.setBoxes(this.props.boxes);
+      this.cameraManagement.setSearchBoxes(this.props.searchBoxes);
       this.cameraManagement.setSelectedBoxIndex(this.props.selectedBoxIndex);
     }
   }

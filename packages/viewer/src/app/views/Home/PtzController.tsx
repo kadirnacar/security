@@ -71,24 +71,29 @@ export default class PtzController extends Component<Props, State> {
     const maxY = parseFloat(ptzLimits?.Range.YRange.Max);
     const minZoom = parseFloat(zoomLimits?.Range.XRange.Min);
     const maxZoom = parseFloat(zoomLimits?.Range.XRange.Max);
-    console.log(this.props.camera?.position);
-    this.setState({
-      ptzLimits: {
-        x: {
-          min: isNaN(minX) ? -1 : minX,
-          max: isNaN(maxX) ? 1 : maxX,
+
+    this.setState(
+      {
+        ptzLimits: {
+          x: {
+            min: isNaN(minX) ? -1 : minX,
+            max: isNaN(maxX) ? 1 : maxX,
+          },
+          y: {
+            min: isNaN(minY) ? -1 : minY,
+            max: isNaN(maxY) ? 1 : maxY,
+          },
         },
-        y: {
-          min: isNaN(minY) ? -1 : minY,
-          max: isNaN(maxY) ? 1 : maxY,
+        zoomLimits: {
+          min: isNaN(minZoom) ? -1 : minZoom,
+          max: isNaN(maxZoom) ? 1 : maxZoom,
         },
+        velocity: this.props.camera?.position || { x: 0, y: 0, z: 0 },
       },
-      zoomLimits: {
-        min: isNaN(minZoom) ? -1 : minZoom,
-        max: isNaN(maxZoom) ? 1 : maxZoom,
-      },
-      velocity: this.props.camera?.position || { x: 0, y: 0, z: 0 },
-    });
+      async () => {
+        await this.gotoPosition(this.state.velocity);
+      }
+    );
   }
 
   render() {

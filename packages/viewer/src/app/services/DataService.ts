@@ -206,7 +206,7 @@ export class DataService extends ServiceBase {
       {
         url: `/api/${entity}`,
         method: 'PATCH',
-        data: { ...item },
+        data: item,
       },
       true
     );

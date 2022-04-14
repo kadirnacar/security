@@ -64,7 +64,7 @@ class Form extends Component<Props & WithRouter, State> {
       if (this.props.Data?.Camera.CurrentItem)
         this.setState({ camera: this.props.Data.Camera.CurrentItem });
     } else {
-      this.setState({ camera: { name: '' } });
+      this.setState({ camera: { name: '', cameras: {} } });
     }
   }
 
@@ -87,10 +87,18 @@ class Form extends Component<Props & WithRouter, State> {
   };
 
   async handleSave() {
+    const { camera } = this.state;
+    if (camera && camera.cameras) {
+      Object.keys(camera.cameras).forEach((x) => {
+        camera.cameras[x].forEach((y) => {
+          delete y.image;
+        });
+      });
+    }
     if (this.state.camera?.id) {
-      await this.props.DataActions?.updateItem('Camera', this.state.camera);
+      await this.props.DataActions?.updateItem('Camera', camera);
     } else {
-      await this.props.DataActions?.createItem('Camera', this.state.camera);
+      await this.props.DataActions?.createItem('Camera', camera);
     }
   }
 
@@ -289,6 +297,14 @@ class Form extends Component<Props & WithRouter, State> {
           <Pursuit
             searchCanvas={this.state.searchCanvas}
             camera={this.state.camera}
+            onPursuit={(val) => {
+              const { camera } = this.state;
+
+              if (camera) {
+                camera.cameras = val;
+              }
+              this.setState({ camera });
+            }}
           />
         ) : null}
       </>

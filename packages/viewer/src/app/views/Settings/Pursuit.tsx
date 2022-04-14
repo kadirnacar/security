@@ -27,8 +27,8 @@ import { withRouter } from '../../withRouter';
 import CameraView from '../Home/CameraView';
 
 interface State {
-  selectCamId?: any;
-  activePursuit?: any;
+  selectCamId?: string;
+  activePursuit?: string;
   activeCamera?: Camera;
   canvases: { id: string; canvas: HTMLCanvasElement }[];
 }
@@ -38,6 +38,7 @@ interface Props {
   DataActions?: DataActions<Camera>;
   Data?: DataState;
   searchCanvas?: { id: string; canvas: HTMLCanvasElement }[];
+  onPursuit?: (val) => void;
 }
 
 export class Pursuit extends Component<Props, State> {
@@ -73,9 +74,7 @@ export class Pursuit extends Component<Props, State> {
                           {this.props.Data?.Camera.List.filter(
                             (x) =>
                               !x.isPtz &&
-                              !this.props.camera?.cameras?.find(
-                                (y) => y.camId == x.id
-                              )
+                              !this.props.camera?.cameras[x.id || '']
                           ).map((cam, i) => {
                             return (
                               <MenuItem key={i} value={cam.id}>
@@ -91,15 +90,14 @@ export class Pursuit extends Component<Props, State> {
                         onClick={() => {
                           const { camera } = this.props;
                           if (camera && !camera?.cameras) {
-                            camera.cameras = [];
+                            camera.cameras = {};
                           }
-
                           if (camera) {
-                            camera.cameras?.push({
-                              camId: this.state.selectCamId,
-                            });
-
+                            camera.cameras[this.state.selectCamId || ''] = [];
                             this.setState({ selectCamId: '' });
+                            if (this.props.onPursuit) {
+                              this.props.onPursuit(camera.cameras);
+                            }
                           }
                         }}
                       >
@@ -108,57 +106,57 @@ export class Pursuit extends Component<Props, State> {
                     </ListItem>
 
                     {this.props.camera
-                      ? this.props.camera.cameras?.map((cam, i) => {
-                          const camInfo = this.props.Data?.Camera.List.find(
-                            (x) => x.id == cam.camId
-                          );
-                          return (
-                            <ListItem
-                              key={i}
-                              disablePadding
-                              secondaryAction={
-                                <IconButton
-                                  title="Kaydet"
+                      ? Object.keys(this.props.camera?.cameras).map(
+                          (camId, i) => {
+                            const camInfo = this.props.Data?.Camera.List.find(
+                              (x) => x.id == camId
+                            );
+                            return (
+                              <ListItem
+                                key={i}
+                                disablePadding
+                                secondaryAction={
+                                  <IconButton
+                                    title="Kaydet"
+                                    onClick={() => {
+                                      const { camera } = this.props;
+                                      if (camera && !camera?.cameras) {
+                                        camera.cameras = {};
+                                      }
+
+                                      if (camera) {
+                                        delete camera.cameras[camId];
+
+                                        this.setState({ selectCamId: '' });
+                                      }
+                                    }}
+                                  >
+                                    <Remove />
+                                  </IconButton>
+                                }
+                              >
+                                <ListItemButton
+                                  selected={this.state.activePursuit == camId}
                                   onClick={() => {
-                                    const { camera } = this.props;
-                                    if (camera && !camera?.cameras) {
-                                      camera.cameras = [];
-                                    }
-
-                                    if (camera) {
-                                      camera.cameras?.splice(i, 1);
-
-                                      this.setState({ selectCamId: '' });
-                                    }
+                                    const camera =
+                                      this.props.Data?.Camera.List.find(
+                                        (x) => x.id == camId
+                                      );
+                                    this.setState({
+                                      activePursuit: camId,
+                                      activeCamera: camera,
+                                    });
                                   }}
                                 >
-                                  <Remove />
-                                </IconButton>
-                              }
-                            >
-                              <ListItemButton
-                                selected={
-                                  this.state.activePursuit?.camId == cam.camId
-                                }
-                                onClick={() => {
-                                  const camera =
-                                    this.props.Data?.Camera.List.find(
-                                      (x) => x.id == cam.camId
-                                    );
-                                  this.setState({
-                                    activePursuit: cam,
-                                    activeCamera: camera,
-                                  });
-                                }}
-                              >
-                                <ListItemIcon>
-                                  <CameraAlt />
-                                </ListItemIcon>
-                                <ListItemText primary={camInfo?.name} />
-                              </ListItemButton>
-                            </ListItem>
-                          );
-                        })
+                                  <ListItemIcon>
+                                    <CameraAlt />
+                                  </ListItemIcon>
+                                  <ListItemText primary={camInfo?.name} />
+                                </ListItemButton>
+                              </ListItem>
+                            );
+                          }
+                        )
                       : null}
                   </List>
                 </Grid>
@@ -179,6 +177,33 @@ export class Pursuit extends Component<Props, State> {
                               hideControls={false}
                               showPanorama={!this.state.activeCamera?.isPtz}
                               searchCanvas={this.props.searchCanvas}
+                              searchBoxes={
+                                this.props.camera?.cameras[
+                                  this.state.activePursuit
+                                ]
+                              }
+                              onSearchRect={(boxes) => {
+                                console.log(boxes);
+                              }}
+                              onSearchRemove={(index) => {
+                                const { camera } = this.props;
+                                if (camera && !camera?.cameras) {
+                                  camera.cameras = {};
+                                }
+                                if (camera) {
+                                  console.log(
+                                    camera,
+                                    this.state.activePursuit,
+                                    index
+                                  );
+                                  camera.cameras[
+                                    this.state.activePursuit || ''
+                                  ].splice(index, 1);
+                                  if (this.props.onPursuit) {
+                                    this.props.onPursuit(camera.cameras);
+                                  }
+                                }
+                              }}
                             />
                           </Box>
                         </Grid>

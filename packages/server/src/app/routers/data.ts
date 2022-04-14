@@ -1,6 +1,18 @@
 import { Services } from '@security/database';
 import { Request, Response, Router } from 'express';
-import { createUuidV4 } from '../../onvif-nvt/utils/util';
+
+function createUuidV4() {
+  var result, i, j;
+  result = '';
+  for (j = 0; j < 32; j++) {
+    if (j == 8 || j == 12 || j == 16 || j == 20) result = result + '';
+    i = Math.floor(Math.random() * 16)
+      .toString(16)
+      .toUpperCase();
+    result = result + i;
+  }
+  return result;
+}
 
 export class DataRouter {
   router: Router;

@@ -1,6 +1,12 @@
 import { PlayCircleFilled } from '@mui/icons-material';
 import { CircularProgress, Divider, Grid, IconButton } from '@mui/material';
-import { Camera, IGlRect, Settings } from '@security/models';
+import {
+  Camera,
+  ICamPosition,
+  IGlRect,
+  IResulation,
+  Settings,
+} from '@security/models';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -17,7 +23,7 @@ interface State {
   loaded: boolean;
   playing: boolean;
   focal?: any;
-  images: IGlRect[];
+  boxes: IGlRect[];
   searchCanvases?: { id: string; canvas: HTMLCanvasElement }[];
   selectedBoxIndex: number;
 }
@@ -29,8 +35,16 @@ type Props = {
   settings: Settings;
   hideControls?: boolean;
   showPtz?: boolean;
-  searchCanvas?: { id: string; canvas: HTMLCanvasElement };
+  searchBoxes: IGlRect[];
+  searchCanvas?: {
+    id: string;
+    canvas: HTMLCanvasElement;
+    camPos: ICamPosition;
+    resulation: IResulation;
+  };
   onDrawRect?: (rect: IGlRect[]) => void;
+  onSearchRect?: (rect: IGlRect[]) => void;
+  onSearchRemove?: (index) => void;
   onFindRect?: (rect: IGlRect) => void;
   onSearched?: () => void;
   activateDetection?: boolean;
@@ -46,7 +60,7 @@ class CameraView extends Component<Props, State> {
       loaded: false,
       playing: false,
       focal: { x: 0, y: 0, scale: 1 },
-      images: [],
+      boxes: [],
       selectedBoxIndex: -1,
     };
   }
@@ -139,12 +153,17 @@ class CameraView extends Component<Props, State> {
                     });
                   }}
                   onClearImages={() => {
-                    this.setState({ images: [] });
+                    this.setState({ boxes: [] });
                   }}
                   onRemoveImage={(img, index) => {
-                    const { images } = this.state;
-                    images.splice(index, 1);
-                    this.setState({ images });
+                    const { boxes } = this.state;
+                    boxes.splice(index, 1);
+                    this.setState({ boxes });
+                  }}
+                  onRemoveSearch={(img, index) => {
+                    if (this.props.onSearchRemove) {
+                      this.props.onSearchRemove(index);
+                    }
                   }}
                   selectedBoxIndex={this.state.selectedBoxIndex}
                   onClickImage={async (item, index) => {
@@ -170,7 +189,8 @@ class CameraView extends Component<Props, State> {
                   onCheckPhoto={() => {
                     this.videoPlayer.takePhoto();
                   }}
-                  images={this.state.images}
+                  boxes={this.state.boxes}
+                  searchBoxes={this.props.searchBoxes}
                   panorama={this.state.focal}
                   camera={this.props.camera}
                 />
@@ -209,7 +229,8 @@ class CameraView extends Component<Props, State> {
                 settings={this.props.Data?.Settings.CurrentItem}
                 focal={this.props.camera?.panorama}
                 searchCanvas={this.props.searchCanvas}
-                boxes={this.state.images}
+                boxes={this.state.boxes}
+                searchBoxes={this.props.searchBoxes}
                 selectedBoxIndex={this.state.selectedBoxIndex}
                 onSearched={() => {
                   this.setState({ searchCanvases: undefined });
@@ -217,14 +238,22 @@ class CameraView extends Component<Props, State> {
                     this.props.onSearched();
                   }
                 }}
-                onDrawRect={(rect) => {
-                  console.log(rect);
+                onDrawRect={(rects) => {
                   this.setState({
-                    images: rect,
-                    selectedBoxIndex: rect.length,
+                    boxes: rects,
+                    selectedBoxIndex: rects.length,
                   });
                   if (this.props.onDrawRect) {
-                    this.props.onDrawRect(rect);
+                    this.props.onDrawRect(rects);
+                  }
+                }}
+                onSearchRect={(rects) => {
+                  // this.setState({
+                  //   searchBoxes: rects,
+                  //   selectedBoxIndex: rects.length,
+                  // });
+                  if (this.props.onSearchRect) {
+                    this.props.onSearchRect(rects);
                   }
                 }}
               />

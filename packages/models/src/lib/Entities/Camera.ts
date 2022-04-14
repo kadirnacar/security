@@ -1,4 +1,4 @@
-import { ICamPosition, IPtzLimit } from './IGlRect';
+import { ICamPosition, IGlRect, IPtzLimit } from './IGlRect';
 
 export interface Camera {
   id?: string;
@@ -10,7 +10,7 @@ export interface Camera {
   password?: string;
   isPtz?: boolean;
   position?: ICamPosition;
-  cameras?: { camId: string; tolerance?: IPtzLimit }[];
+  cameras: { [key in string]: IGlRect[] };
   camInfo?: any;
   panorama?: ICamPosition;
 }

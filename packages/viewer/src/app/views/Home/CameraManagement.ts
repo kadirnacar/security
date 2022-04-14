@@ -18,6 +18,7 @@ export class CameraManagement {
   }
 
   onDrawRect?: (boxes: IGlRect[]) => void;
+  onSearchRect?: (boxes: IGlRect[]) => void;
   videoLoaded = false;
   canvas: HTMLCanvasElement;
   video: HTMLVideoElement;
@@ -25,6 +26,7 @@ export class CameraManagement {
   maxBoxes: number = 10;
   regl?: REGL.Regl;
   boxes: IGlRect[] = [];
+  searcBoxes: IGlRect[] = [];
   selectedBoxIndex = -1;
   drawingRect?: IGlRect;
   videoAnimate?: REGL.Cancellable;
@@ -78,6 +80,10 @@ export class CameraManagement {
     this.boxes = boxes;
   }
 
+  setSearchBoxes(boxes) {
+    this.searcBoxes = boxes;
+  }
+
   setSelectedBoxIndex(index) {
     this.selectedBoxIndex = index;
   }
@@ -87,9 +93,11 @@ export class CameraManagement {
   }
 
   setLens(lens: ICamPosition) {
-    this.lens.Fx = lens.x;
-    this.lens.Fy = lens.y;
-    this.lens.scale = lens.z;
+    if (lens) {
+      this.lens.Fx = lens.x;
+      this.lens.Fy = lens.y;
+      this.lens.scale = lens.z;
+    }
   }
 
   stop() {
@@ -295,23 +303,25 @@ export class CameraManagement {
           },
           box: () => {
             const flatBoxes = this.boxes
+              .filter((x, i) => i == this.selectedBoxIndex - 1)
               .map((x) => [
                 x.left,
                 x.top,
                 (this.video?.videoWidth || 0) - x.right,
                 (this.video?.videoHeight || 0) - x.bottom,
               ])
-              .flat();
-            //   .concat(
-            //     this.props.boxes
-            //       .map((x) => [
-            //         x.left,
-            //         x.top,
-            //         (this.video?.videoWidth || 0) - x.right,
-            //         (this.video?.videoHeight || 0) - x.bottom,
-            //       ])
-            //       .flat()
-            //   );
+              .flat()
+              .concat(
+                this.searcBoxes
+                  .filter((x, i) => i == this.selectedBoxIndex - 1)
+                  .map((x) => [
+                    x.left,
+                    x.top,
+                    (this.video?.videoWidth || 0) - x.right,
+                    (this.video?.videoHeight || 0) - x.bottom,
+                  ])
+                  .flat()
+              );
             if (this.drawingRect) {
               flatBoxes.push(this.drawingRect.left);
               flatBoxes.push(this.drawingRect.top);
@@ -431,19 +441,18 @@ export class CameraManagement {
       //   let src: any = cv.imread(this.canvas2.current);
       let templ = cv.imread(searchCanvas.image);
 
-      let result_cols = src.cols - templ.cols + 1;
-      let result_rows = src.rows - templ.rows + 1;
+      // let result_cols = src.cols - templ.cols + 1;
+      // let result_rows = src.rows - templ.rows + 1;
 
-      var dst = new cv.Mat(result_cols, result_rows, cv.CV_32FC1);
+      // var dst = new cv.Mat(result_cols, result_rows, cv.CV_32FC1);
+      var dst = new cv.Mat();
       let mask = new cv.Mat();
 
-      cv.matchTemplate(src, templ, dst, cv.TM_CCORR_NORMED, mask);
+      cv.matchTemplate(src, templ, dst, cv.TM_CCOEFF_NORMED, mask);
       cv.normalize(dst, dst, 0, 1, cv.NORM_MINMAX, -1, new cv.Mat());
 
       let result = cv.minMaxLoc(dst, mask);
-      console.log(result);
       let maxPoint = result.maxLoc;
-      let color = new cv.Scalar(255, 0, 0, 255);
 
       let point = new cv.Point(
         maxPoint.x + templ.cols,
@@ -451,18 +460,23 @@ export class CameraManagement {
       );
       //   cv.rectangle(src, maxPoint, point, color, 2, cv.LINE_8, 0);
 
-      this.boxes.push({
+      this.searcBoxes.push({
         id: generateGuid(),
         right: point.x,
         left: maxPoint.x,
         top: maxPoint.y,
         bottom: point.y,
         image: searchCanvas.image,
+        camPos: searchCanvas.camPos,
+        resulation: { width: this.canvas.width, height: this.canvas.height },
       });
+
       src.delete();
       templ.delete();
       mask.delete();
-
+      if (this.onSearchRect) {
+        this.onSearchRect(this.searcBoxes);
+      }
       //   if (this.props.onDrawRect) {
       //     const id = generateGuid();
       //     this.props.onDrawRect(
@@ -527,11 +541,11 @@ vec4 draw_rect(in vec2 bottomLeft, in vec2 topRight, in float lineWidth, in vec2
 
     float pct = pctInside - pctOuter;
 
-    float a = floor((float(index) + 1.0) / float(selectedIndex));
-    float b = floor(float(selectedIndex) / (float(index) + 1.0));
-    vec4 color = vec4(clamp(a * b, 0.0, 1.0), 1.0, 1.0, 1.0);
+    // float a = floor((float(index) + 1.0) / float(selectedIndex));
+    // float b = floor(float(selectedIndex) / (float(index) + 1.0));
+    // vec4 color = vec4(clamp(a * b, 0.0, 1.0), 1.0, 1.0, 1.0);
 
-    vec4 finalColor = mix(Mon, boxColor * clamp(a * b, 0.0, 1.0),  pct);
+    vec4 finalColor = mix(Mon, boxColor,  pct);
     return finalColor;
 }
 

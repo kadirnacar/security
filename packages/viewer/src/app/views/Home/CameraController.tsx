@@ -1,7 +1,9 @@
 import {
+  AutoAwesomeMotion,
   Close,
   Delete,
   FindInPage,
+  Photo,
   PhotoCamera,
   Screenshot,
   Visibility,
@@ -26,10 +28,12 @@ type Props = {
   onFocalChange?: (val) => void;
   onClearImages?: () => void;
   onRemoveImage?: (img, index) => void;
+  onRemoveSearch?: (img, index) => void;
   onClickImage?: (item, index) => void;
   onClickFindImage?: (item, index) => void;
   onCheckPhoto?: () => void;
-  images?: IGlRect[];
+  boxes?: IGlRect[];
+  searchBoxes?: IGlRect[];
 };
 
 type State = {
@@ -106,6 +110,7 @@ export default class CameraController extends Component<Props, State> {
           >
             <Tab label={<PhotoCamera />} />
             <Tab label={<Visibility />} />
+            <Tab label={<AutoAwesomeMotion />} />
             {/* <Tab label={<HighlightAlt />} /> */}
           </Tabs>
         </Box>
@@ -118,8 +123,8 @@ export default class CameraController extends Component<Props, State> {
           </IconButton>
           <Box>
             <ImageList cols={3} variant="masonry">
-              {this.props.images ? (
-                this.props.images?.map((item, index) => (
+              {this.props.boxes ? (
+                this.props.boxes?.map((item, index) => (
                   <ImageListItem
                     key={index}
                     style={{
@@ -227,6 +232,63 @@ export default class CameraController extends Component<Props, State> {
               }
             }}
           />
+        </TabPanel>
+        <TabPanel value={this.state.activeTab} index={2}>
+          <Box>
+            <ImageList cols={2} variant="masonry">
+              {this.props.searchBoxes ? (
+                this.props.searchBoxes?.map((item, index) => (
+                  <ImageListItem
+                    key={index}
+                    style={{
+                      border:
+                        this.props.selectedBoxIndex == index + 1
+                          ? '1px solid red'
+                          : '1px solid gray',
+                    }}
+                  >
+                    <IconButton
+                      style={{ position: 'absolute', right: 0 }}
+                      onClick={() => {
+                        if (this.props.onRemoveSearch) {
+                          this.props.onRemoveSearch(item, index);
+                        }
+                      }}
+                    >
+                      <Close />
+                    </IconButton>
+
+                    {item.image ? (
+                      <img
+                        src={item.image?.toDataURL()}
+                        // srcSet={`${item.img}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
+                        // alt={item.title}
+                        loading="lazy"
+                        onClick={this.props.onClickImage?.bind(
+                          this,
+                          item,
+                          index
+                        )}
+                      />
+                    ) : (
+                      <Photo
+                        style={{ minWidth: 120, minHeight: 70 }}
+                        onClick={this.props.onClickImage?.bind(
+                          this,
+                          item,
+                          index
+                        )}
+                      ></Photo>
+                    )}
+                  </ImageListItem>
+                ))
+              ) : (
+                <ImageListItem>
+                  <img loading="lazy" />
+                </ImageListItem>
+              )}
+            </ImageList>
+          </Box>
         </TabPanel>
       </>
     );
