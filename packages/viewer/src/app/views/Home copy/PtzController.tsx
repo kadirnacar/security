@@ -13,9 +13,12 @@ import { SpeedDial, SpeedDialAction } from '@mui/material';
 import { Camera, ICamPosition, ILimit, IPtzLimit } from '@security/models';
 import React, { Component } from 'react';
 import { CameraService } from '../../services/CameraService';
-import { CamContext } from '../../utils';
 
-type Props = {};
+type Props = {
+  camera?: Camera;
+  goPosition?: ICamPosition;
+  onChangePos?: (pos: ICamPosition) => void;
+};
 
 type State = {
   velocity?: ICamPosition;
@@ -32,7 +35,6 @@ export default class PtzController extends Component<Props, State> {
 
     this.gotoPosition = this.gotoPosition.bind(this);
 
-    console.log(this.context);
     this.state = {
       velocity: { x: 0, y: 1, z: 0 },
       speed: 1,
@@ -43,28 +45,26 @@ export default class PtzController extends Component<Props, State> {
     };
   }
 
-  static contextType = CamContext;
-  context!: React.ContextType<typeof CamContext>;
-
   async gotoPosition(velocity: ICamPosition) {
-    if (velocity && this.context.camera && this.context.camera.id) {
-      await CameraService.pos(this.context.camera?.id, velocity, {
+    if (velocity && this.props.camera?.id) {
+      await CameraService.pos(this.props.camera?.id, velocity, {
         x: this.state.speed,
         y: this.state.speed,
         z: this.state.speed,
       });
       this.setState({ velocity });
-      this.context.camera.position = velocity;
+
+      if (this.props.onChangePos) {
+        this.props.onChangePos(velocity);
+      }
     }
   }
 
   componentDidMount() {
-    this.context.camOptions.gotoPosition = this.gotoPosition;
     const ptzLimits =
-      this.context.camera?.camInfo.defaultProfile.PTZConfiguration
-        .PanTiltLimits;
+      this.props.camera?.camInfo.defaultProfile.PTZConfiguration.PanTiltLimits;
     const zoomLimits =
-      this.context.camera?.camInfo.defaultProfile.PTZConfiguration.ZoomLimits;
+      this.props.camera?.camInfo.defaultProfile.PTZConfiguration.ZoomLimits;
 
     const minX = parseFloat(ptzLimits?.Range.XRange.Min);
     const maxX = parseFloat(ptzLimits?.Range.XRange.Max);
@@ -89,7 +89,7 @@ export default class PtzController extends Component<Props, State> {
           min: isNaN(minZoom) ? -1 : minZoom,
           max: isNaN(maxZoom) ? 1 : maxZoom,
         },
-        velocity: this.context.camera?.position || { x: 0, y: 0, z: 0 },
+        velocity: this.props.camera?.position || { x: 0, y: 0, z: 0 },
       },
       async () => {
         if (this.state.velocity) {
@@ -97,6 +97,16 @@ export default class PtzController extends Component<Props, State> {
         }
       }
     );
+  }
+
+  async componentDidUpdate(prevProp, prevState) {
+    if (
+      this.props.goPosition &&
+      (this.props.goPosition != prevProp.goPosition ||
+        this.props.goPosition != this.state.velocity)
+    ) {
+      this.gotoPosition(this.props.goPosition);
+    }
   }
 
   render() {
@@ -162,7 +172,7 @@ export default class PtzController extends Component<Props, State> {
               }
             }}
           />
-          {this.context.camera?.isPtz
+          {this.props.camera?.isPtz
             ? [
                 <SpeedDialAction
                   key={0}

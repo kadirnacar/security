@@ -1,3 +1,6 @@
+import { Camera, IGlRect } from '@security/models';
+import React from 'react';
+
 export function generateGuid() {
   var result, i, j;
   result = '';
@@ -10,3 +13,16 @@ export function generateGuid() {
   }
   return result;
 }
+
+export interface ICamComtext {
+  render: (state) => void;
+  camera?: Camera;
+  boxes: IGlRect[];
+  camOptions: any;
+  parent?: ICamComtext;
+}
+export const CamContext = React.createContext<ICamComtext>({
+  render: () => {},
+  boxes: [],
+  camOptions: {},
+});

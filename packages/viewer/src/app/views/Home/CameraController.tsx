@@ -18,22 +18,13 @@ import {
   Tabs,
   Typography,
 } from '@mui/material';
-import { Camera, ICamPosition, IGlRect } from '@security/models';
+import { ICamPosition } from '@security/models';
 import React, { Component } from 'react';
+import { CamContext } from '../../utils';
 
 type Props = {
-  camera?: Camera;
-  panorama?: any;
   selectedBoxIndex?: number;
-  onFocalChange?: (val) => void;
-  onClearImages?: () => void;
-  onRemoveImage?: (img, index) => void;
-  onRemoveSearch?: (img, index) => void;
   onClickImage?: (item, index) => void;
-  onClickFindImage?: (item, index) => void;
-  onCheckPhoto?: () => void;
-  boxes?: IGlRect[];
-  searchBoxes?: IGlRect[];
 };
 
 type State = {
@@ -87,10 +78,12 @@ export default class CameraController extends Component<Props, State> {
       activeTab: 0,
     };
   }
+  static contextType = CamContext;
+  context!: React.ContextType<typeof CamContext>;
 
   componentDidMount() {
     this.setState({
-      focal: this.props.panorama || { x: 0.0, y: 0.0, z: 1.0 },
+      focal: this.context.camera?.panorama || { x: 0.0, y: 0.0, z: 1.0 },
     });
   }
 
@@ -108,23 +101,22 @@ export default class CameraController extends Component<Props, State> {
               this.setState({ activeTab: val });
             }}
           >
-            <Tab label={<PhotoCamera />} />
+            {!this.context.parent ? <Tab label={<PhotoCamera />} /> : null}
+            {this.context.parent ? <Tab label={<AutoAwesomeMotion />} /> : null}
             <Tab label={<Visibility />} />
-            <Tab label={<AutoAwesomeMotion />} />
-            {/* <Tab label={<HighlightAlt />} /> */}
           </Tabs>
         </Box>
-        <TabPanel value={this.state.activeTab} index={0}>
-          <IconButton title="Temizle" onClick={this.props.onClearImages}>
-            <Delete />
-          </IconButton>
-          <IconButton title="Çek" onClick={this.props.onCheckPhoto}>
-            <Screenshot />
-          </IconButton>
-          <Box>
-            <ImageList cols={3} variant="masonry">
-              {this.props.boxes ? (
-                this.props.boxes?.map((item, index) => (
+        {!this.context.parent ? (
+          <TabPanel value={this.state.activeTab} index={0}>
+            <IconButton title="Temizle">
+              <Delete />
+            </IconButton>
+            <IconButton title="Çek">
+              <Screenshot />
+            </IconButton>
+            <Box>
+              <ImageList cols={3} variant="masonry">
+                {this.context.boxes.map((item, index) => (
                   <ImageListItem
                     key={index}
                     style={{
@@ -137,23 +129,22 @@ export default class CameraController extends Component<Props, State> {
                     <IconButton
                       style={{ position: 'absolute', right: 0 }}
                       onClick={() => {
-                        if (this.props.onRemoveImage) {
-                          this.props.onRemoveImage(item, index);
-                        }
+                        this.context.boxes.splice(index, 1);
+                        this.context.render({ boxes: this.context.boxes });
                       }}
                     >
                       <Close />
                     </IconButton>
-                    <IconButton
-                      style={{ position: 'absolute', right: 25 }}
-                      onClick={() => {
-                        if (this.props.onClickFindImage) {
-                          this.props.onClickFindImage(item, index);
-                        }
-                      }}
-                    >
-                      <FindInPage />
-                    </IconButton>
+                    {/* <IconButton
+                    style={{ position: 'absolute', right: 25 }}
+                    onClick={() => {
+                      // if (this.context.camOptions.onFindImage) {
+                      //   this.context.camOptions.onFindImage(item);
+                      // }
+                    }}
+                  >
+                    <FindInPage />
+                  </IconButton> */}
                     <img
                       src={item.image?.toDataURL()}
                       // srcSet={`${item.img}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
@@ -162,15 +153,80 @@ export default class CameraController extends Component<Props, State> {
                       onClick={this.props.onClickImage?.bind(this, item, index)}
                     />
                   </ImageListItem>
-                ))
-              ) : (
-                <ImageListItem>
-                  <img loading="lazy" />
-                </ImageListItem>
-              )}
-            </ImageList>
-          </Box>
-        </TabPanel>
+                ))}
+              </ImageList>
+            </Box>
+          </TabPanel>
+        ) : null}
+        {this.context.parent ? (
+          <TabPanel value={this.state.activeTab} index={0}>
+            <Box>
+              <ImageList cols={2} variant="masonry">
+                {this.context.parent && this.context.parent.boxes ? (
+                  this.context.parent.boxes.map((item, index) => (
+                    <ImageListItem
+                      key={index}
+                      style={{
+                        border:
+                          this.props.selectedBoxIndex == index + 1
+                            ? '1px solid red'
+                            : '1px solid gray',
+                      }}
+                    >
+                      <IconButton
+                        style={{ position: 'absolute', right: 0 }}
+                        onClick={() => {
+                          if (this.context.parent) {
+                            this.context.parent?.boxes.splice(index, 1);
+                            this.context.parent?.render({
+                              boxes: this.context.parent.boxes,
+                            });
+                          }
+                        }}
+                      >
+                        <Close />
+                      </IconButton>
+                      <IconButton
+                        style={{ position: 'absolute', right: 25 }}
+                        onClick={() => {
+                          this.context.camOptions.onFindImage(item);
+                        }}
+                      >
+                        <FindInPage />
+                      </IconButton>
+                      {item.image ? (
+                        <img
+                          src={item.image?.toDataURL()}
+                          // srcSet={`${item.img}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
+                          // alt={item.title}
+                          loading="lazy"
+                          onClick={this.props.onClickImage?.bind(
+                            this,
+                            item,
+                            index
+                          )}
+                        />
+                      ) : (
+                        <Photo
+                          style={{ minWidth: 120, minHeight: 70 }}
+                          // onClick={this.props.onClickImage?.bind(
+                          //   this,
+                          //   item,
+                          //   index
+                          // )}
+                        ></Photo>
+                      )}
+                    </ImageListItem>
+                  ))
+                ) : (
+                  <ImageListItem>
+                    <img loading="lazy" />
+                  </ImageListItem>
+                )}
+              </ImageList>
+            </Box>
+          </TabPanel>
+        ) : null}
         <TabPanel value={this.state.activeTab} index={1}>
           <Typography id="input-slider" gutterBottom>
             Yatay
@@ -186,10 +242,10 @@ export default class CameraController extends Component<Props, State> {
             onChange={(ev, val) => {
               const { focal } = this.state;
               focal.x = val as number;
-              this.setState({ focal });
-              if (this.props.onFocalChange) {
-                this.props.onFocalChange(focal);
+              if (this.context.camera) {
+                this.context.camera.panorama = focal;
               }
+              this.setState({ focal });
             }}
           />
           <Typography id="input-slider" gutterBottom>
@@ -206,10 +262,10 @@ export default class CameraController extends Component<Props, State> {
             onChange={(ev, val) => {
               const { focal } = this.state;
               focal.y = val as number;
-              this.setState({ focal });
-              if (this.props.onFocalChange) {
-                this.props.onFocalChange(focal);
+              if (this.context.camera) {
+                this.context.camera.panorama = focal;
               }
+              this.setState({ focal });
             }}
           />
           <Typography id="input-slider" gutterBottom>
@@ -226,69 +282,12 @@ export default class CameraController extends Component<Props, State> {
             onChange={(ev, val) => {
               const { focal } = this.state;
               focal.z = val as number;
-              this.setState({ focal });
-              if (this.props.onFocalChange) {
-                this.props.onFocalChange(focal);
+              if (this.context.camera) {
+                this.context.camera.panorama = focal;
               }
+              this.setState({ focal });
             }}
           />
-        </TabPanel>
-        <TabPanel value={this.state.activeTab} index={2}>
-          <Box>
-            <ImageList cols={2} variant="masonry">
-              {this.props.searchBoxes ? (
-                this.props.searchBoxes?.map((item, index) => (
-                  <ImageListItem
-                    key={index}
-                    style={{
-                      border:
-                        this.props.selectedBoxIndex == index + 1
-                          ? '1px solid red'
-                          : '1px solid gray',
-                    }}
-                  >
-                    <IconButton
-                      style={{ position: 'absolute', right: 0 }}
-                      onClick={() => {
-                        if (this.props.onRemoveSearch) {
-                          this.props.onRemoveSearch(item, index);
-                        }
-                      }}
-                    >
-                      <Close />
-                    </IconButton>
-
-                    {item.image ? (
-                      <img
-                        src={item.image?.toDataURL()}
-                        // srcSet={`${item.img}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
-                        // alt={item.title}
-                        loading="lazy"
-                        onClick={this.props.onClickImage?.bind(
-                          this,
-                          item,
-                          index
-                        )}
-                      />
-                    ) : (
-                      <Photo
-                        style={{ minWidth: 120, minHeight: 70 }}
-                        onClick={this.props.onClickImage?.bind(
-                          this,
-                          item,
-                          index
-                        )}
-                      ></Photo>
-                    )}
-                  </ImageListItem>
-                ))
-              ) : (
-                <ImageListItem>
-                  <img loading="lazy" />
-                </ImageListItem>
-              )}
-            </ImageList>
-          </Box>
         </TabPanel>
       </>
     );

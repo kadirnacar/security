@@ -1,8 +1,8 @@
+import { ICamPosition } from '@security/models';
 import { Result } from '../reducers/Result';
 import { ServiceBase } from './ServiceBase';
 
 export class CameraService extends ServiceBase {
-
   public static async getInfo(id: string): Promise<Result<any>> {
     const result = await this.requestJson(
       {
@@ -49,7 +49,7 @@ export class CameraService extends ServiceBase {
 
   public static async pos(
     id: string,
-    velocity?: { x?: any; y?: any; z?: any },
+    velocity?: ICamPosition,
     speed?: any,
     action?: 'home'
   ): Promise<Result<any>> {

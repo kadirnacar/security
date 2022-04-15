@@ -1,14 +1,34 @@
 import { CircularProgress } from '@mui/material';
-import { IGlRect, Settings } from '@security/models';
+import {
+  Camera,
+  ICamPosition,
+  IGlRect,
+  IResulation,
+  Settings,
+} from '@security/models';
 import React, { Component } from 'react';
-import { CamContext } from '../../utils';
+import { generateGuid } from '../../utils';
 import { CameraManagement } from './CameraManagement';
 
 type Props = {
   stream?: MediaStream;
+  camera?: Camera;
   settings?: Settings;
   focal?: any;
   activateDetection?: boolean;
+  onDrawRect?: (rects: IGlRect[]) => void;
+  onSearchRect?: (rects: IGlRect[]) => void;
+  onSearched?: () => void;
+  searchCanvas?: {
+    id: string;
+    canvas: HTMLCanvasElement;
+    camPos: ICamPosition;
+    resulation: IResulation;
+  };
+  boxes: IGlRect[];
+  searchBoxes: IGlRect[];
+  selectedBoxIndex?: number;
+  childRef: (item) => void;
 };
 
 type State = {
@@ -22,6 +42,9 @@ export default class VideoPlayer extends Component<Props, State> {
     this.video = React.createRef<HTMLVideoElement>();
     this.canvas = React.createRef<HTMLCanvasElement>();
 
+    if (this.props.childRef) {
+      this.props.childRef(this);
+    }
     this.state = {
       loaded: false,
     };
@@ -32,30 +55,30 @@ export default class VideoPlayer extends Component<Props, State> {
     searchBoxes: [],
     selectedBoxIndex: -1,
   };
-  static contextType = CamContext;
-  context!: React.ContextType<typeof CamContext>;
 
   video: React.RefObject<HTMLVideoElement>;
   canvas: React.RefObject<HTMLCanvasElement>;
   cameraManagement?: CameraManagement;
 
   async componentDidMount() {
-    if (this.canvas.current && this.video.current && this.context.camera) {
+    if (this.canvas.current && this.video.current && this.props.camera) {
       this.cameraManagement = new CameraManagement(
         this.canvas.current,
         this.video.current,
-        this.context,
+        this.props.camera,
         this.props.settings?.maxBoxes
       );
       this.cameraManagement.init();
       this.cameraManagement.onDrawRect =
         this.handleCameraManagementDrawRect.bind(this);
-      // this.cameraManagement.onSearchRect =
-      //   this.handleCameraManagementSearchRect.bind(this);
-      // this.cameraManagement.setSearchBoxes(this.props.searchBoxes);
+      this.cameraManagement.onSearchRect =
+        this.handleCameraManagementSearchRect.bind(this);
+      this.cameraManagement.setBoxes(this.props.boxes);
+      this.cameraManagement.setSearchBoxes(this.props.searchBoxes);
+
       if (this.props.activateDetection) {
         this.cameraManagement.initDetection();
-
+        this.cameraManagement.setSelectedBoxIndex(this.props.selectedBoxIndex);
         this.cameraManagement.setSpeed(
           this.props.settings?.framePerSecond || 0.5
         );
@@ -64,9 +87,16 @@ export default class VideoPlayer extends Component<Props, State> {
     this.setState({ loaded: true });
   }
 
-  handleCameraManagementDrawRect(boxe: IGlRect) {
-    this.context.boxes.push(boxe);
-    this.context.render({ boxes: this.context.boxes });
+  async handleCameraManagementSearchRect(boxes: IGlRect[]) {
+    if (this.props.onSearchRect) {
+      await this.props.onSearchRect(boxes);
+    }
+  }
+
+  async handleCameraManagementDrawRect(boxes: IGlRect[]) {
+    if (this.props.onDrawRect) {
+      await this.props.onDrawRect(boxes);
+    }
   }
 
   async componentDidUpdate(prevProp, prevState) {
@@ -79,22 +109,20 @@ export default class VideoPlayer extends Component<Props, State> {
         this.cameraManagement.initDetection();
       }
 
-      // this.cameraManagement.setContext(this.context);
-
-      // if (this.props.searchCanvas != prevProp.searchCanvas) {
-      //   setTimeout(async () => {
-      //     if (this.cameraManagement) {
-      //       await this.cameraManagement.searchImage(this.props.searchCanvas);
-      //       if (this.props.onSearched) {
-      //         this.props.onSearched();
-      //       }
-      //     }
-      //   }, 500);
-      // }
-      // this.cameraManagement.setLens(this.props.focal);
-      // this.cameraManagement.setBoxes(this.props.boxes);
-      // this.cameraManagement.setSearchBoxes(this.props.searchBoxes);
-      // this.cameraManagement.setSelectedBoxIndex(this.props.selectedBoxIndex);
+      if (this.props.searchCanvas != prevProp.searchCanvas) {
+        setTimeout(async () => {
+          if (this.cameraManagement) {
+            await this.cameraManagement.searchImage(this.props.searchCanvas);
+            if (this.props.onSearched) {
+              this.props.onSearched();
+            }
+          }
+        }, 500);
+      }
+      this.cameraManagement.setLens(this.props.focal);
+      this.cameraManagement.setBoxes(this.props.boxes);
+      this.cameraManagement.setSearchBoxes(this.props.searchBoxes);
+      this.cameraManagement.setSelectedBoxIndex(this.props.selectedBoxIndex);
     }
   }
 
@@ -109,6 +137,29 @@ export default class VideoPlayer extends Component<Props, State> {
   num = 0;
   isStop = false;
   cachedBoxes: any[] = [];
+
+  intersect(boxA, boxB) {
+    const xA = Math.max(boxA.left, boxB.left);
+    const yA = Math.max(boxA.top, boxB.top);
+    const xB = Math.min(boxA.right, boxB.right);
+    const yB = Math.min(boxA.bottom, boxB.bottom);
+
+    const interArea = Math.max(0, xB - xA + 1) * Math.max(0, yB - yA + 1);
+
+    const boxAArea =
+      (boxA.right - boxA.left + 1) * (boxA.bottom - boxA.top + 1);
+
+    return interArea / boxAArea;
+  }
+
+  chunkArray(arr, chunkSize) {
+    return [].concat.apply(
+      [],
+      arr.map(function (elem, i) {
+        return i % chunkSize ? [] : [arr.slice(i, i + chunkSize)];
+      })
+    );
+  }
 
   async takePhoto() {
     if (this.canvas.current && this.video.current) {
@@ -137,26 +188,25 @@ export default class VideoPlayer extends Component<Props, State> {
       }
       // this.isDrawing = false;
 
-      // if (this.props.onDrawRect) {
-      //   const id = generateGuid();
-      //   this.props.boxes.push({
-      //     id,
-      //     left: 0,
-      //     top: 0,
-      //     right: canvas.width,
-      //     bottom: canvas.height,
-      //     image: canvas,
-      //     camPos: this.props.camera?.position
-      //       ? {
-      //           ...this.props.camera?.position,
-      //         }
-      //       : undefined,
-      //     resulation: { width: canvas.width, height: canvas.height },
-      //   });
-      //   console.log('aaaa', [...this.props.boxes]);
+      if (this.props.onDrawRect) {
+        const id = generateGuid();
+        this.props.boxes.push({
+          id,
+          left: 0,
+          top: 0,
+          right: canvas.width,
+          bottom: canvas.height,
+          image: canvas,
+          camPos: this.props.camera?.position
+            ? {
+                ...this.props.camera?.position,
+              }
+            : undefined,
+          resulation: { width: canvas.width, height: canvas.height },
+        });
 
-      //   await this.props.onDrawRect([...this.props.boxes]);
-      // }
+        await this.props.onDrawRect([...this.props.boxes]);
+      }
     }
   }
 

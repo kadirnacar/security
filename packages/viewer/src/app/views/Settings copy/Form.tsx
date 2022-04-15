@@ -18,18 +18,22 @@ import React, { Component } from 'react';
 import ReactJson from 'react-json-view';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
+
 import { DataActions } from '../../reducers/Data/actions';
 import { DataState } from '../../reducers/Data/state';
 import { ApplicationState } from '../../store';
-import { CamContext } from '../../utils';
 import { WithRouter, withRouter } from '../../withRouter';
+import { CameraManagement } from '../Home/CameraManagement';
 import CameraView from '../Home/CameraView';
 import Pursuit from './Pursuit';
 
+export interface ICamComtext {
+  goPos: (pos) => void;
+}
+export const CamContext = React.createContext<ICamComtext>({ goPos: () => {} });
+
 interface State {
   camera?: Camera;
-  boxes: IGlRect[];
-  camOptions: any;
   expand?: boolean;
   expandView?: boolean;
   searchCanvas?: IGlRect;
@@ -51,8 +55,6 @@ class Form extends Component<Props & WithRouter, State, typeof CamContext> {
       camera: undefined,
       expand: false,
       expandView: false,
-      boxes: [],
-      camOptions: {},
     };
   }
 
@@ -110,11 +112,8 @@ class Form extends Component<Props & WithRouter, State, typeof CamContext> {
     return (
       <CamContext.Provider
         value={{
-          camera: this.state.camera,
-          boxes: this.state.boxes,
-          camOptions: this.state.camOptions,
-          render: (state) => {
-            this.setState(state);
+          goPos: (pos) => {
+            console.log(pos);
           },
         }}
       >
@@ -286,9 +285,22 @@ class Form extends Component<Props & WithRouter, State, typeof CamContext> {
                 style={{ maxHeight: 600, height: 600, position: 'relative' }}
               >
                 <CameraView
+                  camera={this.state.camera}
                   hideControls={false}
                   showPtz={this.state.camera?.isPtz}
+                  showPanorama={!this.state.camera?.isPtz}
                   settings={this.props.Data?.Settings.CurrentItem}
+                  goPosition={this.state.goPosition}
+                  onSearched={() => {
+                    this.setState({
+                      searchCanvas: undefined,
+                    });
+                  }}
+                  onFindRect={(rect) => {
+                    this.setState({
+                      searchCanvas: rect,
+                    });
+                  }}
                 />
               </CardContent>
             </Collapse>

@@ -2,37 +2,32 @@ import { Camera, ICamPosition, IGlRect } from '@security/models';
 import cv from 'opencv.js';
 import REGL from 'regl';
 import yolo from 'tfjs-yolo';
-import { generateGuid, ICamComtext } from '../../utils';
-import { CamContext } from '../../utils';
+import { generateGuid } from '../../utils';
 
 export class CameraManagement {
   constructor(
     canvas: HTMLCanvasElement,
     video: HTMLVideoElement,
-    context: ICamComtext,
+    camera: Camera,
     maxBoxes: number = 10
   ) {
     this.canvas = canvas;
     this.video = video;
     this.maxBoxes = maxBoxes;
-    this.context = context;
-
-    if (this.context){
-      this.context.camOptions.onFindImage = (image) => {
-        this.searchImage(image);
-      };
-    }
+    this.camera = camera;
   }
 
-  onDrawRect?: (boxe: IGlRect) => void;
+  onDrawRect?: (boxes: IGlRect[]) => void;
   onSearchRect?: (boxes: IGlRect[]) => void;
   videoLoaded = false;
   canvas: HTMLCanvasElement;
   video: HTMLVideoElement;
-  context: ICamComtext;
+  camera: Camera;
   maxBoxes: number = 10;
   regl?: REGL.Regl;
+  boxes: IGlRect[] = [];
   searcBoxes: IGlRect[] = [];
+  selectedBoxIndex = -1;
   drawingRect?: IGlRect;
   videoAnimate?: REGL.Cancellable;
   yoloAnimate?: any;
@@ -77,12 +72,20 @@ export class CameraManagement {
     );
   }
 
+  getBoxes() {
+    return this.boxes;
+  }
+
+  setBoxes(boxes) {
+    this.boxes = boxes;
+  }
+
   setSearchBoxes(boxes) {
     this.searcBoxes = boxes;
   }
 
-  setContext(context) {
-    this.context = context;
+  setSelectedBoxIndex(index) {
+    this.selectedBoxIndex = index;
   }
 
   setSpeed(speed) {
@@ -128,14 +131,12 @@ export class CameraManagement {
         top: top,
         right: left,
         bottom: top,
-        camPos: this.context.camera?.position
-          ? { ...this.context.camera.position }
-          : undefined,
+        camPos: this.camera.position ? { ...this.camera.position } : undefined,
         resulation: { width: this.canvas.width, height: this.canvas.height },
       };
       this.drawingStartPoint = { x: left, y: top };
       this.drawingRect = drawingRect;
-      this.context.camOptions.selectedBoxIndex = this.context.boxes.length + 1;
+      this.selectedBoxIndex = this.boxes.length + 1;
     }
     this.isDrawing = true;
   }
@@ -187,13 +188,13 @@ export class CameraManagement {
         }
         this.isDrawing = false;
         this.drawingRect.image = canvas;
-        // this.boxes.push(this.drawingRect);
-
-        if (this.onDrawRect && this.drawingRect) {
-          this.onDrawRect({ ...this.drawingRect });
-        }
+        this.boxes.push(this.drawingRect);
         this.drawingRect = undefined;
-        this.context.camOptions.selectedBoxIndex = this.context.boxes.length;
+        this.selectedBoxIndex = this.boxes.length;
+
+        if (this.onDrawRect) {
+          this.onDrawRect(this.boxes);
+        }
       }
     }
     this.isDrawing = false;
@@ -282,17 +283,10 @@ export class CameraManagement {
             return [x, viewportHeight - y, z, viewportHeight - w];
           },
           uLensS: () => {
-            return [
-              this.lens.a || 1.0,
-              this.lens.b || 1.0,
-              this.context.camera?.panorama?.z || 1.0,
-            ];
+            return [this.lens.a, this.lens.b, this.lens.scale];
           },
           uLensF: () => {
-            return [
-              this.context.camera?.panorama?.x || 0.0,
-              this.context.camera?.panorama?.y || 0.0,
-            ];
+            return [this.lens.Fx, this.lens.Fy];
           },
           resolution: (context, props) => {
             return [context.viewportWidth, context.viewportHeight];
@@ -304,13 +298,11 @@ export class CameraManagement {
             return [1, 1, 1, 1];
           },
           selectedIndex: () => {
-            return this.context.camOptions.selectedBoxIndex;
+            return this.selectedBoxIndex;
           },
           box: () => {
-            const flatBoxes = this.context.boxes
-              .filter(
-                (x, i) => i == this.context.camOptions.selectedBoxIndex - 1
-              )
+            const flatBoxes = this.boxes
+              .filter((x, i) => i == this.selectedBoxIndex - 1)
               .map((x) => [
                 x.left,
                 x.top,
@@ -320,9 +312,7 @@ export class CameraManagement {
               .flat()
               .concat(
                 this.searcBoxes
-                  .filter(
-                    (x, i) => i == this.context.camOptions.selectedBoxIndex - 1
-                  )
+                  .filter((x, i) => i == this.selectedBoxIndex - 1)
                   .map((x) => [
                     x.left,
                     x.top,
@@ -413,7 +403,7 @@ export class CameraManagement {
       if (this.canvas && this.activateDetection && this.yoloDetect) {
         // const boxes = await this.yoloDetect.predict(this.canvas.current);
         this.yoloDetect.predict(this.canvas).then((boxes) => {
-          this.context.boxes = boxes;
+          this.boxes = boxes;
           this.yoloAnimate = requestAnimationFrame(this.yoloAnimationFrame);
         });
         // const boxes = await this.yoloDetect(this.video.current);
@@ -483,7 +473,6 @@ export class CameraManagement {
       src.delete();
       templ.delete();
       mask.delete();
-      console.log(this.searcBoxes);
       if (this.onSearchRect) {
         this.onSearchRect(this.searcBoxes);
       }

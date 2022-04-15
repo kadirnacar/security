@@ -16,23 +16,21 @@ import {
   MenuItem,
   Select,
 } from '@mui/material';
-import { Camera, ICamPosition, IGlRect } from '@security/models';
+import { Camera, ICamPosition } from '@security/models';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { DataActions } from '../../reducers/Data/actions';
 import { DataState } from '../../reducers/Data/state';
 import { ApplicationState } from '../../store';
-import { CamContext } from '../../utils';
 import { withRouter } from '../../withRouter';
 import CameraView from '../Home/CameraView';
 
 interface State {
   selectCamId?: string;
-  boxes: IGlRect[];
   activePursuit?: string;
   activeCamera?: Camera;
-  camOptions: any;
+  canvases: { id: string; canvas: HTMLCanvasElement }[];
 }
 
 interface Props {
@@ -47,16 +45,8 @@ interface Props {
 export class Pursuit extends Component<Props, State> {
   constructor(props) {
     super(props);
-    this.state = {
-      selectCamId: '',
-      activeCamera: undefined,
-      boxes: [],
-      camOptions: {},
-    };
+    this.state = { selectCamId: '', activeCamera: undefined, canvases: [] };
   }
-
-  static contextType = CamContext;
-  context!: React.ContextType<typeof CamContext>;
 
   async componentDidMount() {
     await this.props.DataActions?.getItem('Settings');
@@ -183,19 +173,40 @@ export class Pursuit extends Component<Props, State> {
                               position: 'relative',
                             }}
                           >
-                            <CamContext.Provider
-                              value={{
-                                camera: this.state.activeCamera,
-                                boxes: this.state.boxes,
-                                camOptions: this.state.camOptions,
-                                parent: this.context,
-                                render: (state) => {
-                                  this.setState(state);
-                                },
+                            <CameraView
+                              camera={this.state.activeCamera}
+                              hideControls={false}
+                              showPanorama={!this.state.activeCamera?.isPtz}
+                              searchCanvas={this.props.searchCanvas}
+                              onGotoPosition={this.props.onGotoPosition}
+                              searchBoxes={
+                                this.props.camera?.cameras[
+                                  this.state.activePursuit
+                                ]
+                              }
+                              onSearchRect={(boxes) => {
+                                console.log(boxes);
                               }}
-                            >
-                              <CameraView hideControls={false} />
-                            </CamContext.Provider>
+                              onSearchRemove={(index) => {
+                                const { camera } = this.props;
+                                if (camera && !camera?.cameras) {
+                                  camera.cameras = {};
+                                }
+                                if (camera) {
+                                  console.log(
+                                    camera,
+                                    this.state.activePursuit,
+                                    index
+                                  );
+                                  camera.cameras[
+                                    this.state.activePursuit || ''
+                                  ].splice(index, 1);
+                                  if (this.props.onPursuit) {
+                                    this.props.onPursuit(camera.cameras);
+                                  }
+                                }
+                              }}
+                            />
                           </Box>
                         </Grid>
                         {/* <Grid item xs={6}>
