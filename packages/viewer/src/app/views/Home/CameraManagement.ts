@@ -25,7 +25,6 @@ export class CameraManagement {
   }
 
   onDrawRect?: (boxe: IGlRect) => void;
-  onSearchRect?: (boxes: IGlRect[]) => void;
   videoLoaded = false;
   canvas: HTMLCanvasElement;
   video: HTMLVideoElement;
@@ -240,7 +239,6 @@ export class CameraManagement {
           : undefined,
         resulation: { width: canvas.width, height: canvas.height },
       });
-      console.log(this.context)
       this.context.render({ boxes: this.context.boxes });
     }
   }
@@ -350,19 +348,19 @@ export class CameraManagement {
                 (this.video?.videoHeight || 0) - x.bottom,
               ])
               .flat()
-              .concat(
-                this.searcBoxes
-                  .filter(
-                    (x, i) => i == this.context.camOptions.selectedBoxIndex - 1
-                  )
-                  .map((x) => [
-                    x.left,
-                    x.top,
-                    (this.video?.videoWidth || 0) - x.right,
-                    (this.video?.videoHeight || 0) - x.bottom,
-                  ])
-                  .flat()
-              );
+              // .concat(
+              //   this.searcBoxes
+              //     .filter(
+              //       (x, i) => i == this.context.camOptions.selectedBoxIndex - 1
+              //     )
+              //     .map((x) => [
+              //       x.left,
+              //       x.top,
+              //       (this.video?.videoWidth || 0) - x.right,
+              //       (this.video?.videoHeight || 0) - x.bottom,
+              //     ])
+              //     .flat()
+              // );
             if (this.drawingRect) {
               flatBoxes.push(this.drawingRect.left);
               flatBoxes.push(this.drawingRect.top);
@@ -501,7 +499,18 @@ export class CameraManagement {
       );
       //   cv.rectangle(src, maxPoint, point, color, 2, cv.LINE_8, 0);
 
-      this.searcBoxes.push({
+      // this.searcBoxes.push({
+      //   id: generateGuid(),
+      //   right: point.x,
+      //   left: maxPoint.x,
+      //   top: maxPoint.y,
+      //   bottom: point.y,
+      //   image: searchCanvas.image,
+      //   camPos: { ...searchCanvas.camPos },
+      //   resulation: { width: this.canvas.width, height: this.canvas.height },
+      // });
+
+      this.context.boxes.push({
         id: generateGuid(),
         right: point.x,
         left: maxPoint.x,
@@ -511,14 +520,15 @@ export class CameraManagement {
         camPos: { ...searchCanvas.camPos },
         resulation: { width: this.canvas.width, height: this.canvas.height },
       });
+      this.context.render({ boxes: this.context.boxes });
 
       src.delete();
       templ.delete();
       mask.delete();
       console.log(this.searcBoxes);
-      if (this.onSearchRect) {
-        this.onSearchRect(this.searcBoxes);
-      }
+      // if (this.onSearchRect) {
+      //   this.onSearchRect(this.searcBoxes);
+      // }
       //   if (this.props.onDrawRect) {
       //     const id = generateGuid();
       //     this.props.onDrawRect(

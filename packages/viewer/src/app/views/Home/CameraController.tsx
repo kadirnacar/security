@@ -3,6 +3,7 @@ import {
   Close,
   Delete,
   FindInPage,
+  MoveToInbox,
   Photo,
   PhotoCamera,
   Screenshot,
@@ -111,7 +112,7 @@ export default class CameraController extends Component<Props, State> {
             <IconButton
               title="Çek"
               onClick={() => {
-                console.log(this.context)
+                console.log(this.context);
                 if (this.context.camOptions.takePhoto) {
                   this.context.camOptions.takePhoto();
                 }
@@ -198,6 +199,19 @@ export default class CameraController extends Component<Props, State> {
                         }}
                       >
                         <FindInPage />
+                      </IconButton>
+                      <IconButton
+                        style={{ position: 'absolute', right: 50 }}
+                        onClick={async () => {
+                          console.log(this.context,item)
+                          if (this.context.parent?.camOptions.gotoPosition) {
+                            await this.context.parent?.camOptions.gotoPosition(
+                              item.camPos
+                            );
+                          }
+                        }}
+                      >
+                        <MoveToInbox />
                       </IconButton>
                       {item.image ? (
                         <img

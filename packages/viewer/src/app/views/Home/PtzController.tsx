@@ -47,6 +47,7 @@ export default class PtzController extends Component<Props, State> {
   context!: React.ContextType<typeof CamContext>;
 
   async gotoPosition(velocity: ICamPosition) {
+    console.log(velocity)
     if (velocity && this.context.camera && this.context.camera.id) {
       await CameraService.pos(this.context.camera?.id, velocity, {
         x: this.state.speed,
@@ -59,7 +60,7 @@ export default class PtzController extends Component<Props, State> {
   }
 
   componentDidMount() {
-    this.context.camOptions.gotoPosition = this.gotoPosition;
+    this.context.camOptions.gotoPosition = this.gotoPosition.bind(this);
     const ptzLimits =
       this.context.camera?.camInfo.defaultProfile.PTZConfiguration
         .PanTiltLimits;
