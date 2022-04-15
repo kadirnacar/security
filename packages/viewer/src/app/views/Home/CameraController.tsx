@@ -108,10 +108,15 @@ export default class CameraController extends Component<Props, State> {
         </Box>
         {!this.context.parent ? (
           <TabPanel value={this.state.activeTab} index={0}>
-            <IconButton title="Temizle">
-              <Delete />
-            </IconButton>
-            <IconButton title="Çek">
+            <IconButton
+              title="Çek"
+              onClick={() => {
+                console.log(this.context)
+                if (this.context.camOptions.takePhoto) {
+                  this.context.camOptions.takePhoto();
+                }
+              }}
+            >
               <Screenshot />
             </IconButton>
             <Box>

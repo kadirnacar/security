@@ -114,6 +114,7 @@ class Form extends Component<Props & WithRouter, State, typeof CamContext> {
           boxes: this.state.boxes,
           camOptions: this.state.camOptions,
           render: (state) => {
+            console.log(state);
             this.setState(state);
           },
         }}

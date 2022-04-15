@@ -1,7 +1,7 @@
 import { CircularProgress } from '@mui/material';
 import { IGlRect, Settings } from '@security/models';
 import React, { Component } from 'react';
-import { CamContext } from '../../utils';
+import { CamContext, generateGuid } from '../../utils';
 import { CameraManagement } from './CameraManagement';
 
 type Props = {
@@ -48,8 +48,8 @@ export default class VideoPlayer extends Component<Props, State> {
         this.props.settings?.maxBoxes
       );
       this.cameraManagement.init();
-      this.cameraManagement.onDrawRect =
-        this.handleCameraManagementDrawRect.bind(this);
+      this.context.camOptions.takePhoto = this.cameraManagement.takePhoto.bind( this.cameraManagement);
+
       // this.cameraManagement.onSearchRect =
       //   this.handleCameraManagementSearchRect.bind(this);
       // this.cameraManagement.setSearchBoxes(this.props.searchBoxes);
@@ -64,10 +64,7 @@ export default class VideoPlayer extends Component<Props, State> {
     this.setState({ loaded: true });
   }
 
-  handleCameraManagementDrawRect(boxe: IGlRect) {
-    this.context.boxes.push(boxe);
-    this.context.render({ boxes: this.context.boxes });
-  }
+ 
 
   async componentDidUpdate(prevProp, prevState) {
     if (this.video.current && !this.l) {
@@ -110,55 +107,7 @@ export default class VideoPlayer extends Component<Props, State> {
   isStop = false;
   cachedBoxes: any[] = [];
 
-  async takePhoto() {
-    if (this.canvas.current && this.video.current) {
-      let canvas = document.createElement('canvas');
-
-      canvas.width = this.canvas.current?.width;
-      canvas.height = this.canvas.current?.height;
-
-      if (canvas.width <= 50 || canvas.height <= 50) {
-        return;
-      }
-      let ctx = canvas.getContext('2d');
-
-      if (ctx) {
-        ctx.drawImage(
-          this.video.current,
-          0,
-          0,
-          canvas.width,
-          canvas.height,
-          0,
-          0,
-          canvas.width,
-          canvas.height
-        );
-      }
-      // this.isDrawing = false;
-
-      // if (this.props.onDrawRect) {
-      //   const id = generateGuid();
-      //   this.props.boxes.push({
-      //     id,
-      //     left: 0,
-      //     top: 0,
-      //     right: canvas.width,
-      //     bottom: canvas.height,
-      //     image: canvas,
-      //     camPos: this.props.camera?.position
-      //       ? {
-      //           ...this.props.camera?.position,
-      //         }
-      //       : undefined,
-      //     resulation: { width: canvas.width, height: canvas.height },
-      //   });
-      //   console.log('aaaa', [...this.props.boxes]);
-
-      //   await this.props.onDrawRect([...this.props.boxes]);
-      // }
-    }
-  }
+ 
 
   render() {
     return (

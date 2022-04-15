@@ -17,7 +17,7 @@ export class CameraManagement {
     this.maxBoxes = maxBoxes;
     this.context = context;
 
-    if (this.context){
+    if (this.context) {
       this.context.camOptions.onFindImage = (image) => {
         this.searchImage(image);
       };
@@ -189,14 +189,60 @@ export class CameraManagement {
         this.drawingRect.image = canvas;
         // this.boxes.push(this.drawingRect);
 
-        if (this.onDrawRect && this.drawingRect) {
-          this.onDrawRect({ ...this.drawingRect });
-        }
+        this.context.boxes.push({ ...this.drawingRect });
+        this.context.render({ boxes: this.context.boxes });
         this.drawingRect = undefined;
         this.context.camOptions.selectedBoxIndex = this.context.boxes.length;
       }
     }
     this.isDrawing = false;
+  }
+
+  takePhoto() {
+    console.log(this);
+    if (this.canvas && this.video) {
+      let canvas = document.createElement('canvas');
+
+      canvas.width = this.canvas?.width;
+      canvas.height = this.canvas?.height;
+
+      if (canvas.width <= 50 || canvas.height <= 50) {
+        return;
+      }
+      let ctx = canvas.getContext('2d');
+
+      if (ctx) {
+        ctx.drawImage(
+          this.video,
+          0,
+          0,
+          canvas.width,
+          canvas.height,
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+      }
+
+      const id = generateGuid();
+      this.context.boxes.push({
+        id,
+        left: 0,
+        top: 0,
+        right: canvas.width,
+        bottom: canvas.height,
+        image: canvas,
+        camPos: this.context.camera?.position
+          ? {
+              ...this.context.camera?.position,
+            }
+          : undefined,
+        resulation: { width: canvas.width, height: canvas.height },
+      });
+      console.log(this.context)
+      this.context.render({ boxes: this.context.boxes });
+    }
   }
 
   handleCanvasPointerMove(ev) {
@@ -220,20 +266,6 @@ export class CameraManagement {
         } else {
           d.bottom = mousePosY;
         }
-
-        // if (d.right < d.left) {
-        //   const left = d.right;
-        //   const right = d.left;
-        //   d.left = left;
-        //   d.right = right;
-        // }
-
-        // if (d.bottom < d.top) {
-        //   const top = d.bottom;
-        //   const bottom = d.top;
-        //   d.top = top;
-        //   d.bottom = bottom;
-        // }
 
         this.drawingRect = d;
       }
