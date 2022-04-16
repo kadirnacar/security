@@ -50,7 +50,7 @@ class Form extends Component<Props & WithRouter, State, typeof CamContext> {
     this.state = {
       camera: undefined,
       expand: false,
-      expandView: false,
+      expandView: true,
       boxes: [],
       camOptions: {},
     };
@@ -114,7 +114,6 @@ class Form extends Component<Props & WithRouter, State, typeof CamContext> {
           boxes: this.state.boxes,
           camOptions: this.state.camOptions,
           render: (state) => {
-            console.log(state);
             this.setState(state);
           },
         }}

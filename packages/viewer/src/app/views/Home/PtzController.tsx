@@ -32,7 +32,6 @@ export default class PtzController extends Component<Props, State> {
 
     this.gotoPosition = this.gotoPosition.bind(this);
 
-    console.log(this.context);
     this.state = {
       velocity: { x: 0, y: 1, z: 0 },
       speed: 1,

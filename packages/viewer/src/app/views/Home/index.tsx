@@ -18,6 +18,7 @@ import { bindActionCreators } from 'redux';
 import { DataActions } from '../../reducers/Data/actions';
 import { DataState } from '../../reducers/Data/state';
 import { ApplicationState } from '../../store';
+import { CamContext } from '../../utils';
 import CameraView from './CameraView';
 import LayoutItem from './LayoutItem';
 
@@ -178,13 +179,27 @@ class Home extends Component<Props, HomeState> {
                   buttons={buttons}
                   onRemoveItem={this.removeLayoutItem.bind(this, index)}
                 >
-                  <CameraView
-                    camera={cam}
-                    settings={this.props.Data?.Settings.CurrentItem}
-                    hideControls={true}
-                    showPtz={true}
-                    activateDetection={true}
-                  />
+                  <CamContext.Provider
+                    value={{
+                      camera: cam,
+                      boxes: [],
+                      camOptions: {},
+                      render: (state) => {
+                        // this.setState(state);
+                      },
+                    }}
+                  >
+                    <CameraView
+                      // settings={this.props.Data?.Settings.CurrentItem}
+                      // hideControls={true}
+                      // showPtz={true}
+                      // activateDetection={true}
+                      hideControls={true}
+                      showPtz={cam?.isPtz}
+                      activateDetection={true}
+                      settings={this.props.Data?.Settings.CurrentItem}
+                    />
+                  </CamContext.Provider>
                 </LayoutItem>
               </Paper>
             ) : null;

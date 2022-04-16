@@ -16,10 +16,14 @@ export class CameraManagement {
     this.video = video;
     this.maxBoxes = maxBoxes;
     this.context = context;
-
+    this.yoloAnimationFrame = this.yoloAnimationFrame.bind(this);
+    this.drawVideoToCanvas = this.drawVideoToCanvas.bind(this);
     if (this.context) {
       this.context.camOptions.onFindImage = (image) => {
-        this.searchImage(image);
+        return new Promise((resolve) => {
+          this.searchImage(image);
+          resolve(true);
+        });
       };
     }
   }
@@ -111,6 +115,13 @@ export class CameraManagement {
         console.warn(`Prevented unhandled exception: ${ex?.message}`);
       }
     }
+    if (this.drawAnimate) {
+      try {
+        cancelAnimationFrame(this.drawAnimate);
+      } catch (ex: any) {
+        console.warn(`Prevented unhandled exception: ${ex?.message}`);
+      }
+    }
   }
 
   handleCanvasPointerDown(ev) {
@@ -198,7 +209,6 @@ export class CameraManagement {
   }
 
   takePhoto() {
-    console.log(this);
     if (this.canvas && this.video) {
       let canvas = document.createElement('canvas');
 
@@ -287,6 +297,78 @@ export class CameraManagement {
     }
 
     if (this.canvas && this.video) {
+      this.ctx = this.canvas.getContext('2d');
+      this.drawAnimate = requestAnimationFrame(this.drawVideoToCanvas);
+      this.yoloAnimate = requestAnimationFrame(this.yoloAnimationFrame);
+    }
+  }
+
+  ctx: CanvasRenderingContext2D | null = null;
+  drawAnimate?: any;
+  last2 = 0;
+  speed2 = 0.05;
+
+  drawVideoToCanvas(timeStamp) {
+    let timeInSecond = timeStamp / 1000;
+    if (timeInSecond - this.last2 >= this.speed2) {
+      new Promise((resolve) => {
+        if (this.ctx && this.video) {
+          this.ctx.clearRect(
+            0,
+            0,
+            this.video.videoWidth,
+            this.video.videoHeight
+          );
+          this.ctx.drawImage(
+            this.video,
+            0,
+            0,
+            this.video.videoWidth,
+            this.video.videoHeight
+          );
+          this.context.boxes.forEach((x, i) => {
+            if (
+              this.ctx &&
+              (this.context.camOptions.selectedBoxIndex
+                ? this.context.camOptions.selectedBoxIndex - 1 == i
+                : true)
+            ) {
+              this.ctx.beginPath();
+              this.ctx.lineWidth = 6;
+              this.ctx.strokeStyle = 'red';
+              this.ctx.rect(x.left, x.top, x.right - x.left, x.bottom - x.top);
+              this.ctx.stroke();
+              this.ctx.closePath();
+            }
+            // this.ctx?.rect(x.left,x.top,x.right-x.left,x.bottom-x.top);
+            // this.ctx?.strokeStyle
+          });
+        }
+        resolve(null);
+      });
+
+      this.last2 = timeInSecond;
+    }
+    this.drawAnimate = requestAnimationFrame(this.drawVideoToCanvas);
+  }
+
+  handleVideoLoadeddata2() {
+    if (this.videoLoaded) {
+      return;
+    }
+    this.videoLoaded = true;
+    try {
+      if (this.canvas && this.video) {
+        this.canvas.width = this.video.videoWidth;
+        this.canvas.height = this.video.videoHeight;
+      }
+    } catch {}
+
+    if (this.regl) {
+      return;
+    }
+
+    if (this.canvas && this.video) {
       this.regl = REGL(this.canvas);
       let pos = [-1, -1, 1, -1, -1, 1, 1, 1, -1, 1, 1, -1];
       let texture: REGL.Texture2D;
@@ -338,8 +420,11 @@ export class CameraManagement {
           },
           box: () => {
             const flatBoxes = this.context.boxes
-              .filter(
-                (x, i) => i == this.context.camOptions.selectedBoxIndex - 1
+              .filter((x, i) =>
+                this.context.camOptions.selectedBoxIndex &&
+                this.context.camOptions.selectedBoxIndex > 0
+                  ? i == this.context.camOptions.selectedBoxIndex - 1
+                  : true
               )
               .map((x) => [
                 x.left,
@@ -347,20 +432,20 @@ export class CameraManagement {
                 (this.video?.videoWidth || 0) - x.right,
                 (this.video?.videoHeight || 0) - x.bottom,
               ])
-              .flat()
-              // .concat(
-              //   this.searcBoxes
-              //     .filter(
-              //       (x, i) => i == this.context.camOptions.selectedBoxIndex - 1
-              //     )
-              //     .map((x) => [
-              //       x.left,
-              //       x.top,
-              //       (this.video?.videoWidth || 0) - x.right,
-              //       (this.video?.videoHeight || 0) - x.bottom,
-              //     ])
-              //     .flat()
-              // );
+              .flat();
+            // .concat(
+            //   this.searcBoxes
+            //     .filter(
+            //       (x, i) => i == this.context.camOptions.selectedBoxIndex - 1
+            //     )
+            //     .map((x) => [
+            //       x.left,
+            //       x.top,
+            //       (this.video?.videoWidth || 0) - x.right,
+            //       (this.video?.videoHeight || 0) - x.bottom,
+            //     ])
+            //     .flat()
+            // );
             if (this.drawingRect) {
               flatBoxes.push(this.drawingRect.left);
               flatBoxes.push(this.drawingRect.top);
@@ -432,20 +517,32 @@ export class CameraManagement {
             }
           }
         });
-        // this.yoloAnimate = requestAnimationFrame(this.yoloAnimationFrame);
+        this.yoloAnimate = requestAnimationFrame(this.yoloAnimationFrame);
       }
     }
   }
-
+  isPredict = false;
   async yoloAnimationFrame(timeStamp) {
     let timeInSecond = timeStamp / 1000;
-    if (timeInSecond - this.last >= this.speed) {
+    if (timeInSecond - this.last >= this.speed && !this.isPredict) {
       if (this.canvas && this.activateDetection && this.yoloDetect) {
         // const boxes = await this.yoloDetect.predict(this.canvas.current);
-        this.yoloDetect.predict(this.canvas).then((boxes) => {
-          this.context.boxes = boxes;
-          this.yoloAnimate = requestAnimationFrame(this.yoloAnimationFrame);
+        this.isPredict = true;
+        this.yoloDetect.predict(this.video).then((boxes) => {
+          this.context.boxes.splice(0, this.context.boxes.length);
+          this.context.boxes.push(...boxes);
+          this.isPredict = false;
+
+          this.context.render({});
         });
+        // this.context.boxes.splice(0, this.context.boxes.length);
+        // this.context.boxes.push(...boxes);
+        // this.context.render({});
+        // .then((boxes) => {
+        // this.context.boxes.splice(0, this.context.boxes.length);
+        // this.context.boxes.push(...boxes);
+        // this.context.render({});
+        // });
         // const boxes = await this.yoloDetect(this.video.current);
 
         // this.boxes = boxes;
@@ -453,6 +550,7 @@ export class CameraManagement {
       }
       this.last = timeInSecond;
     }
+    this.yoloAnimate = requestAnimationFrame(this.yoloAnimationFrame);
   }
 
   searchImage(searchCanvas) {
@@ -525,7 +623,6 @@ export class CameraManagement {
       src.delete();
       templ.delete();
       mask.delete();
-      console.log(this.searcBoxes);
       // if (this.onSearchRect) {
       //   this.onSearchRect(this.searcBoxes);
       // }

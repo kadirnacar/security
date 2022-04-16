@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	webrtc "github.com/deepch/vdk/format/webrtcv3"
@@ -53,7 +52,7 @@ func HTTPAPIServerStreamWebRTC(suuid string, data string) {
 		for {
 			select {
 			case <-noVideo.C:
-				log.Println("noVideo")
+				log.Println("noVideo 22")
 				return
 			case pck := <-ch:
 				if pck.IsKeyFrame || AudioOnly {
@@ -69,7 +68,7 @@ func HTTPAPIServerStreamWebRTC(suuid string, data string) {
 					mapErr := map[string]string{"error": err.Error()}
 					mapErrJ, _ := json.Marshal(mapErr)
 					fmt.Println(string(mapErrJ))
-					os.Exit(3)
+					//os.Exit(3)
 					return
 				}
 			}

@@ -63,7 +63,6 @@ class CameraView extends Component<Props, State, typeof CamContext> {
     if (this.context.camera?.id) {
       await CameraService.connect(this.context.camera?.id);
     }
-
     this.setState({
       loaded: true,
       focal: this.context.camera?.panorama || { x: 0, y: 0, scale: 1 },

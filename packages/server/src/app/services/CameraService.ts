@@ -64,9 +64,9 @@ export class CameraService {
       if (msg.includes('Stream Codec Not Found')) {
         goProcess.kill();
         await this.endProcess(goProcess);
-      } else if (msg.includes('Stream Exit Rtsp Disconnect')) {
-        goProcess.kill();
-        await this.endProcess(goProcess);
+      // } else if (msg.includes('Stream Exit Rtsp Disconnect')) {
+      //   goProcess.kill();
+      //   await this.endProcess(goProcess);
       } else if (msg.includes('WebRTC Client Offline')) {
         goProcess.kill();
         await this.endProcess(goProcess);
