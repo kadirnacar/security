@@ -1,7 +1,7 @@
 import { CircularProgress } from '@mui/material';
-import { IGlRect, Settings } from '@security/models';
+import { Settings } from '@security/models';
 import React, { Component } from 'react';
-import { CamContext, generateGuid } from '../../utils';
+import { CamContext } from '../../utils';
 import { CameraManagement } from './CameraManagement';
 
 type Props = {
@@ -48,7 +48,9 @@ export default class VideoPlayer extends Component<Props, State> {
         this.props.settings?.maxBoxes
       );
       this.cameraManagement.init();
-      this.context.camOptions.takePhoto = this.cameraManagement.takePhoto.bind( this.cameraManagement);
+      this.context.camOptions.takePhoto = this.cameraManagement.takePhoto.bind(
+        this.cameraManagement
+      );
 
       // this.cameraManagement.onSearchRect =
       //   this.handleCameraManagementSearchRect.bind(this);
@@ -63,8 +65,6 @@ export default class VideoPlayer extends Component<Props, State> {
     }
     this.setState({ loaded: true });
   }
-
- 
 
   async componentDidUpdate(prevProp, prevState) {
     if (this.video.current && !this.l) {
@@ -106,8 +106,6 @@ export default class VideoPlayer extends Component<Props, State> {
   num = 0;
   isStop = false;
   cachedBoxes: any[] = [];
-
- 
 
   render() {
     return (

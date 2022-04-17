@@ -14,12 +14,12 @@ export class CameraRouter {
     try {
       const OnvifManager = require('onvif-nvt');
       OnvifManager.add('discovery');
-      OnvifManager.discovery.startProbe().then((deviceList) => {
-        console.log(deviceList);
-        // 'deviceList' contains all ONVIF devices that have responded.
-        // If it is empty, then no ONVIF devices
-        // responded back to the broadcast.
-      });
+      // OnvifManager.discovery.startProbe().then((deviceList) => {
+      //   console.log(deviceList);
+      //   // 'deviceList' contains all ONVIF devices that have responded.
+      //   // If it is empty, then no ONVIF devices
+      //   // responded back to the broadcast.
+      // });
       const id = req.params['id'];
       const dataRepo = Services.Camera;
       const data = await dataRepo.get(id);

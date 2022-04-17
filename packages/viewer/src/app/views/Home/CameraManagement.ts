@@ -1,9 +1,8 @@
-import { Camera, ICamPosition, IGlRect } from '@security/models';
+import { ICamPosition, IGlRect } from '@security/models';
 import cv from 'opencv.js';
 import REGL from 'regl';
 import yolo from 'tfjs-yolo';
 import { generateGuid, ICamComtext } from '../../utils';
-import { CamContext } from '../../utils';
 
 export class CameraManagement {
   constructor(
@@ -159,7 +158,6 @@ export class CameraManagement {
         // this.drawingRect = drawingRect;
         // this.context.render({});
         // this.isDrawing = true;
-        // console.log(drawingRect);
         // drawingRect.camPos = this.context.camera?.position
         //   ? { ...this.context.camera.position }
         //   : undefined;
@@ -746,7 +744,6 @@ export class CameraManagement {
       //   searchCanvas.top = maxPoint.y;
       //   searchCanvas.bottom = point.y;
       // }
-      console.log(this.context.parent?.camera);
       this.context.parent?.render({ camera: this.context.parent.camera });
       // searchCanvas.image = searchCanvas.image;
       // searchCanvas.resulation = {

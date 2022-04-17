@@ -188,7 +188,8 @@ export class Pursuit extends Component<Props, State> {
                               p: 2,
                               border: '1px dashed grey',
                               position: 'relative',
-                              maxHeight: 600, height: 600
+                              maxHeight: 600,
+                              height: 600,
                             }}
                             // style={{ maxHeight: 600, height: 600, position: 'relative' }}
                           >

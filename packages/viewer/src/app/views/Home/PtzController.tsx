@@ -10,7 +10,7 @@ import {
   ZoomOut,
 } from '@mui/icons-material';
 import { SpeedDial, SpeedDialAction } from '@mui/material';
-import { Camera, ICamPosition, ILimit, IPtzLimit } from '@security/models';
+import { ICamPosition, ILimit, IPtzLimit } from '@security/models';
 import React, { Component } from 'react';
 import { CameraService } from '../../services/CameraService';
 import { CamContext } from '../../utils';
@@ -46,7 +46,6 @@ export default class PtzController extends Component<Props, State> {
   context!: React.ContextType<typeof CamContext>;
 
   async gotoPosition(velocity: ICamPosition) {
-    console.log(velocity)
     if (velocity && this.context.camera && this.context.camera.id) {
       await CameraService.pos(this.context.camera?.id, velocity, {
         x: this.state.speed,

@@ -1,7 +1,6 @@
 import {
   AutoAwesomeMotion,
   Close,
-  Delete,
   FindInPage,
   MoveToInbox,
   Photo,
@@ -245,7 +244,6 @@ export default class CameraController extends Component<Props, State> {
                           const img = await this.context.camOptions.onFindImage(
                             item
                           );
-                          console.log(img);
                           // if (
                           //   this.context.parent &&
                           //   this.context.parent.camera &&

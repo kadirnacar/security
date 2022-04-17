@@ -8,13 +8,13 @@ import {
   CardHeader,
   CssBaseline,
   Divider,
+  Grid,
   Paper,
   Theme,
 } from '@mui/material';
 import { createStyles, withStyles } from '@mui/styles';
 import { Camera } from '@security/models';
 import React, { Component } from 'react';
-import { Responsive as ResponsiveGridLayout } from 'react-grid-layout';
 import { connect } from 'react-redux';
 import { withSize } from 'react-sizeme';
 import { bindActionCreators } from 'redux';
@@ -170,41 +170,56 @@ class Home extends Component<Props, HomeState> {
               </CardContent>
             </Card>
           </Box>
-          {this.props.Data?.Camera.List.filter((x) => !x.isPtz).map((scam) => {
-            return (
-              <CamContext.Provider
-                value={{
-                  camera: scam,
-                  boxes: [],
-                  camOptions: {},
-                  render: (state) => {
-                    this.setState({});
-                  },
-                }}
-              >
-                <Box sx={{ my: 2 }}>
-                  <Card>
-                    <CardHeader title={scam.name} />
-                    <Divider />
-                    <CardContent
-                      style={{
-                        maxHeight: 600,
-                        height: 600,
-                        position: 'relative',
-                      }}
+          <Grid container spacing={0}>
+            {this.props.Data?.Camera.List.filter((x) => !x.isPtz).map(
+              (scam, i) => {
+                return (
+                  <CamContext.Provider
+                    key={i}
+                    value={{
+                      camera: scam,
+                      boxes: [],
+                      camOptions: {},
+                      render: (state) => {
+                        this.setState({});
+                      },
+                    }}
+                  >
+                    <Grid
+                      item
+                      xs={Math.floor(
+                        12 /
+                          (this.props.Data?.Camera.List.filter((x) => !x.isPtz)
+                            .length || 1)
+                      )}
+                      key={0}
                     >
-                      <CameraView
-                        hideControls={true}
-                        showPtz={false}
-                        activateDetection={true}
-                        settings={this.props.Data?.Settings.CurrentItem}
-                      />
-                    </CardContent>
-                  </Card>
-                </Box>
-              </CamContext.Provider>
-            );
-          })}
+                      <Box sx={{ my: 2 }}>
+                        <Card>
+                          <CardHeader title={scam.name} />
+                          <Divider />
+                          <CardContent
+                            style={{
+                              maxHeight: 600,
+                              height: 600,
+                              position: 'relative',
+                            }}
+                          >
+                            <CameraView
+                              hideControls={true}
+                              showPtz={false}
+                              activateDetection={true}
+                              settings={this.props.Data?.Settings.CurrentItem}
+                            />
+                          </CardContent>
+                        </Card>
+                      </Box>
+                    </Grid>
+                  </CamContext.Provider>
+                );
+              }
+            )}
+          </Grid>
         </CamContext.Provider>
         <Paper>
           <LayoutItem

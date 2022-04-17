@@ -1,17 +1,11 @@
-import { Delete, Save } from '@mui/icons-material';
+import { Save } from '@mui/icons-material';
 import {
   Box,
   Card,
   CardContent,
   CardHeader,
-  Checkbox,
   Divider,
-  FormControl,
-  FormControlLabel,
   IconButton,
-  InputLabel,
-  MenuItem,
-  Select,
   TextField,
 } from '@mui/material';
 import { Camera, Settings } from '@security/models';
@@ -91,7 +85,6 @@ class SettingsForm extends Component<Props, State> {
           />
           <Divider />
           <CardContent>
-
             <TextField
               fullWidth
               label="Max Boxes"

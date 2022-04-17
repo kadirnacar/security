@@ -29,7 +29,6 @@ export class CameraService {
   }
 
   static async rtspgo(id, sdp, res) {
-    console.log(id,this.cameraModels);
     const camItem = this.getCamera(id);
     if (camItem) {
       const rtspUrl = new URL(camItem.camera.defaultProfile.StreamUri.Uri);
@@ -74,9 +73,8 @@ export class CameraService {
           await this.endProcess(goProcess);
         }
       });
-    }else{
-      res.status(200).send({msg:'can not find camera'});
-
+    } else {
+      res.status(200).send({ msg: 'can not find camera' });
     }
   }
 

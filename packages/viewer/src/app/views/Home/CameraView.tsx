@@ -63,7 +63,7 @@ class CameraView extends Component<Props, State, typeof CamContext> {
 
   async componentDidMount() {
     if (this.context.camera?.id) {
-      await CameraService.connect(this.context.camera?.id);
+      // await CameraService.connect(this.context.camera?.id);
       this.setState({
         loaded: true,
         connected: true,
@@ -74,7 +74,7 @@ class CameraView extends Component<Props, State, typeof CamContext> {
 
   async componentDidUpdate(prevProps, prevState) {
     if (!this.state.connected && this.context.camera?.id) {
-      await CameraService.connect(this.context.camera?.id);
+      // await CameraService.connect(this.context.camera?.id);
       this.setState({
         loaded: true,
         connected: true,
@@ -142,7 +142,6 @@ class CameraView extends Component<Props, State, typeof CamContext> {
                 <CameraController
                   selectedBoxIndex={this.context.camOptions.selectedBoxIndex}
                   onClickImage={async (item, index) => {
-                    console.log(item);
                     this.context.camOptions.selectedBoxIndex = index;
                     if (this.context.camOptions.gotoPosition) {
                       await this.context.camOptions.gotoPosition(item.camPos);
