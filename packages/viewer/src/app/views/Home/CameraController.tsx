@@ -90,6 +90,30 @@ export default class CameraController extends Component<Props, State> {
 
   handlePhoto(item) {}
 
+  getBoxes() {
+    if (this.context.parent && this.context.parent.boxes) {
+      const bxs =
+        this.context.parent.camera?.cameras[this.context.camera?.id || ''] ||
+        [];
+
+      return bxs.concat(
+        this.context.boxes
+          .filter((x) => !bxs.find((y) => y.id == x.id))
+          .concat(
+            this.context.parent.camera
+              ? this.context.parent.boxes.filter(
+                  (x) =>
+                    !this.context.boxes.find((y) => y.id == x.id) &&
+                    !bxs.find((y) => y.id == x.id)
+                )
+              : []
+          )
+      );
+    } else {
+      return [];
+    }
+  }
+
   render() {
     return (
       <>
@@ -124,7 +148,7 @@ export default class CameraController extends Component<Props, State> {
                     key={index}
                     style={{
                       border:
-                        this.props.selectedBoxIndex == index + 1
+                        this.props.selectedBoxIndex == index
                           ? '1px solid red'
                           : '',
                     }}
@@ -166,111 +190,115 @@ export default class CameraController extends Component<Props, State> {
             <Box>
               <ImageList cols={2} variant="masonry">
                 {this.context.parent && this.context.parent.boxes ? (
-                  this.context.parent.boxes
-                    .concat(
-                      this.context.parent.camera
-                        ? this.context.parent.camera?.cameras[
-                            this.context.camera?.id || ''
-                          ].filter(
-                            (x) => !this.context.boxes.find((y) => y.id == x.id)
-                          )
-                        : []
-                    )
-                    .map((item, index) => (
-                      <ImageListItem
-                        key={index}
+                  this.getBoxes().map((item, index) => (
+                    <ImageListItem
+                      key={index}
+                      style={{
+                        border:
+                          this.props.selectedBoxIndex == index
+                            ? '1px solid red'
+                            : '1px solid gray',
+                      }}
+                    >
+                      <IconButton
                         style={{
-                          border:
-                            this.props.selectedBoxIndex == index + 1
-                              ? '1px solid red'
-                              : '1px solid gray',
+                          position: 'absolute',
+                          right: 0,
+                          color: 'red',
+                        }}
+                        onClick={() => {
+                          if (this.context.parent) {
+                            const i = this.context.parent?.boxes.findIndex(
+                              (x) => x.id == item.id
+                            );
+                            const i2 = this.context.boxes.findIndex(
+                              (x) => x.id == item.id
+                            );
+                            const i3 = this.context.parent?.camera?.cameras[
+                              this.context.camera?.id || ''
+                            ].findIndex((x) => x.id == item.id);
+                            if (i > -1) this.context.parent?.boxes.splice(i, 1);
+                            if (i2 > -1) this.context.boxes.splice(i2, 1);
+                            if (i3 != undefined && i3 > -1)
+                              this.context.parent?.camera?.cameras[
+                                this.context.camera?.id || ''
+                              ].splice(i3, 1);
+
+                            this.context.parent?.render({
+                              boxes: this.context.parent.boxes,
+                            });
+                            this.context.render({
+                              boxes: this.context.boxes,
+                            });
+                          }
                         }}
                       >
-                        <IconButton
-                          style={{ position: 'absolute', right: 0 }}
-                          onClick={() => {
-                            if (this.context.parent) {
-                              const i = this.context.parent?.boxes.findIndex(
-                                (x) => x.id == item.id
-                              );
-                              const i2 = this.context.boxes.findIndex(
-                                (x) => x.id == item.id
-                              );
-                              const i3 = this.context.parent?.camera?.cameras[
-                                this.context.camera?.id || ''
-                              ].findIndex((x) => x.id == item.id);
-                              if (i > -1)
-                                this.context.parent?.boxes.splice(i, 1);
-                              if (i2 > -1) this.context.boxes.splice(i2, 1);
-                              if (i3 != undefined && i3 > -1)
-                                this.context.parent?.camera?.cameras[
-                                  this.context.camera?.id || ''
-                                ].splice(i3, 1);
-                            
-                              this.context.parent?.render({
-                                boxes: this.context.parent.boxes,
-                              });
-                              this.context.render({
-                                boxes: this.context.boxes,
-                              });
-                            }
-                          }}
-                        >
-                          <Close />
-                        </IconButton>
-                        <IconButton
-                          style={{ position: 'absolute', right: 25 }}
-                          onClick={async () => {
-                            await this.context.camOptions.onFindImage(item);
-                            if (
-                              this.context.parent &&
-                              this.context.parent.camera &&
-                              this.context.camera
-                            ) {
-                              this.context.parent.camera.cameras[
-                                this.context.camera?.id || ''
-                              ] = [...this.context.boxes];
-                            }
-                          }}
-                        >
-                          <FindInPage />
-                        </IconButton>
-                        <IconButton
-                          style={{ position: 'absolute', right: 50 }}
-                          onClick={async () => {
-                            if (this.context.parent?.camOptions.gotoPosition) {
-                              await this.context.parent?.camOptions.gotoPosition(
-                                item.camPos
-                              );
-                            }
-                          }}
-                        >
-                          <MoveToInbox />
-                        </IconButton>
-                        {item.image ? (
-                          <img
-                            src={item.image?.toDataURL()}
-                            // srcSet={`${item.img}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
-                            // alt={item.title}
-                            loading="lazy"
-                            onClick={this.props.onClickImage?.bind(
-                              this,
-                              item,
-                              index
-                            )}
-                          />
-                        ) : (
-                          <Photo
-                            style={{ minWidth: 120, minHeight: 70 }}
-                            // onClick={this.props.onClickImage?.bind(
-                            //   this,
-                            //   item,
-                            //   index
-                            // )}
-                          ></Photo>
-                        )}
-                      </ImageListItem>
-                    ))
+                        <Close />
+                      </IconButton>
+                      <IconButton
+                        style={{
+                          position: 'absolute',
+                          right: 25,
+                          color: 'red',
+                        }}
+                        onClick={async () => {
+                          const img = await this.context.camOptions.onFindImage(
+                            item
+                          );
+                          console.log(img);
+                          // if (
+                          //   this.context.parent &&
+                          //   this.context.parent.camera &&
+                          //   this.context.camera
+                          // ) {
+                          //   this.context.parent.camera.cameras[
+                          //     this.context.camera?.id || ''
+                          //   ] = [...this.context.boxes];
+                          // }
+                        }}
+                      >
+                        <FindInPage />
+                      </IconButton>
+                      <IconButton
+                        style={{
+                          position: 'absolute',
+                          right: 50,
+                          color: 'red',
+                        }}
+                        onClick={async () => {
+                          // if (this.context.parent?.camOptions.gotoPosition) {
+                          //   await this.context.parent?.camOptions.gotoPosition(
+                          //     item.camPos
+                          //   );
+                          // }
+                        }}
+                      >
+                        <MoveToInbox />
+                      </IconButton>
+                      {item.image ? (
+                        <img
+                          src={item.image?.toDataURL()}
+                          // srcSet={`${item.img}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
+                          // alt={item.title}
+                          loading="lazy"
+                          onClick={this.props.onClickImage?.bind(
+                            this,
+                            item,
+                            index
+                          )}
+                        />
+                      ) : (
+                        <Photo
+                          style={{ minWidth: 120, minHeight: 70 }}
+                          onClick={this.props.onClickImage?.bind(
+                            this,
+                            item,
+                            index
+                          )}
+                        ></Photo>
+                      )}
+                    </ImageListItem>
+                  ))
                 ) : (
                   <ImageListItem>
                     <img loading="lazy" />

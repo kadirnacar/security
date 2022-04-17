@@ -19,10 +19,9 @@ export class CameraManagement {
     this.yoloAnimationFrame = this.yoloAnimationFrame.bind(this);
     this.drawVideoToCanvas = this.drawVideoToCanvas.bind(this);
     if (this.context) {
-      this.context.camOptions.onFindImage = (image) => {
+      this.context.camOptions.onFindImage = (image: IGlRect) => {
         return new Promise((resolve) => {
-          this.searchImage(image);
-          resolve(true);
+          resolve(this.searchImage(image));
         });
       };
     }
@@ -125,29 +124,70 @@ export class CameraManagement {
   }
 
   handleCanvasPointerDown(ev) {
-    if (this.canvas) {
+    if (this.canvas && !this.isDrawing) {
       const box = (ev.target as HTMLElement).getBoundingClientRect();
       const ratioX = this.canvas.width / box.width;
       const ratioY = this.canvas.height / box.height;
       const left = (ev.clientX - box.left) * ratioX;
       const top = (ev.clientY - box.top) * ratioY;
+      let drawingRect: IGlRect;
 
-      let drawingRect: IGlRect = {
-        id: generateGuid(),
-        left: left,
-        top: top,
-        right: left,
-        bottom: top,
-        camPos: this.context.camera?.position
-          ? { ...this.context.camera.position }
-          : undefined,
-        resulation: { width: this.canvas.width, height: this.canvas.height },
-      };
+      if (
+        this.context.parent &&
+        this.context.camOptions.selectedBoxIndex != undefined
+      ) {
+        drawingRect = this.context.boxes
+          // .concat(this.drawingRect ? [this.drawingRect] : [])
+          .concat(
+            this.context.parent?.camera
+              ? this.context.parent.boxes
+                  .filter((x) => !this.context.boxes.find((y) => y.id == x.id))
+                  .concat(
+                    this.context.parent.camera?.cameras[
+                      this.context.camera?.id || ''
+                    ].filter(
+                      (x) => !this.context.boxes.find((y) => y.id == x.id)
+                    )
+                  )
+              : []
+          )[this.context.camOptions.selectedBoxIndex];
+        drawingRect.left = left;
+        drawingRect.top = top;
+        drawingRect.right = left;
+        drawingRect.bottom = top;
+        // this.context.render({});
+        // this.drawingRect = drawingRect;
+        // this.context.render({});
+        // this.isDrawing = true;
+        // console.log(drawingRect);
+        // drawingRect.camPos = this.context.camera?.position
+        //   ? { ...this.context.camera.position }
+        //   : undefined;
+        // drawingRect.resulation = {
+        //   width: this.canvas.width,
+        //   height: this.canvas.height,
+        // };
+      } else {
+        drawingRect = {
+          id: generateGuid(),
+          left: left,
+          top: top,
+          right: left,
+          bottom: top,
+          camPos: this.context.camera?.position
+            ? { ...this.context.camera.position }
+            : undefined,
+          resulation: { width: this.canvas.width, height: this.canvas.height },
+        };
+      }
       this.drawingStartPoint = { x: left, y: top };
       this.drawingRect = drawingRect;
-      this.context.camOptions.selectedBoxIndex = this.context.boxes.length + 1;
+      // this.context.camOptions.selectedBoxIndex = this.context.boxes.length;
+      this.context.render({});
+      this.isDrawing = true;
+    } else {
+      this.handleCanvasPointerUp(ev);
     }
-    this.isDrawing = true;
   }
 
   handleCanvasPointerUp(ev) {
@@ -199,10 +239,10 @@ export class CameraManagement {
         this.drawingRect.image = canvas;
         // this.boxes.push(this.drawingRect);
 
-        this.context.boxes.push({ ...this.drawingRect });
-        this.context.render({ boxes: this.context.boxes });
+        // this.context.boxes.push({ ...this.drawingRect });
         this.drawingRect = undefined;
-        this.context.camOptions.selectedBoxIndex = this.context.boxes.length;
+        // this.context.camOptions.selectedBoxIndex = this.context.boxes.length;
+        this.context.render({ boxes: this.context.boxes });
       }
     }
     this.isDrawing = false;
@@ -249,7 +289,11 @@ export class CameraManagement {
           : undefined,
         resulation: { width: canvas.width, height: canvas.height },
       });
-      this.context.render({ boxes: this.context.boxes });
+      this.context.camOptions.selectedBoxIndex = 0;
+      this.context.render({
+        boxes: this.context.boxes,
+        camOptions: this.context.camOptions,
+      });
     }
   }
 
@@ -326,23 +370,32 @@ export class CameraManagement {
             this.video.videoWidth,
             this.video.videoHeight
           );
-          this.context.boxes.forEach((x, i) => {
-            if (
-              this.ctx &&
-              (this.context.camOptions.selectedBoxIndex
-                ? this.context.camOptions.selectedBoxIndex - 1 == i
-                : true)
-            ) {
-              this.ctx.beginPath();
-              this.ctx.lineWidth = 6;
-              this.ctx.strokeStyle = 'red';
-              this.ctx.rect(x.left, x.top, x.right - x.left, x.bottom - x.top);
-              this.ctx.stroke();
-              this.ctx.closePath();
-            }
-            // this.ctx?.rect(x.left,x.top,x.right-x.left,x.bottom-x.top);
-            // this.ctx?.strokeStyle
-          });
+
+          this.context.boxes
+            .concat(this.drawingRect ? [this.drawingRect] : [])
+            .concat(this.getBoxes())
+            .forEach((x, i) => {
+              if (
+                this.ctx &&
+                (this.context.camOptions.selectedBoxIndex != undefined
+                  ? this.context.camOptions.selectedBoxIndex == i
+                  : true)
+              ) {
+                this.ctx.beginPath();
+                this.ctx.lineWidth = 6;
+                this.ctx.strokeStyle = 'red';
+                this.ctx.rect(
+                  x.left,
+                  x.top,
+                  x.right - x.left,
+                  x.bottom - x.top
+                );
+                this.ctx.stroke();
+                this.ctx.closePath();
+              }
+              // this.ctx?.rect(x.left,x.top,x.right-x.left,x.bottom-x.top);
+              // this.ctx?.strokeStyle
+            });
         }
         resolve(null);
       });
@@ -422,8 +475,8 @@ export class CameraManagement {
             const flatBoxes = this.context.boxes
               .filter((x, i) =>
                 this.context.camOptions.selectedBoxIndex &&
-                this.context.camOptions.selectedBoxIndex > 0
-                  ? i == this.context.camOptions.selectedBoxIndex - 1
+                this.context.camOptions.selectedBoxIndex >= 0
+                  ? i == this.context.camOptions.selectedBoxIndex
                   : true
               )
               .map((x) => [
@@ -552,8 +605,30 @@ export class CameraManagement {
     }
     this.yoloAnimate = requestAnimationFrame(this.yoloAnimationFrame);
   }
+  getBoxes() {
+    if (this.context.parent && this.context.parent.boxes) {
+      const bxs =
+        this.context.parent.camera?.cameras[this.context.camera?.id || ''] ||
+        [];
 
-  searchImage(searchCanvas) {
+      return bxs.concat(
+        this.context.boxes
+          .filter((x) => !bxs.find((y) => y.id == x.id))
+          .concat(
+            this.context.parent.camera
+              ? this.context.parent.boxes.filter(
+                  (x) =>
+                    !this.context.boxes.find((y) => y.id == x.id) &&
+                    !bxs.find((y) => y.id == x.id)
+                )
+              : []
+          )
+      );
+    } else {
+      return [];
+    }
+  }
+  searchImage(searchCanvas: IGlRect) {
     if (this.video && searchCanvas && this.canvas) {
       let orjCanvas = document.createElement('canvas');
       orjCanvas.width = this.canvas.width;
@@ -608,21 +683,77 @@ export class CameraManagement {
       //   resulation: { width: this.canvas.width, height: this.canvas.height },
       // });
 
-      this.context.boxes.push({
-        id: generateGuid(),
-        right: point.x,
-        left: maxPoint.x,
-        top: maxPoint.y,
-        bottom: point.y,
-        image: searchCanvas.image,
-        camPos: { ...searchCanvas.camPos },
-        resulation: { width: this.canvas.width, height: this.canvas.height },
-      });
-      this.context.render({ boxes: this.context.boxes });
+      // this.context.boxes.push({
+      //   id: generateGuid(),
+      //   right: point.x,
+      //   left: maxPoint.x,
+      //   top: maxPoint.y,
+      //   bottom: point.y,
+      //   image: searchCanvas.image,
+      //   camPos: { ...searchCanvas.camPos },
+      //   resulation: { width: this.canvas.width, height: this.canvas.height },
+      // });
+      // this.context.render({ boxes: this.context.boxes });
 
       src.delete();
       templ.delete();
       mask.delete();
+
+      if (
+        this.context.parent?.camera &&
+        this.context.camera &&
+        this.context.parent.camera.cameras[this.context.camera?.id || '']
+      ) {
+        const cameras =
+          this.context.parent.camera.cameras[this.context.camera?.id || ''];
+        const camRel = cameras.find((x) => x.id == searchCanvas.id);
+        if (!camRel) {
+          cameras.push({
+            ...searchCanvas,
+            camPos: searchCanvas.camPos
+              ? { ...searchCanvas.camPos }
+              : undefined,
+            right: point.x,
+            left: maxPoint.x,
+            top: maxPoint.y,
+            bottom: point.y,
+            resulation: {
+              width: this.canvas.width,
+              height: this.canvas.height,
+            },
+          });
+        } else {
+          camRel.right = point.x;
+          camRel.left = maxPoint.x;
+          camRel.top = maxPoint.y;
+          camRel.bottom = point.y;
+        }
+      }
+
+      // if (!this.context.boxes.find((x) => x.id == searchCanvas.id)) {
+      //   this.context.boxes.push({
+      //     ...searchCanvas,
+      //     camPos: searchCanvas.camPos ? { ...searchCanvas.camPos } : undefined,
+      //     right: point.x,
+      //     left: maxPoint.x,
+      //     top: maxPoint.y,
+      //     bottom: point.y,
+      //     resulation: { width: this.canvas.width, height: this.canvas.height },
+      //   });
+      // } else {
+      //   searchCanvas.right = point.x;
+      //   searchCanvas.left = maxPoint.x;
+      //   searchCanvas.top = maxPoint.y;
+      //   searchCanvas.bottom = point.y;
+      // }
+      console.log(this.context.parent?.camera);
+      this.context.parent?.render({ camera: this.context.parent.camera });
+      // searchCanvas.image = searchCanvas.image;
+      // searchCanvas.resulation = {
+      //   width: this.canvas.width,
+      //   height: this.canvas.height,
+      // };
+
       // if (this.onSearchRect) {
       //   this.onSearchRect(this.searcBoxes);
       // }

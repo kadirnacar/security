@@ -32,7 +32,6 @@ interface State {
   camOptions: any;
   expand?: boolean;
   expandView?: boolean;
-  searchCanvas?: IGlRect;
   goPosition?: ICamPosition;
 }
 
@@ -296,7 +295,6 @@ class Form extends Component<Props & WithRouter, State, typeof CamContext> {
         </Box>
         {this.state.camera?.isPtz ? (
           <Pursuit
-            searchCanvas={this.state.searchCanvas}
             camera={this.state.camera}
             onGotoPosition={(pos) => {
               this.setState({ goPosition: undefined }, () => {

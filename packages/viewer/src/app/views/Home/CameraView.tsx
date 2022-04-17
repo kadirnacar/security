@@ -20,6 +20,7 @@ interface State {
   focal?: any;
   boxes: IGlRect[];
   selectedBoxIndex: number;
+  connected: boolean;
 }
 
 type Props = {
@@ -43,6 +44,7 @@ class CameraView extends Component<Props, State, typeof CamContext> {
       focal: { x: 0, y: 0, scale: 1 },
       boxes: [],
       selectedBoxIndex: -1,
+      connected: false,
     };
   }
   static contextType = CamContext;
@@ -62,11 +64,23 @@ class CameraView extends Component<Props, State, typeof CamContext> {
   async componentDidMount() {
     if (this.context.camera?.id) {
       await CameraService.connect(this.context.camera?.id);
+      this.setState({
+        loaded: true,
+        connected: true,
+        focal: this.context.camera?.panorama || { x: 0, y: 0, scale: 1 },
+      });
     }
-    this.setState({
-      loaded: true,
-      focal: this.context.camera?.panorama || { x: 0, y: 0, scale: 1 },
-    });
+  }
+
+  async componentDidUpdate(prevProps, prevState) {
+    if (!this.state.connected && this.context.camera?.id) {
+      await CameraService.connect(this.context.camera?.id);
+      this.setState({
+        loaded: true,
+        connected: true,
+        focal: this.context.camera?.panorama || { x: 0, y: 0, scale: 1 },
+      });
+    }
   }
 
   handleConnectVideo() {
@@ -128,13 +142,20 @@ class CameraView extends Component<Props, State, typeof CamContext> {
                 <CameraController
                   selectedBoxIndex={this.context.camOptions.selectedBoxIndex}
                   onClickImage={async (item, index) => {
-                    this.context.camOptions.selectedBoxIndex = index + 1;
+                    console.log(item);
+                    this.context.camOptions.selectedBoxIndex = index;
                     if (this.context.camOptions.gotoPosition) {
                       await this.context.camOptions.gotoPosition(item.camPos);
                     }
-                    this.context.render({
-                      camOptions: this.context.camOptions,
-                    });
+                    if (this.context.parent?.camOptions.gotoPosition) {
+                      await this.context.parent?.camOptions.gotoPosition(
+                        item.camPos
+                      );
+                    }
+                    this.context.render({});
+                    // this.context.render({
+                    //   camOptions: this.context.camOptions,
+                    // });
                   }}
                 />
               </Grid>,

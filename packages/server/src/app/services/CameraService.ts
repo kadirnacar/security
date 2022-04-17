@@ -29,49 +29,55 @@ export class CameraService {
   }
 
   static async rtspgo(id, sdp, res) {
+    console.log(id,this.cameraModels);
     const camItem = this.getCamera(id);
-    const rtspUrl = new URL(camItem.camera.defaultProfile.StreamUri.Uri);
-    const connectionUrl = `rtsp://${camItem.model.username}:${camItem.model.password}@${camItem.model.url}:${camItem.model.rtspPort}${rtspUrl.pathname}${rtspUrl.search}`;
+    if (camItem) {
+      const rtspUrl = new URL(camItem.camera.defaultProfile.StreamUri.Uri);
+      const connectionUrl = `rtsp://${camItem.model.username}:${camItem.model.password}@${camItem.model.url}:${camItem.model.rtspPort}${rtspUrl.pathname}${rtspUrl.search}`;
 
-    const goProcess = spawn('go', ['run', '.', id, sdp, connectionUrl], {
-      cwd: './rtspgo',
-    });
+      const goProcess = spawn('go', ['run', '.', id, sdp, connectionUrl], {
+        cwd: './rtspgo',
+      });
 
-    goProcess.stdout.on('data', async (chunk) => {
-      const dataString = chunk.toString('utf8');
-      try {
-        const data = JSON.parse(dataString);
-        if (data.answer) {
-          res.status(200).send(data);
-        } else if (data.error) {
-          console.log('stdout go err', data.error);
-          goProcess.kill();
-          await this.endProcess(goProcess);
-          res.status(501);
-        } else {
+      goProcess.stdout.on('data', async (chunk) => {
+        const dataString = chunk.toString('utf8');
+        try {
+          const data = JSON.parse(dataString);
+          if (data.answer) {
+            res.status(200).send(data);
+          } else if (data.error) {
+            console.log('stdout go err', data.error);
+            goProcess.kill();
+            await this.endProcess(goProcess);
+            res.status(501);
+          } else {
+            res.status(501);
+          }
+        } catch (e) {
+          console.log('stdout err', e);
           res.status(501);
         }
-      } catch (e) {
-        console.log('stdout err', e);
-        res.status(501);
-      }
-    });
+      });
 
-    goProcess.stderr.on('data', async (chunk) => {
-      const msg: string = chunk.toString('utf8');
-      console.log('stderr', msg);
+      goProcess.stderr.on('data', async (chunk) => {
+        const msg: string = chunk.toString('utf8');
+        console.log('stderr', msg);
 
-      if (msg.includes('Stream Codec Not Found')) {
-        goProcess.kill();
-        await this.endProcess(goProcess);
-      // } else if (msg.includes('Stream Exit Rtsp Disconnect')) {
-      //   goProcess.kill();
-      //   await this.endProcess(goProcess);
-      } else if (msg.includes('WebRTC Client Offline')) {
-        goProcess.kill();
-        await this.endProcess(goProcess);
-      }
-    });
+        if (msg.includes('Stream Codec Not Found')) {
+          goProcess.kill();
+          await this.endProcess(goProcess);
+          // } else if (msg.includes('Stream Exit Rtsp Disconnect')) {
+          //   goProcess.kill();
+          //   await this.endProcess(goProcess);
+        } else if (msg.includes('WebRTC Client Offline')) {
+          goProcess.kill();
+          await this.endProcess(goProcess);
+        }
+      });
+    }else{
+      res.status(200).send({msg:'can not find camera'});
+
+    }
   }
 
   static async stopRes(camId, userId, res) {

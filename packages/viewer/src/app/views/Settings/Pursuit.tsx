@@ -39,7 +39,6 @@ interface Props {
   camera?: Camera;
   DataActions?: DataActions<Camera>;
   Data?: DataState;
-  searchCanvas?: { id: string; canvas: HTMLCanvasElement }[];
   onPursuit?: (val) => void;
   onGotoPosition?: (pos?: ICamPosition) => void;
 }
