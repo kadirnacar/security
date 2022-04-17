@@ -1,13 +1,10 @@
 import { CameraAlt, Restore, Save } from '@mui/icons-material';
 import {
-  Box,
   Button,
   ButtonGroup,
   Card,
-  CardContent,
   CardHeader,
   CssBaseline,
-  Divider,
   Paper,
   Theme,
 } from '@mui/material';
@@ -144,68 +141,70 @@ class Home extends Component<Props, HomeState> {
             }
           ></CardHeader>
         </Card>
-        <CamContext.Provider
-          value={{
-            camera: this.props.Data?.Camera.List.find((x) => x.isPtz),
-            boxes: [],
-            camOptions: {},
-            render: (state) => {
-              this.setState({});
-            },
-          }}
+        <ResponsiveGridLayout
+          className="layout"
+          breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+          cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+          rowHeight={100}
+          containerPadding={[0, 10]}
+          width={this.props['size'].width}
+          onLayoutChange={this.layoutChange}
+          // layouts={{ lg: this.state.layout }}
+          draggableHandle={'.dragger'}
+          resizeHandles={['se', 'e', 'w']}
         >
-          <Box sx={{ my: 2 }}>
-            <Card>
-              <CardHeader title="PTZ" />
-              <Divider />
-              <CardContent
-                style={{ maxHeight: 600, height: 600, position: 'relative' }}
-              >
-                <CameraView
-                  hideControls={true}
-                  showPtz={true}
-                  activateDetection={true}
-                  settings={this.props.Data?.Settings.CurrentItem}
-                />
-              </CardContent>
-            </Card>
-          </Box>
-          {this.props.Data?.Camera.List.filter((x) => !x.isPtz).map((scam) => {
-            return (
-              <CamContext.Provider
-                value={{
-                  camera: scam,
-                  boxes: [],
-                  camOptions: {},
-                  render: (state) => {
-                    this.setState({});
-                  },
-                }}
-              >
-                <Box sx={{ my: 2 }}>
-                  <Card>
-                    <CardHeader title={scam.name} />
-                    <Divider />
-                    <CardContent
-                      style={{
-                        maxHeight: 600,
-                        height: 600,
-                        position: 'relative',
-                      }}
-                    >
-                      <CameraView
-                        hideControls={true}
-                        showPtz={false}
-                        activateDetection={true}
-                        settings={this.props.Data?.Settings.CurrentItem}
-                      />
-                    </CardContent>
-                  </Card>
-                </Box>
-              </CamContext.Provider>
-            );
+          {this.state.layout.map((item, index) => {
+            let title = '';
+            let buttons: any[] = [];
+            let cam: Camera | undefined = undefined;
+            let TagName: any = 'div';
+            let props: any = {};
+
+            if (item.type == 'cam') {
+              cam = this.props.Data?.Camera.List.find((x) => x.id == item.i);
+
+              title = cam ? cam.name : '';
+              props = {
+                camera: cam,
+                settings: this.props.Data?.Settings.CurrentItem,
+              };
+              TagName = Tags['CameraView'];
+            }
+
+            return this.props.Data?.Settings.CurrentItem ? (
+              <Paper key={item.i} data-grid={item}>
+                <LayoutItem
+                  index={index}
+                  title={title}
+                  buttons={buttons}
+                  onRemoveItem={this.removeLayoutItem.bind(this, index)}
+                >
+                  <CamContext.Provider
+                    value={{
+                      camera: cam,
+                      boxes: [],
+                      camOptions: {},
+                      render: (state) => {
+                        // this.setState(state);
+                      },
+                    }}
+                  >
+                    <CameraView
+                      // settings={this.props.Data?.Settings.CurrentItem}
+                      // hideControls={true}
+                      // showPtz={true}
+                      // activateDetection={true}
+                      hideControls={true}
+                      showPtz={cam?.isPtz}
+                      activateDetection={true}
+                      settings={this.props.Data?.Settings.CurrentItem}
+                    />
+                  </CamContext.Provider>
+                </LayoutItem>
+              </Paper>
+            ) : null;
           })}
-        </CamContext.Provider>
+        </ResponsiveGridLayout>
         <Paper>
           <LayoutItem
             index={0}
