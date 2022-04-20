@@ -213,7 +213,6 @@ class CameraView extends Component<Props, State, typeof CamContext> {
                           this.context.parent.camera.cameras[
                             this.context.camera?.id || ''
                           ].limits = limits;
-                          console.log(this.context.parent)
                         }
                         this.context.render({});
                       }

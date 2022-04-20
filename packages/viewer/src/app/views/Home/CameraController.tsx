@@ -387,20 +387,51 @@ export default class CameraController extends Component<Props, State> {
         {this.context.parent ? (
           <TabPanel value={this.state.activeTab} index={2}>
             <Box>
-              <ButtonGroup variant="text" aria-label="text button group">
-                <Button>Sol Üst</Button>
-                <Button>Sağ Üst</Button>
-                <Button>Sol Alt</Button>
-                <Button>Sağ Alt</Button>
-              </ButtonGroup>
               <ToggleButtonGroup
                 value={this.state.activePosition}
                 exclusive
-                onChange={(evt, value) => {
+                onChange={async (evt, value) => {
                   this.setState({ activePosition: value });
-                  
+
                   if (this.context.parent) {
                     this.context.parent.limitPosition = value;
+
+                    if (
+                      value &&
+                      this.context.parent.camera &&
+                      this.context.camera &&
+                      this.context.camera.id &&
+                      this.context.parent.camera.cameras[
+                        this.context.camera.id
+                      ] &&
+                      this.context.parent.camera.cameras[this.context.camera.id]
+                        .limits
+                    ) {
+                      const d =
+                        this.context.parent.camera.cameras[
+                          this.context.camera.id
+                        ].limits;
+
+                      if (
+                        this.context.parent?.camOptions.gotoPosition &&
+                        d &&
+                        d[value]
+                      ) {
+                        await this.context.parent?.camOptions.gotoPosition(
+                          d[value].pos
+                        );
+                        this.context.boxes = [
+                          {
+                            top: d[value].coord.y,
+                            id: '',
+                            left: d[value].coord.x,
+                            right: d[value].coord.x + 10,
+                            bottom: d[value].coord.y + 10,
+                          },
+                        ];
+                        this.context.parent.render({});
+                      }
+                    }
                   }
                 }}
                 aria-label="text alignment"
