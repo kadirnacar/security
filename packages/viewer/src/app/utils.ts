@@ -1,5 +1,6 @@
 import { Camera, IGlRect } from '@security/models';
 import React from 'react';
+import { PursuitController } from './views/Home/PursuitController';
 
 export function generateGuid() {
   var result, i, j;
@@ -20,7 +21,10 @@ export interface ICamComtext {
   boxes: IGlRect[];
   camOptions: any;
   parent?: ICamComtext;
+  pursuitController?: PursuitController;
+  limitPosition?: any;
 }
+
 export const CamContext = React.createContext<ICamComtext>({
   render: () => {},
   boxes: [],

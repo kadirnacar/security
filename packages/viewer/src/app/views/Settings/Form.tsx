@@ -93,7 +93,7 @@ class Form extends Component<Props & WithRouter, State, typeof CamContext> {
     const { camera } = this.state;
     if (camera && camera.cameras) {
       Object.keys(camera.cameras).forEach((x) => {
-        camera.cameras[x].forEach((y) => {
+        camera.cameras[x].boxes.forEach((y) => {
           delete y.image;
         });
       });

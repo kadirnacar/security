@@ -22,6 +22,11 @@ export interface IPtzLimit {
   y: ILimit;
 }
 
+export interface ICoord {
+  x: number;
+  y: number;
+}
+
 export interface ICamPosition {
   x: any;
   y: any;

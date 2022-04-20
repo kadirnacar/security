@@ -17,12 +17,14 @@ export class LowdbBase {
     entityName: string,
     parentEntityName?: string[],
     multi = true,
-    defaultSchema: any = {}
+    defaultSchema: any = {},
+    ignoredProperties: any[] = []
   ) {
     this.entityName = entityName;
     this.parentEntityName = parentEntityName || [];
     this.multi = multi;
     this.defaultSchema = defaultSchema;
+    this.ignoredProperties = ignoredProperties;
     if (!this.parentEntityName || this.parentEntityName.length == 0) {
       this.init();
     }
@@ -34,6 +36,20 @@ export class LowdbBase {
   private parentEntityName: string[];
   private dbAdapter: any = {};
   private db: any = {};
+  private ignoredProperties: string[] = [];
+
+  private generateGuid() {
+    var result, i, j;
+    result = '';
+    for (j = 0; j < 32; j++) {
+      if (j == 8 || j == 12 || j == 16 || j == 20) result = result + '';
+      i = Math.floor(Math.random() * 16)
+        .toString(16)
+        .toUpperCase();
+      result = result + i;
+    }
+    return result;
+  }
 
   private init() {
     const filePath = path.resolve(__dirname, 'data', this.entityName);
@@ -50,7 +66,7 @@ export class LowdbBase {
     }
   }
 
-  public async getDb(parentId?: string) {
+  public getDb(parentId?: string) {
     if (this.parentEntityName == null || this.parentEntityName.length == 0) {
       return this.db.get(this.entityName);
     } else if (parentId) {
@@ -63,7 +79,7 @@ export class LowdbBase {
           this.entityName
         );
         if (!Utils.checkFileExists(filePath)) Utils.mkDirByPathSync(filePath);
-        // this.dbAdapter[parentId] = new FileAsync(path.resolve(filePath, "index.json"), serializer);
+        // this.dbAdapter[parentId] = new File(path.resolve(filePath, "index.json"), serializer);
         this.dbAdapter[parentId] = new FileSync(
           path.resolve(filePath, 'index.json'),
           serializer
@@ -82,36 +98,64 @@ export class LowdbBase {
     }
   }
 
-  public async all(parentId?: string) {
-    const result = await this.getDb(parentId);
-    return result.value();
+  public all(parentId?: string) {
+    const result = this.getDb(parentId);
+    return JSON.parse(
+      JSON.stringify(result.value(), (key, value) => {
+        if (this.ignoredProperties.includes(key)) {
+          return undefined;
+        } else {
+          return value;
+        }
+      })
+    );
   }
 
-  public async get(id: string, parentId?: string): Promise<any> {
-    const db = await this.getDb(parentId);
-    const data = this.multi ? db?.find({ id: id }).value() : db?.value();
-    return data;
+  public get(id: string, parentId?: string): Promise<any> {
+    const db = this.getDb(parentId);
+    const data = this.multi ? db?.find({ id: id }) : db;
+    return JSON.parse(
+      JSON.stringify(data.value(), (key, value) => {
+        if (this.ignoredProperties.includes(key)) {
+          return undefined;
+        } else {
+          return value;
+        }
+      })
+    );
   }
 
-  public async save(model: any, parentId?: string) {
-    var db = await this.getDb(parentId);
-    var data = this.multi ? db?.find({ id: model.id }).value() : db?.value();
+  public save(model: any, parentId?: string) {
+    var db = this.getDb(parentId);
+    var data = this.multi ? db?.find({ id: model.id }) : db;
+    let savedData = JSON.parse(
+      JSON.stringify(model, (key, value) => {
+        if (this.ignoredProperties.includes(key)) {
+          return undefined;
+        } else {
+          return value;
+        }
+      })
+    );
+    for (const property of this.ignoredProperties) {
+      delete savedData[property];
+    }
+
+    if (!savedData.id) {
+      savedData.id = this.generateGuid();
+    }
+
     if (data) {
-      this.multi
-        ? db
-            .find({ id: model.id })
-            .assign({ ...model, ...{ id: model.id } })
-            .write()
-        : db.assign(model).write();
+      data.merge(savedData).write();
     } else {
-      this.multi ? db?.push(model).write() : db?.assign(model).write();
+      db.push(savedData).write();
     }
   }
 
-  public async delete(id: string, parentId?: string): Promise<void> {
-    const item = await this.get(id, parentId);
+  public delete(id: string, parentId?: string) {
+    const item = this.get(id, parentId);
     if (item) {
-      const db = await this.getDb(parentId);
+      const db = this.getDb(parentId);
 
       this.multi ? db?.remove({ id: id }).write() : db?.assign({}).write();
 

@@ -111,7 +111,9 @@ export class Pursuit extends Component<Props, State> {
                             camera.cameras = {};
                           }
                           if (camera) {
-                            camera.cameras[this.state.selectCamId || ''] = [];
+                            camera.cameras[this.state.selectCamId || ''] = {
+                              boxes: [],
+                            };
                             this.setState({ selectCamId: '' });
                             if (this.props.onPursuit) {
                               this.props.onPursuit(camera.cameras);

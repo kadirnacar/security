@@ -12,20 +12,12 @@ export class CameraRouter {
 
   public async connect(req: Request, res: Response, next) {
     try {
-      const OnvifManager = require('onvif-nvt');
-      OnvifManager.add('discovery');
-      // OnvifManager.discovery.startProbe().then((deviceList) => {
-      //   console.log(deviceList);
-      //   // 'deviceList' contains all ONVIF devices that have responded.
-      //   // If it is empty, then no ONVIF devices
-      //   // responded back to the broadcast.
-      // });
       const id = req.params['id'];
       const dataRepo = Services.Camera;
       const data = await dataRepo.get(id);
       const cam = await CameraService.connect(data);
       data.camInfo = cam;
-      await dataRepo.save(data);
+      dataRepo.save(data);
       res.status(200).send(cam);
     } catch (err) {
       next(err);
@@ -55,7 +47,11 @@ export class CameraRouter {
         if (data.action === 'home') {
           await camera.ptz.gotoHomePosition();
         } else if (data.velocity && camera.ptz) {
-          const a = await camera.ptz.absoluteMove(null, data.velocity, data.speed);
+          const a = await camera.ptz.absoluteMove(
+            null,
+            data.velocity,
+            data.speed
+          );
           const dataRepo = Services.Camera;
           await dataRepo.save({
             id: camItem.model.id,

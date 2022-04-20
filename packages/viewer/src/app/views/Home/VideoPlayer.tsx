@@ -1,5 +1,5 @@
 import { CircularProgress } from '@mui/material';
-import { Settings } from '@security/models';
+import { IGlRect, Settings } from '@security/models';
 import React, { Component } from 'react';
 import { CamContext } from '../../utils';
 import { CameraManagement } from './CameraManagement';
@@ -9,6 +9,7 @@ type Props = {
   settings?: Settings;
   focal?: any;
   activateDetection?: boolean;
+  onDrawRect?: (boxe: IGlRect) => void;
 };
 
 type State = {
@@ -51,6 +52,10 @@ export default class VideoPlayer extends Component<Props, State> {
       this.context.camOptions.takePhoto = this.cameraManagement.takePhoto.bind(
         this.cameraManagement
       );
+
+      if (this.props.onDrawRect) {
+        this.cameraManagement.onDrawRect = this.props.onDrawRect;
+      }
 
       // this.cameraManagement.onSearchRect =
       //   this.handleCameraManagementSearchRect.bind(this);

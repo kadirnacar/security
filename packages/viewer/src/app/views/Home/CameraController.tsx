@@ -1,5 +1,6 @@
 import {
   AutoAwesomeMotion,
+  BorderOuter,
   Close,
   FindInPage,
   MoveToInbox,
@@ -10,12 +11,16 @@ import {
 } from '@mui/icons-material';
 import {
   Box,
+  Button,
+  ButtonGroup,
   IconButton,
   ImageList,
   ImageListItem,
   Slider,
   Tab,
   Tabs,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
 import { ICamPosition } from '@security/models';
@@ -30,6 +35,7 @@ type Props = {
 type State = {
   focal: ICamPosition;
   activeTab: number;
+  activePosition: any;
 };
 
 interface TabPanelProps {
@@ -76,6 +82,7 @@ export default class CameraController extends Component<Props, State> {
     this.state = {
       focal: { x: 0.0, y: 0.0, z: 1.0 },
       activeTab: 0,
+      activePosition: null,
     };
   }
   static contextType = CamContext;
@@ -92,8 +99,8 @@ export default class CameraController extends Component<Props, State> {
   getBoxes() {
     if (this.context.parent && this.context.parent.boxes) {
       const bxs =
-        this.context.parent.camera?.cameras[this.context.camera?.id || ''] ||
-        [];
+        this.context.parent.camera?.cameras[this.context.camera?.id || '']
+          .boxes || [];
 
       return bxs.concat(
         this.context.boxes
@@ -120,12 +127,13 @@ export default class CameraController extends Component<Props, State> {
           <Tabs
             value={this.state.activeTab}
             onChange={(ev, val) => {
-              this.setState({ activeTab: val });
+              this.setState({ activeTab: val, activePosition: undefined });
             }}
           >
             {!this.context.parent ? <Tab label={<PhotoCamera />} /> : null}
             {this.context.parent ? <Tab label={<AutoAwesomeMotion />} /> : null}
             <Tab label={<Visibility />} />
+            {this.context.parent ? <Tab label={<BorderOuter />} /> : null}
           </Tabs>
         </Box>
         {!this.context.parent ? (
@@ -134,7 +142,15 @@ export default class CameraController extends Component<Props, State> {
               title="Çek"
               onClick={() => {
                 if (this.context.camOptions.takePhoto) {
-                  this.context.camOptions.takePhoto();
+                  const box = this.context.camOptions.takePhoto();
+                  if (box) {
+                    this.context.boxes.push(box);
+                    this.context.camOptions.selectedBoxIndex = 0;
+                    this.context.render({
+                      boxes: this.context.boxes,
+                      camOptions: this.context.camOptions,
+                    });
+                  }
                 }
               }}
             >
@@ -215,13 +231,13 @@ export default class CameraController extends Component<Props, State> {
                             );
                             const i3 = this.context.parent?.camera?.cameras[
                               this.context.camera?.id || ''
-                            ].findIndex((x) => x.id == item.id);
+                            ].boxes.findIndex((x) => x.id == item.id);
                             if (i > -1) this.context.parent?.boxes.splice(i, 1);
                             if (i2 > -1) this.context.boxes.splice(i2, 1);
                             if (i3 != undefined && i3 > -1)
                               this.context.parent?.camera?.cameras[
                                 this.context.camera?.id || ''
-                              ].splice(i3, 1);
+                              ].boxes.splice(i3, 1);
 
                             this.context.parent?.render({
                               boxes: this.context.parent.boxes,
@@ -368,6 +384,43 @@ export default class CameraController extends Component<Props, State> {
             }}
           />
         </TabPanel>
+        {this.context.parent ? (
+          <TabPanel value={this.state.activeTab} index={2}>
+            <Box>
+              <ButtonGroup variant="text" aria-label="text button group">
+                <Button>Sol Üst</Button>
+                <Button>Sağ Üst</Button>
+                <Button>Sol Alt</Button>
+                <Button>Sağ Alt</Button>
+              </ButtonGroup>
+              <ToggleButtonGroup
+                value={this.state.activePosition}
+                exclusive
+                onChange={(evt, value) => {
+                  this.setState({ activePosition: value });
+                  
+                  if (this.context.parent) {
+                    this.context.parent.limitPosition = value;
+                  }
+                }}
+                aria-label="text alignment"
+              >
+                <ToggleButton value="leftTop" aria-label="left aligned">
+                  Sol Üst
+                </ToggleButton>
+                <ToggleButton value="rightTop" aria-label="centered">
+                  Sağ Üst
+                </ToggleButton>
+                <ToggleButton value="leftBottom" aria-label="right aligned">
+                  Sol Alt
+                </ToggleButton>
+                <ToggleButton value="rightBottom" aria-label="justified">
+                  Sağ Alt
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+          </TabPanel>
+        ) : null}
       </>
     );
   }

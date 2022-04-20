@@ -144,7 +144,7 @@ export class CameraManagement {
                   .concat(
                     this.context.parent.camera?.cameras[
                       this.context.camera?.id || ''
-                    ].filter(
+                    ].boxes.filter(
                       (x) => !this.context.boxes.find((y) => y.id == x.id)
                     )
                   )
@@ -235,10 +235,15 @@ export class CameraManagement {
         }
         this.isDrawing = false;
         this.drawingRect.image = canvas;
+
+        if (this.onDrawRect) {
+          this.onDrawRect({ ...this.drawingRect });
+        }
         // this.boxes.push(this.drawingRect);
 
         // this.context.boxes.push({ ...this.drawingRect });
         this.drawingRect = undefined;
+
         // this.context.camOptions.selectedBoxIndex = this.context.boxes.length;
         this.context.render({ boxes: this.context.boxes });
       }
@@ -247,6 +252,7 @@ export class CameraManagement {
   }
 
   takePhoto() {
+    console.log('take Photo');
     if (this.canvas && this.video) {
       let canvas = document.createElement('canvas');
 
@@ -273,7 +279,7 @@ export class CameraManagement {
       }
 
       const id = generateGuid();
-      this.context.boxes.push({
+      const box = {
         id,
         left: 0,
         top: 0,
@@ -286,12 +292,16 @@ export class CameraManagement {
             }
           : undefined,
         resulation: { width: canvas.width, height: canvas.height },
-      });
+      };
+      return box;
+      this.context.boxes.push(box);
       this.context.camOptions.selectedBoxIndex = 0;
       this.context.render({
         boxes: this.context.boxes,
         camOptions: this.context.camOptions,
       });
+    } else {
+      return null;
     }
   }
 
@@ -582,6 +592,13 @@ export class CameraManagement {
         this.yoloDetect.predict(this.video).then((boxes) => {
           this.context.boxes.splice(0, this.context.boxes.length);
           this.context.boxes.push(...boxes);
+
+          if (this.context.pursuitController && this.context.camera?.id) {
+            this.context.pursuitController.setCamBoxes(
+              this.context.camera?.id,
+              boxes
+            );
+          }
           this.isPredict = false;
 
           this.context.render({});
@@ -606,8 +623,8 @@ export class CameraManagement {
   getBoxes() {
     if (this.context.parent && this.context.parent.boxes) {
       const bxs =
-        this.context.parent.camera?.cameras[this.context.camera?.id || ''] ||
-        [];
+        this.context.parent.camera?.cameras[this.context.camera?.id || '']
+          .boxes || [];
 
       return bxs.concat(
         this.context.boxes
@@ -703,7 +720,8 @@ export class CameraManagement {
         this.context.parent.camera.cameras[this.context.camera?.id || '']
       ) {
         const cameras =
-          this.context.parent.camera.cameras[this.context.camera?.id || ''];
+          this.context.parent.camera.cameras[this.context.camera?.id || '']
+            .boxes;
         const camRel = cameras.find((x) => x.id == searchCanvas.id);
         if (!camRel) {
           cameras.push({

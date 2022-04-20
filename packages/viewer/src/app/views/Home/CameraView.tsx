@@ -63,7 +63,7 @@ class CameraView extends Component<Props, State, typeof CamContext> {
 
   async componentDidMount() {
     if (this.context.camera?.id) {
-      // await CameraService.connect(this.context.camera?.id);
+      await CameraService.connect(this.context.camera?.id);
       this.setState({
         loaded: true,
         connected: true,
@@ -74,7 +74,7 @@ class CameraView extends Component<Props, State, typeof CamContext> {
 
   async componentDidUpdate(prevProps, prevState) {
     if (!this.state.connected && this.context.camera?.id) {
-      // await CameraService.connect(this.context.camera?.id);
+      await CameraService.connect(this.context.camera?.id);
       this.setState({
         loaded: true,
         connected: true,
@@ -186,6 +186,39 @@ class CameraView extends Component<Props, State, typeof CamContext> {
                 activateDetection={this.props.activateDetection}
                 stream={this.state.streamSource}
                 settings={this.props.Data?.Settings.CurrentItem}
+                onDrawRect={
+                  this.context.parent
+                    ? (box) => {
+                        box.camPos = this.context.parent?.camera?.position;
+
+                        if (
+                          this.context.parent?.limitPosition &&
+                          this.context.camera &&
+                          this.context.parent.camera?.cameras[
+                            this.context.camera?.id || ''
+                          ]
+                        ) {
+                          let limits: any =
+                            this.context.parent.camera?.cameras[
+                              this.context.camera?.id || ''
+                            ].limits;
+
+                          if (!limits) {
+                            limits = {};
+                          }
+                          limits[this.context.parent?.limitPosition] = {
+                            coord: { x: box.left, y: box.top },
+                            pos: { ...box.camPos },
+                          };
+                          this.context.parent.camera.cameras[
+                            this.context.camera?.id || ''
+                          ].limits = limits;
+                          console.log(this.context.parent)
+                        }
+                        this.context.render({});
+                      }
+                    : undefined
+                }
               />
               {this.props.showPtz ? <PtzController></PtzController> : null}
             </>
