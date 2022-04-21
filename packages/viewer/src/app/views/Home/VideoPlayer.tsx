@@ -94,7 +94,7 @@ export default class VideoPlayer extends Component<Props, State> {
       //   }, 500);
       // }
       // this.cameraManagement.setLens(this.props.focal);
-      // this.cameraManagement.setBoxes(this.props.boxes);
+      this.cameraManagement.setContext(this.context);
       // this.cameraManagement.setSearchBoxes(this.props.searchBoxes);
       // this.cameraManagement.setSelectedBoxIndex(this.props.selectedBoxIndex);
     }

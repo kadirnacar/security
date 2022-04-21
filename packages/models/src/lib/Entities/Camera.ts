@@ -16,11 +16,17 @@ export interface Camera {
 }
 
 export interface ICamRelation {
-  boxes: IGlRect[];
-  limits?: {
-    leftTop: { coord: ICoord; pos: ICamPosition };
-    rightTop: { coord: ICoord; pos: ICamPosition };
-    leftBottom: { coord: ICoord; pos: ICamPosition };
-    rightBottom: { coord: ICoord; pos: ICamPosition };
-  };
+  boxes: CamPoint[];
+  limits?: IRectLimits;
+}
+
+export interface CamPoint {
+  coord: ICoord;
+  pos: ICamPosition;
+}
+export interface IRectLimits {
+  leftTop: CamPoint;
+  rightTop: CamPoint;
+  leftBottom: CamPoint;
+  rightBottom: CamPoint;
 }

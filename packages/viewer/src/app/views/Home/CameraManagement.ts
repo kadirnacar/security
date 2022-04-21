@@ -141,13 +141,13 @@ export class CameraManagement {
             this.context.parent?.camera
               ? this.context.parent.boxes
                   .filter((x) => !this.context.boxes.find((y) => y.id == x.id))
-                  .concat(
-                    this.context.parent.camera?.cameras[
-                      this.context.camera?.id || ''
-                    ].boxes.filter(
-                      (x) => !this.context.boxes.find((y) => y.id == x.id)
-                    )
-                  )
+                  // .concat(
+                  //   this.context.parent.camera?.cameras[
+                  //     this.context.camera?.id || ''
+                  //   ].boxes.filter(
+                  //     (x) => !this.context.boxes.find((y) => y.id == x.id)
+                  //   )
+                  // )
               : []
           )[this.context.camOptions.selectedBoxIndex];
         drawingRect.left = left;
@@ -360,53 +360,43 @@ export class CameraManagement {
   last2 = 0;
   speed2 = 0.05;
 
-  drawVideoToCanvas(timeStamp) {
+  async drawVideoToCanvas(timeStamp) {
     let timeInSecond = timeStamp / 1000;
     if (timeInSecond - this.last2 >= this.speed2) {
-      new Promise((resolve) => {
-        if (this.ctx && this.video) {
-          this.ctx.clearRect(
-            0,
-            0,
-            this.video.videoWidth,
-            this.video.videoHeight
-          );
-          this.ctx.drawImage(
-            this.video,
-            0,
-            0,
-            this.video.videoWidth,
-            this.video.videoHeight
-          );
+      if (this.ctx && this.video) {
+        this.ctx.clearRect(0, 0, this.video.videoWidth, this.video.videoHeight);
+        this.ctx.drawImage(
+          this.video,
+          0,
+          0,
+          this.video.videoWidth,
+          this.video.videoHeight
+        );
 
-          this.context.boxes
-            .concat(this.drawingRect ? [this.drawingRect] : [])
-            .concat(this.getBoxes())
-            .forEach((x, i) => {
-              if (
-                this.ctx &&
-                (this.context.camOptions.selectedBoxIndex != undefined
-                  ? this.context.camOptions.selectedBoxIndex == i
-                  : true)
-              ) {
-                this.ctx.beginPath();
-                this.ctx.lineWidth = 6;
-                this.ctx.strokeStyle = 'red';
-                this.ctx.rect(
-                  x.left,
-                  x.top,
-                  x.right - x.left,
-                  x.bottom - x.top
-                );
-                this.ctx.stroke();
-                this.ctx.closePath();
-              }
-              // this.ctx?.rect(x.left,x.top,x.right-x.left,x.bottom-x.top);
-              // this.ctx?.strokeStyle
-            });
-        }
-        resolve(null);
-      });
+        this.context.boxes
+          .concat(this.drawingRect ? [this.drawingRect] : [])
+          .concat(this.getBoxes())
+          .forEach((x, i) => {
+            // if (
+            //   this.ctx &&
+            //   (this.context.camOptions.selectedBoxIndex != undefined
+            //     ? this.context.camOptions.selectedBoxIndex == i
+            //     : true)
+            // ) {
+            // console.log(x);
+            if (this.ctx) {
+              this.ctx.beginPath();
+              this.ctx.lineWidth = 6;
+              this.ctx.strokeStyle = 'red';
+              this.ctx.rect(x.left, x.top, x.right - x.left, x.bottom - x.top);
+              this.ctx.stroke();
+              this.ctx.closePath();
+            }
+            // }
+            // this.ctx?.rect(x.left,x.top,x.right-x.left,x.bottom-x.top);
+            // this.ctx?.strokeStyle
+          });
+      }
 
       this.last2 = timeInSecond;
     }
@@ -622,23 +612,23 @@ export class CameraManagement {
   }
   getBoxes() {
     if (this.context.parent && this.context.parent.boxes) {
-      const bxs =
-        this.context.parent.camera?.cameras[this.context.camera?.id || '']
-          .boxes || [];
+      const bxs = [];
+      // this.context.parent.camera?.cameras[this.context.camera?.id || '']
+      //   .boxes || [];
 
-      return bxs.concat(
-        this.context.boxes
-          .filter((x) => !bxs.find((y) => y.id == x.id))
-          .concat(
-            this.context.parent.camera
-              ? this.context.parent.boxes.filter(
-                  (x) =>
-                    !this.context.boxes.find((y) => y.id == x.id) &&
-                    !bxs.find((y) => y.id == x.id)
-                )
-              : []
-          )
+      const returnValue = bxs.concat(
+        // this.context.boxes.filter((x) => !bxs.find((y) => y.id == x.id))
+        // .concat(
+        //   this.context.parent.camera
+        //     ? this.context.parent.boxes.filter(
+        //         (x) =>
+        //           !this.context.boxes.find((y) => y.id == x.id) &&
+        //           !bxs.find((y) => y.id == x.id)
+        //       )
+        //     : []
+        // )
       );
+      return returnValue;
     } else {
       return [];
     }
@@ -719,9 +709,9 @@ export class CameraManagement {
         this.context.camera &&
         this.context.parent.camera.cameras[this.context.camera?.id || '']
       ) {
-        const cameras =
-          this.context.parent.camera.cameras[this.context.camera?.id || '']
-            .boxes;
+        const cameras: any[] = [];
+        // this.context.parent.camera.cameras[this.context.camera?.id || '']
+        //   .boxes;
         const camRel = cameras.find((x) => x.id == searchCanvas.id);
         if (!camRel) {
           cameras.push({

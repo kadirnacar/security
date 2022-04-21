@@ -92,11 +92,11 @@ class Form extends Component<Props & WithRouter, State, typeof CamContext> {
   async handleSave() {
     const { camera } = this.state;
     if (camera && camera.cameras) {
-      Object.keys(camera.cameras).forEach((x) => {
-        camera.cameras[x].boxes.forEach((y) => {
-          delete y.image;
-        });
-      });
+      // Object.keys(camera.cameras).forEach((x) => {
+      //   camera.cameras[x].boxes.forEach((y) => {
+      //     delete y.image;
+      //   });
+      // });
     }
     if (this.state.camera?.id) {
       await this.props.DataActions?.updateItem('Camera', camera);
