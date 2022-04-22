@@ -18,7 +18,7 @@ export function generateGuid() {
 export interface ICamComtext {
   render: (state) => void;
   camera?: Camera;
-  boxes: IGlRect[];
+  selectedPointIndex?: number;
   camOptions: any;
   parent?: ICamComtext;
   pursuitController?: PursuitController;
@@ -27,6 +27,5 @@ export interface ICamComtext {
 
 export const CamContext = React.createContext<ICamComtext>({
   render: () => {},
-  boxes: [],
   camOptions: {},
 });

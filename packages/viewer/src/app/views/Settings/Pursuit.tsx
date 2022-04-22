@@ -198,7 +198,6 @@ export class Pursuit extends Component<Props, State> {
                             <CamContext.Provider
                               value={{
                                 camera: this.state.activeCamera,
-                                boxes: this.state.boxes,
                                 camOptions: this.state.camOptions,
                                 parent: this.context,
                                 render: (state) => {

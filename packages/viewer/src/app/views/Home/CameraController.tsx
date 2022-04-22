@@ -17,6 +17,9 @@ import {
   IconButton,
   ImageList,
   ImageListItem,
+  List,
+  ListItemButton,
+  ListItemText,
   Slider,
   Tab,
   Tabs,
@@ -54,12 +57,17 @@ interface TabPanelProps {
 
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
-
+  const tabStyle = {
+    position: 'absolute',
+    width: '100%',
+    top: 50,
+    bottom: 0,
+  };
   return (
     <div
       role="tabpanel"
       hidden={value !== index}
-      style={{ position: 'relative', width: '100%', height: '100%' }}
+      style={{ position: 'absolute', width: '100%', top: 50, bottom: 0 }}
       {...other}
     >
       {value === index && (
@@ -85,7 +93,6 @@ export default class CameraController extends Component<Props, State> {
   constructor(props) {
     super(props);
 
-    this.handlePhoto = this.handlePhoto.bind(this);
     this.recursiveParentTakePhoto = this.recursiveParentTakePhoto.bind(this);
     this.handleSetPosition = this.handleSetPosition.bind(this);
     this.recursiveParentTakePhoto = this.recursiveParentTakePhoto.bind(this);
@@ -106,32 +113,6 @@ export default class CameraController extends Component<Props, State> {
     });
   }
 
-  handlePhoto(item) {}
-
-  getBoxes() {
-    if (this.context.parent && this.context.parent.boxes) {
-      const bxs =
-        this.context.parent.camera?.cameras[this.context.camera?.id || '']
-          .boxes || [];
-
-      return bxs.concat(
-        // this.context.boxes
-        //   .filter((x) => !bxs.find((y) => y.id == x.id))
-        //   .concat(
-        //     this.context.parent.camera
-        //       ? this.context.parent.boxes.filter(
-        //           (x) =>
-        //             !this.context.boxes.find((y) => y.id == x.id) &&
-        //             !bxs.find((y) => y.id == x.id)
-        //         )
-        //       : []
-        //   )
-      );
-    } else {
-      return [];
-    }
-  }
-
   recursiveInterval;
 
   getFloat(value) {
@@ -142,33 +123,35 @@ export default class CameraController extends Component<Props, State> {
     return isNaN(cuurentValue) ? 0 : cuurentValue;
   }
 
+  getBetween(val, min, max) {
+    if (val <= max && val >= min) {
+      return val;
+    } else {
+      return min + (Math.abs(val) - Math.abs(max));
+    }
+  }
+
+  calculateDiff(left, right, min, max) {
+    const leftValue = this.getBetween(left, min, max);
+    const rightValue = this.getBetween(right, min, max);
+    if (rightValue < 0 && leftValue >= 0) {
+      return max - leftValue - (min - rightValue);
+    }
+    // if (
+    //   (left < 0 && right < 0) ||
+    //   (left < 0 && right >= 0) ||
+    //   (left >= 0 && right >= 0)
+    // )
+    else {
+      return rightValue - leftValue;
+    }
+  }
+
   async recursiveParentTakePhoto() {
-    // const x= this.
-    // setInterval(async () => {
-    //   // const x=
-    //   if (this.context.parent?.camOptions.takePhoto) {
-    //     if (this.context.parent?.camOptions.gotoPosition) {
-    //       // await this.context.parent?.camOptions.gotoPosition(
-    //       //   item.camPos
-    //       // );
-    //       setTimeout(() => {
-    //         const box = this.context.parent?.camOptions.takePhoto();
-    //         if (box && this.context.parent) {
-    //           this.context.parent?.boxes.push(box);
-    //           this.context.parent.camOptions.selectedBoxIndex = 0;
-    //           this.context.parent?.render({
-    //             boxes: this.context.parent?.boxes,
-    //             camOptions: this.context.parent?.camOptions,
-    //           });
-    //         }
-    //       }, 1000);
-    //     }
-    //   }
-    // }, 3000);
     const { autoPhoto } = this.state;
 
     if (!this.recursiveInterval) {
-      let limits: IRectLimits | undefined;
+      let rangeLimits: IRectLimits | undefined;
       let location: ICamPosition = { x: 0, y: 0, z: 0 };
       if (
         this.context.parent?.camera &&
@@ -177,7 +160,9 @@ export default class CameraController extends Component<Props, State> {
         this.context.parent.camera.cameras[this.context.camera.id] &&
         this.context.parent.camera.cameras[this.context.camera.id].limits
       ) {
-        limits =
+        this.context.parent.camera.cameras[this.context.camera?.id].boxes = [];
+
+        rangeLimits =
           this.context.parent.camera.cameras[this.context.camera.id].limits;
 
         const ptzLimitsXml =
@@ -209,97 +194,154 @@ export default class CameraController extends Component<Props, State> {
           max: isNaN(maxZoom) ? 1 : maxZoom,
         };
 
-        if (limits) {
+        if (rangeLimits) {
           location = {
-            x: limits.leftTop.pos.x,
-            y: limits.leftTop.pos.y,
-            z: limits.leftTop.pos.z,
+            x: rangeLimits.leftTop.pos.x,
+            y: rangeLimits.leftTop.pos.y,
+            z: rangeLimits.leftTop.pos.z,
           };
         }
 
-        let minLeft = this.getFloat(limits?.leftTop.pos.x);
-        let maxRight = this.getFloat(limits?.rightBottom.pos.x);
-        let xLength =
-          minLeft < 0 || maxRight < 0
-            ? Math.abs(maxRight - minLeft)
-            : maxRight - minLeft;
+        let minLeft = this.getFloat(rangeLimits?.leftTop.pos.x);
+        let minLeftCoord = this.getFloat(rangeLimits?.leftTop.coord.x);
+        let maxRight = this.getFloat(rangeLimits?.rightBottom.pos.x);
+        let maxRightCoord = this.getFloat(rangeLimits?.rightBottom.coord.x);
+        let xLength = this.calculateDiff(
+          minLeft,
+          maxRight,
+          ptzLimits.x.min,
+          ptzLimits.x.max
+        );
+        let coordXLength = maxRightCoord - minLeftCoord;
 
-        let minTop = this.getFloat(limits?.leftTop.pos.y);
-        let maxBottom = this.getFloat(limits?.rightBottom.pos.y);
+        let minTop = this.getFloat(rangeLimits?.leftTop.pos.y);
+        let minTopCoord = this.getFloat(rangeLimits?.leftTop.coord.y);
+        let maxBottom = this.getFloat(rangeLimits?.rightBottom.pos.y);
+        let maxBottomCoord = this.getFloat(rangeLimits?.rightBottom.coord.y);
+        let yLength = this.calculateDiff(
+          minTop,
+          maxBottom,
+          ptzLimits.y.min,
+          ptzLimits.y.max
+        );
+        let coordYLength = maxBottomCoord - minTopCoord;
 
-        let yLength =
-          minTop < 0 || maxBottom < 0
-            ? Math.abs(maxBottom - minTop)
-            : maxBottom - minTop;
+        if (this.context.parent?.camOptions.gotoPosition) {
+          await this.context.parent?.camOptions.gotoPosition({
+            x: Number(minLeft).toFixed(2),
+            y: Number(minTop).toFixed(2),
+            z: Number(location.z).toFixed(2),
+          });
+        }
 
-        await this.context.parent?.camOptions.gotoPosition({
-          x: location.x,
-          y: location.y,
-          z: location.z,
-        });
-
-        this.recursiveInterval = setInterval(async () => {
+        this.recursiveInterval = async () => {
+          // this.recursiveInterval = setInterval(async () => {
           if (this.context.parent?.camOptions.gotoPosition && location) {
             if (this.context.parent?.camOptions.takePhoto) {
               const box = this.context.parent.camOptions.takePhoto();
               if (box) {
-                this.context.boxes.push(box);
-                this.context.camOptions.selectedBoxIndex =
-                  this.context.boxes.length;
-                this.context.render({
-                  boxes: this.context.boxes,
-                  camOptions: this.context.camOptions,
+                const boxes =
+                  this.context.parent.camera?.cameras[
+                    this.context.camera?.id || ''
+                  ].boxes;
+
+                const diffX = this.calculateDiff(
+                  minLeft,
+                  location.x,
+                  ptzLimits.x.min,
+                  ptzLimits.x.max
+                );
+
+                const x = parseFloat(
+                  (minLeftCoord + (diffX * coordXLength) / xLength).toFixed(2)
+                );
+                const y = parseFloat(
+                  (
+                    minTopCoord +
+                    ((location.y - minTop) * coordYLength) / yLength
+                  ).toFixed(2)
+                );
+
+                boxes?.push({
+                  pos: {
+                    x: Number(location.x).toFixed(2),
+                    y: Number(location.y).toFixed(2),
+                    z: Number(location.z).toFixed(2),
+                  },
+                  coord: {
+                    // x: x + (Math.pow(y, 2) / x) * -0.1,
+                    // y: y + (Math.pow(x, 2) / y) * -0.16,
+                    x,
+                    y,
+                  },
                 });
+                this.context.parent.render({});
               }
             }
 
-            await this.context.parent?.camOptions.gotoPosition({
-              x: location.x,
-              y: location.y,
-              z: location.z,
-            });
+            if (location) {
+              let cuurentValue: number = 0;
 
-            let newX = this.getFloat(location.x) + autoPhoto.xStep;
-            if (newX <= ptzLimits.x.max && newX >= ptzLimits.x.min) {
-            } else {
-              newX =
-                ptzLimits.x.min + (Math.abs(newX) - Math.abs(ptzLimits.x.max));
+              try {
+                cuurentValue = parseFloat(location.x);
+              } catch {}
+
+              let movement =
+                (isNaN(cuurentValue) ? 0 : cuurentValue) + autoPhoto.xStep;
+
+              location.x = this.getBetween(
+                movement,
+                ptzLimits.x.min,
+                ptzLimits.x.max
+              );
+
+              if (
+                ((maxRight < 0 && location.x < 0) ||
+                  (maxRight >= 0 && location.x >= 0)) &&
+                location.x > maxRight
+              ) {
+                // console.log(cuurentValue, maxRight);
+                location.x = minLeft;
+                cuurentValue = 0;
+                try {
+                  cuurentValue = parseFloat(location.y);
+                } catch {}
+                movement =
+                  (isNaN(cuurentValue) ? 0 : cuurentValue) + autoPhoto.yStep;
+
+                location.y = this.getBetween(
+                  movement,
+                  ptzLimits.y.min,
+                  ptzLimits.y.max
+                );
+
+                if (movement >= maxBottom) {
+                  // clearInterval(this.recursiveInterval);
+                  this.recursiveInterval = undefined;
+                  this.setState({});
+                  return;
+                }
+              }
             }
-
-            let currentXLength =
-              minLeft < 0 || newX < 0
-                ? Math.abs(newX - minLeft)
-                : newX - minLeft;
-
-            if (currentXLength > xLength) {
-              location.x = minLeft.toFixed(2);
-              location.y = (
-                this.getFloat(location.y) + autoPhoto.yStep
-              ).toFixed(2);
-            } else {
-              location.x = newX.toFixed(2);
-            }
-
-            let currentYLength =
-              minTop < 0 || maxBottom < 0
-                ? Math.abs(location.y - minTop)
-                : location.y - minTop;
-            if (currentYLength > yLength) {
-              clearInterval(this.recursiveInterval);
-              this.recursiveInterval = undefined;
-              this.setState({});
-            }
+            // await this.context.parent?.camOptions.gotoPosition({
+            //   x: Number(location.x).toFixed(2),
+            //   y: Number(location.y).toFixed(2),
+            //   z: Number(location.z).toFixed(2),
+            // });
           }
-        }, autoPhoto.interval);
+          // }, autoPhoto.interval);
+
+          this.setState({});
+          this.recursiveInterval();
+        };
+        this.recursiveInterval();
+      } else {
+        // clearInterval(this.recursiveInterval);
+        this.recursiveInterval = undefined;
         this.setState({});
       }
-    } else {
-      clearInterval(this.recursiveInterval);
-      this.recursiveInterval = undefined;
-      this.setState({});
     }
   }
-
   async handleSetPosition(evt, value) {
     this.setState({ activePosition: value });
 
@@ -319,24 +361,13 @@ export default class CameraController extends Component<Props, State> {
 
         if (this.context.parent?.camOptions.gotoPosition && d && d[value]) {
           await this.context.parent?.camOptions.gotoPosition(d[value].pos);
-          this.context.boxes = [
-            {
-              top: d[value].coord.y,
-              id: generateGuid(),
-              left: d[value].coord.x,
-              right: d[value].coord.x + 10,
-              bottom: d[value].coord.y + 10,
-            },
-          ];
-          this.context.camOptions.selectedBoxIndex = undefined;
-          this.context.render({ boxes: this.context.boxes });
         }
       }
     }
   }
   render() {
     return (
-      <>
+      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs
             value={this.state.activeTab}
@@ -358,183 +389,18 @@ export default class CameraController extends Component<Props, State> {
                 if (this.context.camOptions.takePhoto) {
                   const box = this.context.camOptions.takePhoto();
                   if (box) {
-                    this.context.boxes.push(box);
-                    this.context.camOptions.selectedBoxIndex =
-                      this.context.boxes.length;
-                    this.context.render({
-                      boxes: this.context.boxes,
-                      camOptions: this.context.camOptions,
-                    });
                   }
                 }
               }}
             >
               <Screenshot />
             </IconButton>
-            <Box>
-              <ImageList cols={3} variant="masonry">
-                {this.context.boxes.map((item, index) => (
-                  <ImageListItem
-                    key={index}
-                    style={{
-                      border:
-                        this.props.selectedBoxIndex == index
-                          ? '1px solid red'
-                          : '',
-                    }}
-                  >
-                    <IconButton
-                      style={{ position: 'absolute', right: 0 }}
-                      onClick={() => {
-                        this.context.boxes.splice(index, 1);
-                        this.context.render({ boxes: this.context.boxes });
-                      }}
-                    >
-                      <Close />
-                    </IconButton>
-                    {/* <IconButton
-                    style={{ position: 'absolute', right: 25 }}
-                    onClick={() => {
-                      // if (this.context.camOptions.onFindImage) {
-                      //   this.context.camOptions.onFindImage(item);
-                      // }
-                    }}
-                  >
-                    <FindInPage />
-                  </IconButton> */}
-                    <img
-                      src={item.image?.toDataURL()}
-                      // srcSet={`${item.img}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
-                      // alt={item.title}
-                      loading="lazy"
-                      onClick={this.props.onClickImage?.bind(this, item, index)}
-                    />
-                  </ImageListItem>
-                ))}
-              </ImageList>
-            </Box>
+            <Box></Box>
           </TabPanel>
         ) : null}
         {this.context.parent ? (
           <TabPanel value={this.state.activeTab} index={0}>
-            <Box>
-              <ImageList cols={2} variant="masonry">
-                {this.context.parent && this.context.parent.boxes ? (
-                  this.getBoxes().map((item, index) => (
-                    <ImageListItem
-                      key={index}
-                      style={{
-                        border:
-                          this.props.selectedBoxIndex == index
-                            ? '1px solid red'
-                            : '1px solid gray',
-                      }}
-                    >
-                      <IconButton
-                        style={{
-                          position: 'absolute',
-                          right: 0,
-                          color: 'red',
-                        }}
-                        onClick={() => {
-                          // if (this.context.parent) {
-                          //   const i = this.context.parent?.boxes.findIndex(
-                          //     (x) => x.id == item.id
-                          //   );
-                          //   const i2 = this.context.boxes.findIndex(
-                          //     (x) => x.id == item.id
-                          //   );
-                          //   const i3 = this.context.parent?.camera?.cameras[
-                          //     this.context.camera?.id || ''
-                          //   ].boxes.findIndex((x) => x.id == item.id);
-                          //   if (i > -1) this.context.parent?.boxes.splice(i, 1);
-                          //   if (i2 > -1) this.context.boxes.splice(i2, 1);
-                          //   if (i3 != undefined && i3 > -1)
-                          //     this.context.parent?.camera?.cameras[
-                          //       this.context.camera?.id || ''
-                          //     ].boxes.splice(i3, 1);
-
-                          //   this.context.parent?.render({
-                          //     boxes: this.context.parent.boxes,
-                          //   });
-                          //   this.context.render({
-                          //     boxes: this.context.boxes,
-                          //   });
-                          // }
-                        }}
-                      >
-                        <Close />
-                      </IconButton>
-                      <IconButton
-                        style={{
-                          position: 'absolute',
-                          right: 25,
-                          color: 'red',
-                        }}
-                        onClick={async () => {
-                          const img = await this.context.camOptions.onFindImage(
-                            item
-                          );
-                          // if (
-                          //   this.context.parent &&
-                          //   this.context.parent.camera &&
-                          //   this.context.camera
-                          // ) {
-                          //   this.context.parent.camera.cameras[
-                          //     this.context.camera?.id || ''
-                          //   ] = [...this.context.boxes];
-                          // }
-                        }}
-                      >
-                        <FindInPage />
-                      </IconButton>
-                      <IconButton
-                        style={{
-                          position: 'absolute',
-                          right: 50,
-                          color: 'red',
-                        }}
-                        onClick={async () => {
-                          // if (this.context.parent?.camOptions.gotoPosition) {
-                          //   await this.context.parent?.camOptions.gotoPosition(
-                          //     item.camPos
-                          //   );
-                          // }
-                        }}
-                      >
-                        <MoveToInbox />
-                      </IconButton>
-                      {/* {item.image ? (
-                        <img
-                          src={item.image?.toDataURL()}
-                          // srcSet={`${item.img}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
-                          // alt={item.title}
-                          loading="lazy"
-                          onClick={this.props.onClickImage?.bind(
-                            this,
-                            item,
-                            index
-                          )}
-                        />
-                      ) : ( */}
-                        <Photo
-                          style={{ minWidth: 120, minHeight: 70 }}
-                          onClick={this.props.onClickImage?.bind(
-                            this,
-                            item,
-                            index
-                          )}
-                        ></Photo>
-                      {/* )} */}
-                    </ImageListItem>
-                  ))
-                ) : (
-                  <ImageListItem>
-                    <img loading="lazy" />
-                  </ImageListItem>
-                )}
-              </ImageList>
-            </Box>
+            <Box></Box>
           </TabPanel>
         ) : null}
         <TabPanel value={this.state.activeTab} index={1}>
@@ -601,7 +467,7 @@ export default class CameraController extends Component<Props, State> {
         </TabPanel>
         {this.context.parent ? (
           <TabPanel value={this.state.activeTab} index={2}>
-            <Grid container spacing={2}>
+            <Grid container spacing={2} style={{ height: '100%' }}>
               <Grid item xs={12}>
                 <ToggleButtonGroup
                   value={this.state.activePosition}
@@ -651,7 +517,7 @@ export default class CameraController extends Component<Props, State> {
                   }}
                   value={this.state.autoPhoto.xStep}
                   variant="standard"
-                  inputProps={{ min: 0.05, max: 0.1, step: 0.5 }}
+                  inputProps={{ min: 0.05, max: 0.5, step: 0.05 }}
                   onChange={(event) => {
                     const { autoPhoto } = this.state;
                     autoPhoto.xStep = parseFloat(event.target.value);
@@ -667,12 +533,17 @@ export default class CameraController extends Component<Props, State> {
                   InputLabelProps={{
                     shrink: true,
                   }}
-                  value={this.state.autoPhoto.xStep}
+                  value={this.state.autoPhoto.yStep}
                   variant="standard"
-                  inputProps={{ min: 0.05, max: 0.1, step: 0.5 }}
+                  inputProps={{ min: 0.05, max: 0.5, step: 0.05 }}
                   onChange={(event) => {
                     const { autoPhoto } = this.state;
+                    console.log(
+                      autoPhoto.yStep,
+                      parseFloat(event.target.value)
+                    );
                     autoPhoto.yStep = parseFloat(event.target.value);
+
                     this.setState({ autoPhoto });
                   }}
                 />
@@ -687,10 +558,47 @@ export default class CameraController extends Component<Props, State> {
                   Tara
                 </Button>
               </Grid>
+              <Grid item xs={12} style={{ height: '50%', overflow: 'auto' }}>
+                <List component="nav">
+                  {(
+                    this.context.parent.camera?.cameras[
+                      this.context.camera?.id || ''
+                    ].boxes || []
+                  ).map((item, index) => {
+                    return (
+                      <ListItemButton
+                        key={index}
+                        selected={
+                          this.context.parent?.selectedPointIndex === index
+                        }
+                        onClick={async (event) => {
+                          if (this.context.parent) {
+                            this.context.parent.selectedPointIndex = index;
+                            if (this.context.parent?.camOptions.gotoPosition)
+                              await this.context.parent?.camOptions.gotoPosition(
+                                {
+                                  x: Number(item.pos.x).toFixed(2),
+                                  y: Number(item.pos.y).toFixed(2),
+                                  z: Number(item.pos.z).toFixed(2),
+                                }
+                              );
+                          }
+                          this.setState({});
+                        }}
+                      >
+                        <ListItemText
+                          secondary={`${JSON.stringify(item.coord)}`}
+                          secondaryTypographyProps={{ fontSize: 12 }}
+                        />
+                      </ListItemButton>
+                    );
+                  })}
+                </List>
+              </Grid>
             </Grid>
           </TabPanel>
         ) : null}
-      </>
+      </div>
     );
   }
 }

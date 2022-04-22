@@ -110,7 +110,6 @@ class Form extends Component<Props & WithRouter, State, typeof CamContext> {
       <CamContext.Provider
         value={{
           camera: this.state.camera,
-          boxes: this.state.boxes,
           camOptions: this.state.camOptions,
           render: (state) => {
             this.setState(state);

@@ -34,12 +34,12 @@ export class CameraManagement {
   maxBoxes: number = 10;
   regl?: REGL.Regl;
   searcBoxes: IGlRect[] = [];
-  drawingRect?: IGlRect;
   videoAnimate?: REGL.Cancellable;
   yoloAnimate?: any;
   yoloDetect?;
   drawingStartPoint?: { x: number; y: number };
   isDrawing: boolean = false;
+  isDragging: boolean = false;
   lens = {
     a: 1.0,
     b: 1.0,
@@ -50,6 +50,7 @@ export class CameraManagement {
   last = 0;
   speed = 0.5;
   activateDetection = false;
+  pointSize = 30;
 
   async initDetection() {
     this.activateDetection = true;
@@ -122,133 +123,121 @@ export class CameraManagement {
     }
   }
 
-  handleCanvasPointerDown(ev) {
-    if (this.canvas && !this.isDrawing) {
+  getDiaDist(point) {
+    return Math.sqrt(Math.pow(point.x, 2) + Math.pow(point.y, 2));
+  }
+
+  getDistance(p1, p2) {
+    return this.getDiaDist({ x: p1.x - p2.x, y: p1.y - p2.y });
+  }
+
+  getNearestPoint(arr, point) {
+    let result: any[] = [];
+
+    for (let index = 0; index < arr.length; index++) {
+      const a = arr[index];
+      let dist = this.getDistance(a.coord, point);
+      result.push({ index, dist });
+    }
+
+    return result;
+  }
+  async handleCanvasPointerDown(ev) {
+    if (this.canvas && this.pointOverIndex > -1 && this.context.parent) {
+      this.isDragging = true;
+      this.context.parent.selectedPointIndex = this.pointOverIndex;
+      const box =
+        this.context.parent?.camera?.cameras[this.context.camera?.id || '']
+          .boxes[this.pointOverIndex];
+
+      if (box) {
+        if (this.context.parent?.camOptions.gotoPosition)
+          await this.context.parent?.camOptions.gotoPosition({
+            x: Number(box.pos.x).toFixed(2),
+            y: Number(box.pos.y).toFixed(2),
+            z: Number(box.pos.z).toFixed(2),
+          });
+      }
+      // this.context.render({});
+    } else {
       const box = (ev.target as HTMLElement).getBoundingClientRect();
       const ratioX = this.canvas.width / box.width;
       const ratioY = this.canvas.height / box.height;
-      const left = (ev.clientX - box.left) * ratioX;
-      const top = (ev.clientY - box.top) * ratioY;
-      let drawingRect: IGlRect;
+      const mousePosX = (ev.clientX - box.left) * ratioX;
+      const mousePosY = (ev.clientY - box.top) * ratioY;
 
-      if (
-        this.context.parent &&
-        this.context.camOptions.selectedBoxIndex != undefined
-      ) {
-        drawingRect = this.context.boxes
-          // .concat(this.drawingRect ? [this.drawingRect] : [])
-          .concat(
-            this.context.parent?.camera
-              ? this.context.parent.boxes
-                  .filter((x) => !this.context.boxes.find((y) => y.id == x.id))
-                  // .concat(
-                  //   this.context.parent.camera?.cameras[
-                  //     this.context.camera?.id || ''
-                  //   ].boxes.filter(
-                  //     (x) => !this.context.boxes.find((y) => y.id == x.id)
-                  //   )
-                  // )
-              : []
-          )[this.context.camOptions.selectedBoxIndex];
-        drawingRect.left = left;
-        drawingRect.top = top;
-        drawingRect.right = left;
-        drawingRect.bottom = top;
-        // this.context.render({});
-        // this.drawingRect = drawingRect;
-        // this.context.render({});
-        // this.isDrawing = true;
-        // drawingRect.camPos = this.context.camera?.position
-        //   ? { ...this.context.camera.position }
-        //   : undefined;
-        // drawingRect.resulation = {
-        //   width: this.canvas.width,
-        //   height: this.canvas.height,
-        // };
-      } else {
-        drawingRect = {
-          id: generateGuid(),
-          left: left,
-          top: top,
-          right: left,
-          bottom: top,
-          camPos: this.context.camera?.position
-            ? { ...this.context.camera.position }
-            : undefined,
-          resulation: { width: this.canvas.width, height: this.canvas.height },
-        };
-      }
-      this.drawingStartPoint = { x: left, y: top };
-      this.drawingRect = drawingRect;
-      // this.context.camOptions.selectedBoxIndex = this.context.boxes.length;
-      this.context.render({});
-      this.isDrawing = true;
-    } else {
-      this.handleCanvasPointerUp(ev);
+      const pointsDistances = this.getNearestPoint(
+        this.context.parent?.camera?.cameras[this.context.camera?.id || '']
+          .boxes,
+        { x: mousePosX, y: mousePosY }
+      ).sort((a, b) => {
+        if (a.dist > b.dist) {
+          return 1;
+        } else if (a.dist < b.dist) {
+          return -1;
+        } else {
+          return 0;
+        }
+      });
+      console.log(mousePosX, mousePosY, pointsDistances);
     }
   }
 
   handleCanvasPointerUp(ev) {
-    if (this.canvas && this.video) {
-      if (this.drawingRect && this.drawingStartPoint) {
-        const box = (ev.target as HTMLElement).getBoundingClientRect();
-        const ratioX = this.canvas.width / box.width;
-        const ratioY = this.canvas.height / box.height;
-        const mousePosX = (ev.clientX - box.left) * ratioX;
-        const mousePosY = (ev.clientY - box.top) * ratioY;
+    if (this.canvas && this.pointOverIndex > -1) {
+      this.isDragging = false;
+    }
+  }
 
-        const d = this.drawingRect || {};
-        if (mousePosX <= this.drawingStartPoint.x) {
-          d.left = mousePosX;
+  pointOverIndex = -1;
+
+  isMouseOverToPoint(xPoint, yPoint) {
+    if (
+      this.context.parent &&
+      this.context.parent.camera?.cameras[this.context.camera?.id || '']
+    ) {
+      const boxes = this.context.parent.camera?.cameras[
+        this.context.camera?.id || ''
+      ].boxes.findIndex(
+        (x) =>
+          xPoint >= x.coord.x - this.pointSize &&
+          xPoint <= x.coord.x + this.pointSize &&
+          yPoint >= x.coord.y - this.pointSize &&
+          yPoint <= x.coord.y + this.pointSize
+      );
+
+      return boxes;
+    } else {
+      return -1;
+    }
+  }
+
+  handleCanvasPointerMove(ev) {
+    if (this.canvas) {
+      const box = (ev.target as HTMLElement).getBoundingClientRect();
+      const ratioX = this.canvas.width / box.width;
+      const ratioY = this.canvas.height / box.height;
+      const mousePosX = (ev.clientX - box.left) * ratioX;
+      const mousePosY = (ev.clientY - box.top) * ratioY;
+
+      if (!this.isDragging) {
+        this.pointOverIndex = this.isMouseOverToPoint(mousePosX, mousePosY);
+        if (this.pointOverIndex > -1) {
+          ev.target.style.cursor = 'move';
         } else {
-          d.right = mousePosX;
+          ev.target.style.cursor = 'initial';
         }
-
-        if (mousePosY <= this.drawingStartPoint.y) {
-          d.top = mousePosY;
-        } else {
-          d.bottom = mousePosY;
-        }
-
-        let canvas = document.createElement('canvas');
-
-        canvas.width = d.right - d.left;
-        canvas.height = d.bottom - d.top;
-
-        if (canvas.width <= 50 || canvas.height <= 50) {
-          return;
-        }
-        let ctx = canvas.getContext('2d');
-
-        if (ctx) {
-          ctx.drawImage(
-            this.video,
-            d.left,
-            d.top,
-            canvas.width,
-            canvas.height,
-            0,
-            0,
-            canvas.width,
-            canvas.height
-          );
-        }
-        this.isDrawing = false;
-        this.drawingRect.image = canvas;
-
-        if (this.onDrawRect) {
-          this.onDrawRect({ ...this.drawingRect });
-        }
-        // this.boxes.push(this.drawingRect);
-
-        // this.context.boxes.push({ ...this.drawingRect });
-        this.drawingRect = undefined;
-
-        // this.context.camOptions.selectedBoxIndex = this.context.boxes.length;
-        this.context.render({ boxes: this.context.boxes });
+      } else if (
+        this.pointOverIndex > -1 &&
+        this.context.parent?.camera?.cameras[this.context.camera?.id || '']
+      ) {
+        const box =
+          this.context.parent?.camera?.cameras[this.context.camera?.id || '']
+            .boxes[this.pointOverIndex];
+        box.coord.x = mousePosX;
+        box.coord.y = mousePosY;
       }
     }
-    this.isDrawing = false;
   }
 
   takePhoto() {
@@ -294,41 +283,8 @@ export class CameraManagement {
         resulation: { width: canvas.width, height: canvas.height },
       };
       return box;
-      this.context.boxes.push(box);
-      this.context.camOptions.selectedBoxIndex = 0;
-      this.context.render({
-        boxes: this.context.boxes,
-        camOptions: this.context.camOptions,
-      });
     } else {
       return null;
-    }
-  }
-
-  handleCanvasPointerMove(ev) {
-    if (this.canvas && this.isDrawing) {
-      if (this.drawingRect && this.drawingStartPoint) {
-        const box = (ev.target as HTMLElement).getBoundingClientRect();
-        const ratioX = this.canvas.width / box.width;
-        const ratioY = this.canvas.height / box.height;
-        const mousePosX = (ev.clientX - box.left) * ratioX;
-        const mousePosY = (ev.clientY - box.top) * ratioY;
-        const d = this.drawingRect || {};
-
-        if (mousePosX <= this.drawingStartPoint.x) {
-          d.left = mousePosX;
-        } else {
-          d.right = mousePosX;
-        }
-
-        if (mousePosY <= this.drawingStartPoint.y) {
-          d.top = mousePosY;
-        } else {
-          d.bottom = mousePosY;
-        }
-
-        this.drawingRect = d;
-      }
     }
   }
 
@@ -373,29 +329,37 @@ export class CameraManagement {
           this.video.videoHeight
         );
 
-        this.context.boxes
-          .concat(this.drawingRect ? [this.drawingRect] : [])
-          .concat(this.getBoxes())
-          .forEach((x, i) => {
-            // if (
-            //   this.ctx &&
-            //   (this.context.camOptions.selectedBoxIndex != undefined
-            //     ? this.context.camOptions.selectedBoxIndex == i
-            //     : true)
-            // ) {
-            // console.log(x);
-            if (this.ctx) {
-              this.ctx.beginPath();
-              this.ctx.lineWidth = 6;
-              this.ctx.strokeStyle = 'red';
-              this.ctx.rect(x.left, x.top, x.right - x.left, x.bottom - x.top);
-              this.ctx.stroke();
-              this.ctx.closePath();
+        if (
+          this.context.parent?.camera &&
+          this.context.parent?.camera.cameras[this.context.camera?.id || '']
+        ) {
+          const bb =
+            this.context.parent?.camera.cameras[this.context.camera?.id || '']
+              .boxes;
+          for (let index = 0; index < bb.length; index++) {
+            const element = bb[index];
+
+            this.ctx.beginPath();
+            this.ctx.arc(
+              element.coord.x,
+              element.coord.y,
+              this.pointSize,
+              0,
+              2 * Math.PI,
+              false
+            );
+
+            if (this.context.parent.selectedPointIndex == index) {
+              this.ctx.fillStyle = 'red';
+              this.ctx.fill();
             }
-            // }
-            // this.ctx?.rect(x.left,x.top,x.right-x.left,x.bottom-x.top);
-            // this.ctx?.strokeStyle
-          });
+
+            this.ctx.lineWidth = 6;
+            this.ctx.strokeStyle = 'red';
+            this.ctx.stroke();
+            this.ctx.closePath();
+          }
+        }
       }
 
       this.last2 = timeInSecond;
@@ -403,186 +367,16 @@ export class CameraManagement {
     this.drawAnimate = requestAnimationFrame(this.drawVideoToCanvas);
   }
 
-  handleVideoLoadeddata2() {
-    if (this.videoLoaded) {
-      return;
-    }
-    this.videoLoaded = true;
-    try {
-      if (this.canvas && this.video) {
-        this.canvas.width = this.video.videoWidth;
-        this.canvas.height = this.video.videoHeight;
-      }
-    } catch {}
-
-    if (this.regl) {
-      return;
-    }
-
-    if (this.canvas && this.video) {
-      this.regl = REGL(this.canvas);
-      let pos = [-1, -1, 1, -1, -1, 1, 1, 1, -1, 1, 1, -1];
-      let texture: REGL.Texture2D;
-      const x = this.canvas?.width / 2;
-      const y = this.canvas?.height / 2 - 10;
-      const z = this.canvas?.width / 2;
-      const w = this.canvas?.height / 2;
-
-      const drawFrame = this.regl({
-        frag: getFragmentScript(this.maxBoxes),
-        vert: vert,
-        attributes: {
-          position: pos,
-        },
-        uniforms: {
-          uSampler: (ctx, { videoT1 }: any) => {
-            return videoT1;
-          },
-          showSplitter: () => {
-            return 0;
-          },
-          iMouse: ({ viewportHeight }) => {
-            return [x, viewportHeight - y, z, viewportHeight - w];
-          },
-          uLensS: () => {
-            return [
-              this.lens.a || 1.0,
-              this.lens.b || 1.0,
-              this.context.camera?.panorama?.z || 1.0,
-            ];
-          },
-          uLensF: () => {
-            return [
-              this.context.camera?.panorama?.x || 0.0,
-              this.context.camera?.panorama?.y || 0.0,
-            ];
-          },
-          resolution: (context, props) => {
-            return [context.viewportWidth, context.viewportHeight];
-          },
-          boxColor: () => {
-            return [1, 0, 0, 1];
-          },
-          selectedBoxColor: () => {
-            return [1, 1, 1, 1];
-          },
-          selectedIndex: () => {
-            return this.context.camOptions.selectedBoxIndex;
-          },
-          box: () => {
-            const flatBoxes = this.context.boxes
-              .filter((x, i) =>
-                this.context.camOptions.selectedBoxIndex &&
-                this.context.camOptions.selectedBoxIndex >= 0
-                  ? i == this.context.camOptions.selectedBoxIndex
-                  : true
-              )
-              .map((x) => [
-                x.left,
-                x.top,
-                (this.video?.videoWidth || 0) - x.right,
-                (this.video?.videoHeight || 0) - x.bottom,
-              ])
-              .flat();
-            // .concat(
-            //   this.searcBoxes
-            //     .filter(
-            //       (x, i) => i == this.context.camOptions.selectedBoxIndex - 1
-            //     )
-            //     .map((x) => [
-            //       x.left,
-            //       x.top,
-            //       (this.video?.videoWidth || 0) - x.right,
-            //       (this.video?.videoHeight || 0) - x.bottom,
-            //     ])
-            //     .flat()
-            // );
-            if (this.drawingRect) {
-              flatBoxes.push(this.drawingRect.left);
-              flatBoxes.push(this.drawingRect.top);
-              flatBoxes.push(
-                (this.video?.videoWidth || 0) - this.drawingRect.right
-              );
-              flatBoxes.push(
-                (this.video?.videoHeight || 0) - this.drawingRect.bottom
-              );
-            }
-            for (
-              let index = flatBoxes.length;
-              index < this.maxBoxes * 4;
-              index++
-            ) {
-              flatBoxes.push(-50);
-            }
-            return flatBoxes;
-          },
-        },
-        count: pos.length / 2,
-      });
-
-      if (this.regl) {
-        texture = this.regl.texture(this.video);
-
-        this.videoAnimate = this.regl.frame(() => {
-          try {
-            if (
-              this.video &&
-              this.video.videoWidth > 32 &&
-              this.video.currentTime > 0 &&
-              !this.video.paused &&
-              !this.video.ended &&
-              this.video.readyState > 2
-            ) {
-              try {
-                texture = texture.subimage(this.video);
-              } catch {}
-            } else if (!texture && this.regl) {
-              texture = this.regl.texture();
-            }
-          } catch (ex) {
-            if (this.regl) texture = this.regl.texture();
-            console.warn(ex);
-          }
-
-          try {
-            // if (this.regl)
-            //   if (this.context2 && this.video && this.canvas) {
-            //     this.context2.drawImage(
-            //       this.video,
-            //       0,
-            //       0,
-            //       this.canvas.width,
-            //       this.canvas.height
-            //     );
-            //   }
-            drawFrame({
-              videoT1: texture,
-            });
-          } catch {
-            if (this.videoAnimate) {
-              try {
-                this.videoAnimate.cancel();
-              } catch (ex: any) {
-                console.warn(`Prevented unhandled exception: ${ex?.message}`);
-              }
-            }
-          }
-        });
-        this.yoloAnimate = requestAnimationFrame(this.yoloAnimationFrame);
-      }
-    }
-  }
   isPredict = false;
   async yoloAnimationFrame(timeStamp) {
     let timeInSecond = timeStamp / 1000;
     if (timeInSecond - this.last >= this.speed && !this.isPredict) {
       if (this.canvas && this.activateDetection && this.yoloDetect) {
-        // const boxes = await this.yoloDetect.predict(this.canvas.current);
         this.isPredict = true;
         this.yoloDetect.predict(this.video).then((boxes) => {
-          this.context.boxes.splice(0, this.context.boxes.length);
-          this.context.boxes.push(...boxes);
-
+          // this.context.boxes.splice(0, this.context.boxes.length);
+          // this.context.boxes.push(...boxes);
+          console.log(boxes);
           if (this.context.pursuitController && this.context.camera?.id) {
             this.context.pursuitController.setCamBoxes(
               this.context.camera?.id,
@@ -593,52 +387,17 @@ export class CameraManagement {
 
           this.context.render({});
         });
-        // this.context.boxes.splice(0, this.context.boxes.length);
-        // this.context.boxes.push(...boxes);
-        // this.context.render({});
-        // .then((boxes) => {
-        // this.context.boxes.splice(0, this.context.boxes.length);
-        // this.context.boxes.push(...boxes);
-        // this.context.render({});
-        // });
-        // const boxes = await this.yoloDetect(this.video.current);
-
-        // this.boxes = boxes;
-        // this.setState({ boxes });
       }
       this.last = timeInSecond;
     }
     this.yoloAnimate = requestAnimationFrame(this.yoloAnimationFrame);
   }
-  getBoxes() {
-    if (this.context.parent && this.context.parent.boxes) {
-      const bxs = [];
-      // this.context.parent.camera?.cameras[this.context.camera?.id || '']
-      //   .boxes || [];
 
-      const returnValue = bxs.concat(
-        // this.context.boxes.filter((x) => !bxs.find((y) => y.id == x.id))
-        // .concat(
-        //   this.context.parent.camera
-        //     ? this.context.parent.boxes.filter(
-        //         (x) =>
-        //           !this.context.boxes.find((y) => y.id == x.id) &&
-        //           !bxs.find((y) => y.id == x.id)
-        //       )
-        //     : []
-        // )
-      );
-      return returnValue;
-    } else {
-      return [];
-    }
-  }
   searchImage(searchCanvas: IGlRect) {
     if (this.video && searchCanvas && this.canvas) {
       let orjCanvas = document.createElement('canvas');
       orjCanvas.width = this.canvas.width;
       orjCanvas.height = this.canvas.height;
-      //   document.body.append(orjCanvas);
       let ctx = orjCanvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(
@@ -655,13 +414,8 @@ export class CameraManagement {
       }
       let src: any = cv.imread(orjCanvas);
 
-      //   let src: any = cv.imread(this.canvas2.current);
       let templ = cv.imread(searchCanvas.image);
 
-      // let result_cols = src.cols - templ.cols + 1;
-      // let result_rows = src.rows - templ.rows + 1;
-
-      // var dst = new cv.Mat(result_cols, result_rows, cv.CV_32FC1);
       var dst = new cv.Mat();
       let mask = new cv.Mat();
 
@@ -675,30 +429,6 @@ export class CameraManagement {
         maxPoint.x + templ.cols,
         maxPoint.y + templ.rows
       );
-      //   cv.rectangle(src, maxPoint, point, color, 2, cv.LINE_8, 0);
-
-      // this.searcBoxes.push({
-      //   id: generateGuid(),
-      //   right: point.x,
-      //   left: maxPoint.x,
-      //   top: maxPoint.y,
-      //   bottom: point.y,
-      //   image: searchCanvas.image,
-      //   camPos: { ...searchCanvas.camPos },
-      //   resulation: { width: this.canvas.width, height: this.canvas.height },
-      // });
-
-      // this.context.boxes.push({
-      //   id: generateGuid(),
-      //   right: point.x,
-      //   left: maxPoint.x,
-      //   top: maxPoint.y,
-      //   bottom: point.y,
-      //   image: searchCanvas.image,
-      //   camPos: { ...searchCanvas.camPos },
-      //   resulation: { width: this.canvas.width, height: this.canvas.height },
-      // });
-      // this.context.render({ boxes: this.context.boxes });
 
       src.delete();
       templ.delete();
@@ -710,8 +440,6 @@ export class CameraManagement {
         this.context.parent.camera.cameras[this.context.camera?.id || '']
       ) {
         const cameras: any[] = [];
-        // this.context.parent.camera.cameras[this.context.camera?.id || '']
-        //   .boxes;
         const camRel = cameras.find((x) => x.id == searchCanvas.id);
         if (!camRel) {
           cameras.push({
@@ -736,45 +464,7 @@ export class CameraManagement {
         }
       }
 
-      // if (!this.context.boxes.find((x) => x.id == searchCanvas.id)) {
-      //   this.context.boxes.push({
-      //     ...searchCanvas,
-      //     camPos: searchCanvas.camPos ? { ...searchCanvas.camPos } : undefined,
-      //     right: point.x,
-      //     left: maxPoint.x,
-      //     top: maxPoint.y,
-      //     bottom: point.y,
-      //     resulation: { width: this.canvas.width, height: this.canvas.height },
-      //   });
-      // } else {
-      //   searchCanvas.right = point.x;
-      //   searchCanvas.left = maxPoint.x;
-      //   searchCanvas.top = maxPoint.y;
-      //   searchCanvas.bottom = point.y;
-      // }
       this.context.parent?.render({ camera: this.context.parent.camera });
-      // searchCanvas.image = searchCanvas.image;
-      // searchCanvas.resulation = {
-      //   width: this.canvas.width,
-      //   height: this.canvas.height,
-      // };
-
-      // if (this.onSearchRect) {
-      //   this.onSearchRect(this.searcBoxes);
-      // }
-      //   if (this.props.onDrawRect) {
-      //     const id = generateGuid();
-      //     this.props.onDrawRect(
-      //       id || '',
-      //       {
-      //         right: point.x,
-      //         left: maxPoint.x,
-      //         top: maxPoint.y,
-      //         bottom: point.y,
-      //       },
-      //       this.props.searchCanvas.canvas
-      //     );
-      //   }
     }
   }
 }

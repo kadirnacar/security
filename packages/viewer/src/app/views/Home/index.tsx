@@ -76,7 +76,6 @@ class Home extends Component<Props, HomeState> {
         <CamContext.Provider
           value={{
             camera: this.state.ptzCamera,
-            boxes: [],
             camOptions: {},
             pursuitController: this.state.pursuitController,
             render: (state) => {
@@ -107,7 +106,6 @@ class Home extends Component<Props, HomeState> {
                   key={i}
                   value={{
                     camera: scam,
-                    boxes: [],
                     camOptions: {},
                     pursuitController: this.state.pursuitController,
                     render: (state) => {

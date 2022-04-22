@@ -182,7 +182,6 @@ class Home extends Component<Props, HomeState> {
                   <CamContext.Provider
                     value={{
                       camera: cam,
-                      boxes: [],
                       camOptions: {},
                       render: (state) => {
                         // this.setState(state);
