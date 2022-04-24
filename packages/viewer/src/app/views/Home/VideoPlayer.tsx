@@ -9,7 +9,6 @@ type Props = {
   settings?: Settings;
   focal?: any;
   activateDetection?: boolean;
-  onDrawRect?: (boxe: IGlRect) => void;
 };
 
 type State = {
@@ -53,13 +52,8 @@ export default class VideoPlayer extends Component<Props, State> {
         this.cameraManagement
       );
 
-      if (this.props.onDrawRect) {
-        this.cameraManagement.onDrawRect = this.props.onDrawRect;
-      }
-
       // this.cameraManagement.onSearchRect =
       //   this.handleCameraManagementSearchRect.bind(this);
-      // this.cameraManagement.setSearchBoxes(this.props.searchBoxes);
       if (this.props.activateDetection) {
         this.cameraManagement.initDetection();
 
@@ -81,22 +75,7 @@ export default class VideoPlayer extends Component<Props, State> {
         this.cameraManagement.initDetection();
       }
 
-      // this.cameraManagement.setContext(this.context);
-
-      // if (this.props.searchCanvas != prevProp.searchCanvas) {
-      //   setTimeout(async () => {
-      //     if (this.cameraManagement) {
-      //       await this.cameraManagement.searchImage(this.props.searchCanvas);
-      //       if (this.props.onSearched) {
-      //         this.props.onSearched();
-      //       }
-      //     }
-      //   }, 500);
-      // }
-      // this.cameraManagement.setLens(this.props.focal);
       this.cameraManagement.setContext(this.context);
-      // this.cameraManagement.setSearchBoxes(this.props.searchBoxes);
-      // this.cameraManagement.setSelectedBoxIndex(this.props.selectedBoxIndex);
     }
   }
 

@@ -16,7 +16,7 @@ import {
   MenuItem,
   Select,
 } from '@mui/material';
-import { Camera, ICamPosition, IGlRect } from '@security/models';
+import { Camera, ICamPosition } from '@security/models';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -29,7 +29,6 @@ import CameraView from '../Home/CameraView';
 
 interface State {
   selectCamId?: string;
-  boxes: IGlRect[];
   activePursuit?: string;
   activeCamera?: Camera;
   camOptions: any;
@@ -49,7 +48,6 @@ export class Pursuit extends Component<Props, State> {
     this.state = {
       selectCamId: '',
       activeCamera: undefined,
-      boxes: [],
       camOptions: {},
     };
   }
@@ -200,6 +198,7 @@ export class Pursuit extends Component<Props, State> {
                                 camera: this.state.activeCamera,
                                 camOptions: this.state.camOptions,
                                 parent: this.context,
+                                playerMode: 'points',
                                 render: (state) => {
                                   this.setState(state);
                                 },

@@ -1,6 +1,6 @@
 import { PlayCircleFilled } from '@mui/icons-material';
 import { CircularProgress, Divider, Grid, IconButton } from '@mui/material';
-import { Camera, IGlRect, Settings } from '@security/models';
+import { Camera, Settings } from '@security/models';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -18,7 +18,6 @@ interface State {
   loaded: boolean;
   playing: boolean;
   focal?: any;
-  boxes: IGlRect[];
   selectedBoxIndex: number;
   connected: boolean;
 }
@@ -42,7 +41,6 @@ class CameraView extends Component<Props, State, typeof CamContext> {
       loaded: false,
       playing: false,
       focal: { x: 0, y: 0, scale: 1 },
-      boxes: [],
       selectedBoxIndex: -1,
       connected: false,
     };
@@ -186,38 +184,38 @@ class CameraView extends Component<Props, State, typeof CamContext> {
                 activateDetection={this.props.activateDetection}
                 stream={this.state.streamSource}
                 settings={this.props.Data?.Settings.CurrentItem}
-                onDrawRect={
-                  this.context.parent
-                    ? (box) => {
-                        box.camPos = this.context.parent?.camera?.position;
+                // onDrawRect={
+                //   this.context.parent
+                //     ? (box) => {
+                //         box.camPos = this.context.parent?.camera?.position;
 
-                        if (
-                          this.context.parent?.limitPosition &&
-                          this.context.camera &&
-                          this.context.parent.camera?.cameras[
-                            this.context.camera?.id || ''
-                          ]
-                        ) {
-                          let limits: any =
-                            this.context.parent.camera?.cameras[
-                              this.context.camera?.id || ''
-                            ].limits;
+                //         if (
+                //           this.context.parent?.limitPosition &&
+                //           this.context.camera &&
+                //           this.context.parent.camera?.cameras[
+                //             this.context.camera?.id || ''
+                //           ]
+                //         ) {
+                //           let limits: any =
+                //             this.context.parent.camera?.cameras[
+                //               this.context.camera?.id || ''
+                //             ].limits;
 
-                          if (!limits) {
-                            limits = {};
-                          }
-                          limits[this.context.parent?.limitPosition] = {
-                            coord: { x: box.left, y: box.top },
-                            pos: { ...box.camPos },
-                          };
-                          this.context.parent.camera.cameras[
-                            this.context.camera?.id || ''
-                          ].limits = limits;
-                        }
-                        this.context.render({});
-                      }
-                    : undefined
-                }
+                //           if (!limits) {
+                //             limits = {};
+                //           }
+                //           limits[this.context.parent?.limitPosition] = {
+                //             coord: { x: box.left, y: box.top },
+                //             pos: { ...box.camPos },
+                //           };
+                //           this.context.parent.camera.cameras[
+                //             this.context.camera?.id || ''
+                //           ].limits = limits;
+                //         }
+                //         this.context.render({});
+                //       }
+                //     : undefined
+                // }
               />
               {this.props.showPtz ? <PtzController></PtzController> : null}
             </>

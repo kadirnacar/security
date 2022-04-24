@@ -17,23 +17,14 @@ export class CameraManagement {
     this.context = context;
     this.yoloAnimationFrame = this.yoloAnimationFrame.bind(this);
     this.drawVideoToCanvas = this.drawVideoToCanvas.bind(this);
-    if (this.context) {
-      this.context.camOptions.onFindImage = (image: IGlRect) => {
-        return new Promise((resolve) => {
-          resolve(this.searchImage(image));
-        });
-      };
-    }
   }
 
-  onDrawRect?: (boxe: IGlRect) => void;
   videoLoaded = false;
   canvas: HTMLCanvasElement;
   video: HTMLVideoElement;
   context: ICamComtext;
   maxBoxes: number = 10;
   regl?: REGL.Regl;
-  searcBoxes: IGlRect[] = [];
   videoAnimate?: REGL.Cancellable;
   yoloAnimate?: any;
   yoloDetect?;
@@ -56,6 +47,7 @@ export class CameraManagement {
     this.activateDetection = true;
     if (!this.yoloDetect) {
       this.yoloDetect = await yolo.v3('model/v3/model.json');
+      // this.yoloDetect = await yolo.v3tiny('model/yolov3/model.json');
     }
   }
 
@@ -77,10 +69,6 @@ export class CameraManagement {
       'pointermove',
       this.handleCanvasPointerMove.bind(this)
     );
-  }
-
-  setSearchBoxes(boxes) {
-    this.searcBoxes = boxes;
   }
 
   setContext(context) {
@@ -159,7 +147,7 @@ export class CameraManagement {
           });
       }
       // this.context.render({});
-    } else {
+    } else if (this.context.playerMode == 'points') {
       const box = (ev.target as HTMLElement).getBoundingClientRect();
       const ratioX = this.canvas.width / box.width;
       const ratioY = this.canvas.height / box.height;
@@ -170,16 +158,29 @@ export class CameraManagement {
         this.context.parent?.camera?.cameras[this.context.camera?.id || '']
           .boxes,
         { x: mousePosX, y: mousePosY }
-      ).sort((a, b) => {
-        if (a.dist > b.dist) {
-          return 1;
-        } else if (a.dist < b.dist) {
-          return -1;
-        } else {
-          return 0;
+      )
+        .sort((a, b) => {
+          if (a.dist > b.dist) {
+            return 1;
+          } else if (a.dist < b.dist) {
+            return -1;
+          } else {
+            return 0;
+          }
+        })
+        .slice(0, 10);
+      if (this.context.parent?.camOptions.gotoPosition) {
+        const box =
+          this.context.parent?.camera?.cameras[this.context.camera?.id || '']
+            .boxes[pointsDistances[0].index];
+        if (box) {
+          await this.context.parent?.camOptions.gotoPosition({
+            x: Number(box.pos.x).toFixed(2),
+            y: Number(box.pos.y).toFixed(2),
+            z: Number(box.pos.z).toFixed(2),
+          });
         }
-      });
-      console.log(mousePosX, mousePosY, pointsDistances);
+      }
     }
   }
 
@@ -220,22 +221,24 @@ export class CameraManagement {
       const mousePosX = (ev.clientX - box.left) * ratioX;
       const mousePosY = (ev.clientY - box.top) * ratioY;
 
-      if (!this.isDragging) {
-        this.pointOverIndex = this.isMouseOverToPoint(mousePosX, mousePosY);
-        if (this.pointOverIndex > -1) {
-          ev.target.style.cursor = 'move';
-        } else {
-          ev.target.style.cursor = 'initial';
-        }
-      } else if (
-        this.pointOverIndex > -1 &&
-        this.context.parent?.camera?.cameras[this.context.camera?.id || '']
-      ) {
-        const box =
+      if (this.context.playerMode == 'points') {
+        if (!this.isDragging) {
+          this.pointOverIndex = this.isMouseOverToPoint(mousePosX, mousePosY);
+          if (this.pointOverIndex > -1) {
+            ev.target.style.cursor = 'move';
+          } else {
+            ev.target.style.cursor = 'initial';
+          }
+        } else if (
+          this.pointOverIndex > -1 &&
           this.context.parent?.camera?.cameras[this.context.camera?.id || '']
-            .boxes[this.pointOverIndex];
-        box.coord.x = mousePosX;
-        box.coord.y = mousePosY;
+        ) {
+          const box =
+            this.context.parent?.camera?.cameras[this.context.camera?.id || '']
+              .boxes[this.pointOverIndex];
+          box.coord.x = mousePosX;
+          box.coord.y = mousePosY;
+        }
       }
     }
   }
@@ -329,7 +332,22 @@ export class CameraManagement {
           this.video.videoHeight
         );
 
+        if (this.context.playerMode == 'target') {
+          this.ctx.strokeStyle = 'red';
+          this.ctx.lineWidth = 5;
+
+          // draw a red line
+          this.ctx.beginPath();
+          this.ctx.moveTo(0, 0);
+          this.ctx.lineTo(this.video.videoWidth, this.video.videoHeight);
+          this.ctx.moveTo(this.video.videoWidth, 0);
+          this.ctx.lineTo(0, this.video.videoHeight);
+          this.ctx.stroke();
+          this.ctx.closePath();
+        }
+
         if (
+          this.context.playerMode == 'points' &&
           this.context.parent?.camera &&
           this.context.parent?.camera.cameras[this.context.camera?.id || '']
         ) {
@@ -349,13 +367,38 @@ export class CameraManagement {
               false
             );
 
+            this.ctx.lineWidth = 6;
+
             if (this.context.parent.selectedPointIndex == index) {
-              this.ctx.fillStyle = 'red';
-              this.ctx.fill();
+              // this.ctx.fillStyle = 'red';
+              // this.ctx.fill();
+              this.ctx.lineWidth = 16;
             }
 
+            this.ctx.strokeStyle = 'red';
+            this.ctx.stroke();
+            this.ctx.closePath();
+          }
+        } else if (
+          this.context.playerMode == 'detect' &&
+          this.context.detectBoxes
+        ) {
+          for (
+            let index = 0;
+            index < this.context.detectBoxes.length;
+            index++
+          ) {
+            const element = this.context.detectBoxes[index];
+
+            this.ctx.beginPath();
             this.ctx.lineWidth = 6;
             this.ctx.strokeStyle = 'red';
+            this.ctx.strokeRect(
+              element.left,
+              element.top,
+              element.width,
+              element.height
+            );
             this.ctx.stroke();
             this.ctx.closePath();
           }
@@ -371,21 +414,27 @@ export class CameraManagement {
   async yoloAnimationFrame(timeStamp) {
     let timeInSecond = timeStamp / 1000;
     if (timeInSecond - this.last >= this.speed && !this.isPredict) {
-      if (this.canvas && this.activateDetection && this.yoloDetect) {
+      if (
+        this.canvas &&
+        this.activateDetection &&
+        this.yoloDetect &&
+        this.context.playerMode == 'detect'
+      ) {
         this.isPredict = true;
-        this.yoloDetect.predict(this.video).then((boxes) => {
+        this.yoloDetect.predict(this.video, {}).then((boxes) => {
           // this.context.boxes.splice(0, this.context.boxes.length);
           // this.context.boxes.push(...boxes);
-          console.log(boxes);
-          if (this.context.pursuitController && this.context.camera?.id) {
-            this.context.pursuitController.setCamBoxes(
-              this.context.camera?.id,
-              boxes
-            );
-          }
+          this.context.detectBoxes = [];
+          this.context.detectBoxes?.push(...boxes);
+          // if (this.context.pursuitController && this.context.camera?.id) {
+          //   this.context.pursuitController.setCamBoxes(
+          //     this.context.camera?.id,
+          //     boxes
+          //   );
+          // }
           this.isPredict = false;
 
-          this.context.render({});
+          // this.context.render({});
         });
       }
       this.last = timeInSecond;

@@ -19,12 +19,10 @@ import { DataState } from '../../reducers/Data/state';
 import { ApplicationState } from '../../store';
 import { CamContext } from '../../utils';
 import CameraView from './CameraView';
-import { PursuitController } from './PursuitController';
 
 interface HomeState {
   ptzCamera?: Camera;
   staticCameras: Camera[];
-  pursuitController?: PursuitController;
 }
 interface Props {
   DataActions?: DataActions<Camera>;
@@ -53,16 +51,10 @@ class Home extends Component<Props, HomeState> {
 
     const ptzCam = this.props.Data?.Camera.List.find((x) => x.isPtz);
     const staticCams = this.props.Data?.Camera.List.filter((x) => !x.isPtz);
-    let pursuitController: PursuitController | undefined = undefined;
-
-    if (ptzCam && staticCams) {
-      pursuitController = new PursuitController(ptzCam, staticCams);
-    }
 
     this.setState({
       staticCameras: staticCams || [],
       ptzCamera: ptzCam,
-      pursuitController,
     });
   }
 
@@ -77,7 +69,8 @@ class Home extends Component<Props, HomeState> {
           value={{
             camera: this.state.ptzCamera,
             camOptions: {},
-            pursuitController: this.state.pursuitController,
+            detectBoxes: [],
+            playerMode: 'detect',
             render: (state) => {
               this.setState({});
             },
@@ -107,7 +100,8 @@ class Home extends Component<Props, HomeState> {
                   value={{
                     camera: scam,
                     camOptions: {},
-                    pursuitController: this.state.pursuitController,
+                    detectBoxes: [],
+                    playerMode: 'detect',
                     render: (state) => {
                       this.setState({});
                     },

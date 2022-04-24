@@ -28,7 +28,6 @@ import Pursuit from './Pursuit';
 
 interface State {
   camera?: Camera;
-  boxes: IGlRect[];
   camOptions: any;
   expand?: boolean;
   expandView?: boolean;
@@ -50,7 +49,6 @@ class Form extends Component<Props & WithRouter, State, typeof CamContext> {
       camera: undefined,
       expand: false,
       expandView: true,
-      boxes: [],
       camOptions: {},
     };
   }
@@ -111,6 +109,8 @@ class Form extends Component<Props & WithRouter, State, typeof CamContext> {
         value={{
           camera: this.state.camera,
           camOptions: this.state.camOptions,
+          playerMode: 'target',
+          detectBoxes: [],
           render: (state) => {
             this.setState(state);
           },
