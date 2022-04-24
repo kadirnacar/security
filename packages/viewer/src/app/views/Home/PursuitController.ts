@@ -94,7 +94,6 @@ export class PursuitController {
   private async pursuitAction() {
     if (this.ptzCamera) {
       const box = this.getBox();
-
       if (box && this.ptzCamera.cameras[box.camId]) {
         const camRel = this.ptzCamera.cameras[box.camId];
         const pointsDistances = this.getNearestPoint(camRel.boxes, {
@@ -167,10 +166,10 @@ export class PursuitController {
               );
               let coordXLength = maxRightCoord - minLeftCoord;
 
-              let minTop = this.getFloat(minX.item.pos.y);
-              let minTopCoord = this.getFloat(minX.item.coord.y);
-              let maxBottom = this.getFloat(maxX.item.pos.y);
-              let maxBottomCoord = this.getFloat(maxX.item.coord.y);
+              let minTop = this.getFloat(minY.item.pos.y);
+              let minTopCoord = this.getFloat(minY.item.coord.y);
+              let maxBottom = this.getFloat(maxY.item.pos.y);
+              let maxBottomCoord = this.getFloat(maxY.item.coord.y);
               let yLength = this.calculateDiff(
                 minTop,
                 maxBottom,
@@ -198,7 +197,7 @@ export class PursuitController {
               );
 
               const d = box.item.width / (camRel.resulation?.width || 1);
-              console.log(d, -1 + (1 - d) * 2);
+              console.log(d, yPos, box, minTopCoord, coordYLength, ptzLimits);
 
               //   console.log(
               //     xPos,

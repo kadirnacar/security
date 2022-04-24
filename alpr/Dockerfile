@@ -20,4 +20,4 @@ RUN cd /storage/projects/alpr/src/bindings/python && \
       ln /dev/null /dev/raw1394 && \
       bash ./make.sh
 
-CMD ln -s /dev/null /dev/raw1394; python /webservice/openalpr_web.py
+CMD ln -s /dev/null /dev/raw1394; stdbuf -oL python /webservice/openalpr_web.py

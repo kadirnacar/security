@@ -1,7 +1,7 @@
 import { Services } from '@security/database';
 import { Request, Response, Router } from 'express';
 import { CameraService } from '../services/CameraService';
-
+import * as FormData from 'form-data';
 export class CameraRouter {
   router: Router;
 
@@ -84,14 +84,35 @@ export class CameraRouter {
       next(err);
     }
   }
+  public async test(req: any, res: Response, next) {
+    try {
+      console.log(req.file, req.files, req.body);
 
+      res.status(200);
+    } catch (err) {
+      next(err);
+    }
+  }
   public async getSnapshot(req: Request, res: Response, next) {
     try {
       const id = req.params['id'];
       const dataRepo = await CameraService.getSnapshot(id);
-      // res.status(200).send(dataRepo);
-      res.contentType(dataRepo.mimeType);
-      res.end(dataRepo.rawImage, 'binary');
+      var form = new FormData();
+
+      form.append('image', dataRepo.rawImage, {
+        filename: 'snapshot.jpg', // ... or:
+        // filepath: 'photos/toys/unicycle.jpg',
+        contentType: 'image/jpeg',
+        knownLength: dataRepo.rawImage.length,
+      });
+
+      form.submit('http://localhost:8888/alpr', function (err, res2) {
+        if (err) throw err;
+        res2.on('data', function (chunk) {
+          res.contentType('application/json');
+          res.end(chunk)
+        });
+      });
     } catch (err) {
       next(err);
     }
@@ -101,6 +122,7 @@ export class CameraRouter {
     this.router.post('/connect/:id', this.connect.bind(this));
     this.router.post('/disconnect/:id', this.disconnect.bind(this));
     this.router.post('/pos/:id', this.setPos.bind(this));
+    this.router.all('/pos2', this.test.bind(this));
     this.router.get('/info/:id', this.getCamInfo.bind(this));
     this.router.get('/snapshot/:id', this.getSnapshot.bind(this));
     this.router.post('/rtspgo/:id', this.rtspgo.bind(this));

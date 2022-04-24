@@ -8,7 +8,7 @@
     "server-build": "npx nx build server",
     "viewer": "npx nx serve viewer",
     "viewer-build": "npx nx build viewer",
-    "docker":"cd alpr && docker run -d -p 8888:8888 openalpr-web"
+    "docker": "cd alpr && docker run -d -p 8888:8888 openalpr-web"
   },
   "private": true,
   "devDependencies": {
@@ -55,6 +55,7 @@
     "core-js": "^3.21.1",
     "crypto": "^1.0.1",
     "express": "4.17.3",
+    "form-data": "^4.0.0",
     "golang": "^0.1.5-stable",
     "json-to-url": "^1.0.5",
     "lowdb": "^1.0.0",
@@ -75,6 +76,7 @@
     "reflect-metadata": "^0.1.13",
     "regenerator-runtime": "0.13.9",
     "regl": "^2.1.0",
+    "request": "^2.88.2",
     "tfjs-yolo": "0.0.4",
     "tslib": "^2.3.1",
     "uuidv4": "^6.2.13",
