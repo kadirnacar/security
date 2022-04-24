@@ -1,4 +1,4 @@
-import { ICamPosition, ICoord, IGlRect } from './IGlRect';
+import { ICamPosition, ICoord, IGlRect, IResulation } from './IGlRect';
 
 export interface Camera {
   id?: string;
@@ -18,6 +18,7 @@ export interface Camera {
 export interface ICamRelation {
   boxes: CamPoint[];
   limits?: IRectLimits;
+  resulation?: IResulation;
 }
 
 export interface CamPoint {

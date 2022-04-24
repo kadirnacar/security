@@ -90,8 +90,8 @@ export class CameraRouter {
       const id = req.params['id'];
       const dataRepo = await CameraService.getSnapshot(id);
       // res.status(200).send(dataRepo);
-      res.contentType('image/jpeg');
-      res.end(dataRepo, 'binary');
+      res.contentType(dataRepo.mimeType);
+      res.end(dataRepo.rawImage, 'binary');
     } catch (err) {
       next(err);
     }

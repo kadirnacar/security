@@ -19,10 +19,12 @@ import { DataState } from '../../reducers/Data/state';
 import { ApplicationState } from '../../store';
 import { CamContext } from '../../utils';
 import CameraView from './CameraView';
+import { PursuitController } from './PursuitController';
 
 interface HomeState {
   ptzCamera?: Camera;
   staticCameras: Camera[];
+  pursuit?: PursuitController;
 }
 interface Props {
   DataActions?: DataActions<Camera>;
@@ -52,10 +54,19 @@ class Home extends Component<Props, HomeState> {
     const ptzCam = this.props.Data?.Camera.List.find((x) => x.isPtz);
     const staticCams = this.props.Data?.Camera.List.filter((x) => !x.isPtz);
 
+    const pursuit = new PursuitController(ptzCam);
+
     this.setState({
       staticCameras: staticCams || [],
       ptzCamera: ptzCam,
+      pursuit,
     });
+  }
+
+  componentWillUnmount() {
+    if (this.state.pursuit) {
+      this.state.pursuit.stop();
+    }
   }
 
   render() {
@@ -71,6 +82,7 @@ class Home extends Component<Props, HomeState> {
             camOptions: {},
             detectBoxes: [],
             playerMode: 'detect',
+            pursuit: this.state.pursuit,
             render: (state) => {
               this.setState({});
             },
@@ -86,7 +98,7 @@ class Home extends Component<Props, HomeState> {
                 <CameraView
                   hideControls={true}
                   showPtz={true}
-                  activateDetection={true}
+                  activateDetection={false}
                   settings={this.props.Data?.Settings.CurrentItem}
                 />
               </CardContent>
@@ -102,6 +114,7 @@ class Home extends Component<Props, HomeState> {
                     camOptions: {},
                     detectBoxes: [],
                     playerMode: 'detect',
+                    pursuit: this.state.pursuit,
                     render: (state) => {
                       this.setState({});
                     },

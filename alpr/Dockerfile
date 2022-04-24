@@ -1,24 +1,23 @@
-FROM openalpr/openalpr:latest
+FROM python:2
 
-# Reset the entrypoint in parent Dockerfile
-ENTRYPOINT []
+RUN apt-get -y update && \
+    apt-get -y install libopencv-dev libtesseract-dev git cmake build-essential libleptonica-dev liblog4cplus-dev libcurl3-dev beanstalkd && \
+    pip install tornado
 
-WORKDIR /srv/platonix
+ADD webservice /webservice
 
-RUN apt-get update && \
-    apt-get install -y python3-pip && \
-    apt-get clean
+ADD openalpr /storage/projects/alpr
 
-ENV LC_ALL=C.UTF-8 \
-    LANG=C.UTF-8 \
-    FLASK_APP=/srv/platonix/server.py
+RUN cd /storage/projects/alpr/src && \
+      mkdir build && \
+      cd build && \
+      cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DCMAKE_INSTALL_SYSCONFDIR:PATH=/etc .. && \
+      make && \
+      make install
 
-COPY requirements.txt requirements.txt
+RUN cd /storage/projects/alpr/src/bindings/python && \
+      python setup.py install && \
+      ln /dev/null /dev/raw1394 && \
+      bash ./make.sh
 
-RUN pip3 install -r requirements.txt && \
-    cd /srv/openalpr/src/bindings/python/ && \
-    python3 setup.py install
-
-COPY server.py server.py
-
-CMD ["flask", "run", "--host=0.0.0.0"]
+CMD ln -s /dev/null /dev/raw1394; python /webservice/openalpr_web.py

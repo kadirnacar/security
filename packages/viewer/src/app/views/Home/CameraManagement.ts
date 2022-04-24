@@ -30,6 +30,7 @@ export class CameraManagement {
   yoloDetect?;
   drawingStartPoint?: { x: number; y: number };
   isDrawing: boolean = false;
+  drawingBox?: any;
   isDragging: boolean = false;
   lens = {
     a: 1.0,
@@ -147,46 +148,34 @@ export class CameraManagement {
           });
       }
       // this.context.render({});
-    } else if (this.context.playerMode == 'points') {
+    } else {
       const box = (ev.target as HTMLElement).getBoundingClientRect();
       const ratioX = this.canvas.width / box.width;
       const ratioY = this.canvas.height / box.height;
       const mousePosX = (ev.clientX - box.left) * ratioX;
       const mousePosY = (ev.clientY - box.top) * ratioY;
-
-      const pointsDistances = this.getNearestPoint(
-        this.context.parent?.camera?.cameras[this.context.camera?.id || '']
-          .boxes,
-        { x: mousePosX, y: mousePosY }
-      )
-        .sort((a, b) => {
-          if (a.dist > b.dist) {
-            return 1;
-          } else if (a.dist < b.dist) {
-            return -1;
-          } else {
-            return 0;
-          }
-        })
-        .slice(0, 10);
-      if (this.context.parent?.camOptions.gotoPosition) {
-        const box =
-          this.context.parent?.camera?.cameras[this.context.camera?.id || '']
-            .boxes[pointsDistances[0].index];
-        if (box) {
-          await this.context.parent?.camOptions.gotoPosition({
-            x: Number(box.pos.x).toFixed(2),
-            y: Number(box.pos.y).toFixed(2),
-            z: Number(box.pos.z).toFixed(2),
-          });
-        }
-      }
+      this.isDrawing = true;
+      this.drawingBox = { x: mousePosX, y: mousePosY, width: 5, height: 5 };
     }
   }
 
   handleCanvasPointerUp(ev) {
     if (this.canvas && this.pointOverIndex > -1) {
       this.isDragging = false;
+    } else if (this.isDrawing) {
+      this.isDrawing = false;
+      if (this.context.onDrawEnd) {
+        this.context.onDrawEnd(this.drawingBox);
+      }
+      if (this.context.pursuit) {
+        this.context.pursuit.setBoxes(this.context.camera?.id || '', [
+          {
+            left: this.drawingBox.x,
+            top: this.drawingBox.y,
+            ...this.drawingBox,
+          },
+        ]);
+      }
     }
   }
 
@@ -221,24 +210,39 @@ export class CameraManagement {
       const mousePosX = (ev.clientX - box.left) * ratioX;
       const mousePosY = (ev.clientY - box.top) * ratioY;
 
-      if (this.context.playerMode == 'points') {
-        if (!this.isDragging) {
-          this.pointOverIndex = this.isMouseOverToPoint(mousePosX, mousePosY);
-          if (this.pointOverIndex > -1) {
-            ev.target.style.cursor = 'move';
-          } else {
-            ev.target.style.cursor = 'initial';
-          }
-        } else if (
-          this.pointOverIndex > -1 &&
-          this.context.parent?.camera?.cameras[this.context.camera?.id || '']
-        ) {
-          const box =
-            this.context.parent?.camera?.cameras[this.context.camera?.id || '']
-              .boxes[this.pointOverIndex];
-          box.coord.x = mousePosX;
-          box.coord.y = mousePosY;
+      if (
+        this.context.playerMode == 'points' &&
+        !this.isDragging &&
+        !this.isDrawing
+      ) {
+        this.pointOverIndex = this.isMouseOverToPoint(mousePosX, mousePosY);
+        if (this.pointOverIndex > -1) {
+          ev.target.style.cursor = 'move';
+        } else {
+          ev.target.style.cursor = 'initial';
         }
+      } else if (
+        this.context.playerMode == 'points' &&
+        this.pointOverIndex > -1 &&
+        this.context.parent?.camera?.cameras[this.context.camera?.id || '']
+      ) {
+        const box =
+          this.context.parent?.camera?.cameras[this.context.camera?.id || '']
+            .boxes[this.pointOverIndex];
+        box.coord.x = mousePosX;
+        box.coord.y = mousePosY;
+      } else if (this.isDrawing && this.drawingBox) {
+        const w = Math.abs(this.drawingBox.x - mousePosX) || 5;
+        const h = Math.abs(this.drawingBox.y - mousePosY) || 5;
+
+        this.drawingBox.x =
+          mousePosX > this.drawingBox.x ? this.drawingBox.x : mousePosX;
+        this.drawingBox.y =
+          mousePosY > this.drawingBox.y ? this.drawingBox.y : mousePosY;
+        this.drawingBox.width =
+          mousePosX > this.drawingBox.x ? w : this.drawingBox.width + w;
+        this.drawingBox.height =
+          mousePosY > this.drawingBox.y ? h : this.drawingBox.height + h;
       }
     }
   }
@@ -300,6 +304,21 @@ export class CameraManagement {
       if (this.canvas && this.video) {
         this.canvas.width = this.video.videoWidth;
         this.canvas.height = this.video.videoHeight;
+        this.context.resulation = {
+          width: this.video.videoWidth,
+          height: this.video.videoHeight,
+        };
+        if (
+          this.context.parent?.camera &&
+          this.context.parent?.camera.cameras[this.context.camera?.id || '']
+        ) {
+          this.context.parent.camera.cameras[
+            this.context.camera?.id || ''
+          ].resulation = {
+            width: this.video.videoWidth,
+            height: this.video.videoHeight,
+          };
+        }
       }
     } catch {}
 
@@ -346,6 +365,20 @@ export class CameraManagement {
           this.ctx.closePath();
         }
 
+        if (this.drawingBox) {
+          this.ctx.beginPath();
+          this.ctx.lineWidth = 6;
+          this.ctx.strokeStyle = 'red';
+          this.ctx.strokeRect(
+            this.drawingBox.x,
+            this.drawingBox.y,
+            this.drawingBox.width,
+            this.drawingBox.height
+          );
+          this.ctx.stroke();
+          this.ctx.closePath();
+        }
+
         if (
           this.context.playerMode == 'points' &&
           this.context.parent?.camera &&
@@ -379,8 +412,9 @@ export class CameraManagement {
             this.ctx.stroke();
             this.ctx.closePath();
           }
-        } else if (
-          this.context.playerMode == 'detect' &&
+        }
+        if (
+          // this.context.playerMode == 'detect' &&
           this.context.detectBoxes
         ) {
           for (
@@ -389,15 +423,14 @@ export class CameraManagement {
             index++
           ) {
             const element = this.context.detectBoxes[index];
-
             this.ctx.beginPath();
             this.ctx.lineWidth = 6;
             this.ctx.strokeStyle = 'red';
             this.ctx.strokeRect(
-              element.left,
-              element.top,
-              element.width,
-              element.height
+              element.left || 0,
+              element.top || 0,
+              element.width || 0,
+              element.height || 0
             );
             this.ctx.stroke();
             this.ctx.closePath();
@@ -421,20 +454,23 @@ export class CameraManagement {
         this.context.playerMode == 'detect'
       ) {
         this.isPredict = true;
+
         this.yoloDetect.predict(this.video, {}).then((boxes) => {
-          // this.context.boxes.splice(0, this.context.boxes.length);
-          // this.context.boxes.push(...boxes);
           this.context.detectBoxes = [];
           this.context.detectBoxes?.push(...boxes);
-          // if (this.context.pursuitController && this.context.camera?.id) {
-          //   this.context.pursuitController.setCamBoxes(
-          //     this.context.camera?.id,
-          //     boxes
-          //   );
-          // }
-          this.isPredict = false;
 
-          // this.context.render({});
+          if (this.context.pursuit) {
+            if (this.drawingBox) {
+              boxes.push({
+                left: this.drawingBox.x,
+                top: this.drawingBox.y,
+                ...this.drawingBox,
+              });
+            }
+            this.context.pursuit.setBoxes(this.context.camera?.id || '', boxes);
+          }
+
+          this.isPredict = false;
         });
       }
       this.last = timeInSecond;

@@ -1,45 +1,19 @@
-# Platonix
+# Openalpr Webservice in a docker container
 
-Automated license plate recognition server using [OpenALPR](http://www.openalpr.com/) and [Flask](http://flask.pocoo.org/).
+## To Build
 
-## Build
-
-```bash
-docker build -t platonix . --platform linux/amd64
+```
+docker build -t openalpr-web .
 ```
 
-## Run
+## To Run
 
-"Production" mode:
-
-```bash
-docker run -d \
-    -p 5000:5000 \
-    --name platonix \
-    platonix
+```
+docker run -d -p 8888:8888 openalpr-web
 ```
 
-Development mode:
+## To Test
 
-```bash
-docker run -d \
-    -p 5000:5000 \
-    -e FLASK_DEBUG=1 \
-    --name platonix \
-    -v $PWD:/srv/platonix \
-    platonix
 ```
-
-## API
-
-`/ping` (validate the server is working):
-
-```bash
-curl http://localhost:5000/ping
-```
-
-`/photo` (upload and get results):
-
-```bash
-curl -F 'file=@plate_img.jpg' http://localhost:5000/photo
+curl -X POST -F "image=@license.jpg" http://`boot2docker ip`:8888/alpr
 ```

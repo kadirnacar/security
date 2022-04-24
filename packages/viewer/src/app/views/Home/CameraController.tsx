@@ -113,6 +113,37 @@ export default class CameraController extends Component<Props, State> {
     });
   }
 
+  componentDidUpdate() {
+    this.context.onDrawEnd = async (box) => {
+      if (this.state.activePosition) {
+        if (this.context.parent) {
+          this.context.parent.limitPosition = this.state.activePosition;
+
+          if (
+            this.state.activePosition &&
+            this.context.parent.camera &&
+            this.context.camera &&
+            this.context.camera.id &&
+            this.context.parent.camera.cameras[this.context.camera.id]
+          ) {
+            let d: IRectLimits | undefined =
+              this.context.parent.camera.cameras[this.context.camera.id].limits;
+
+            if (d) {
+              if (!d[this.state.activePosition]) {
+                d[this.state.activePosition] = {};
+              }
+              d[this.state.activePosition].coord = { x: box.x, y: box.y };
+            }
+            this.context.parent.camera.cameras[this.context.camera.id].limits =
+              d;
+            this.context.parent.render({});
+          }
+        }
+      }
+    };
+  }
+
   recursiveInterval;
 
   getFloat(value) {
@@ -353,11 +384,39 @@ export default class CameraController extends Component<Props, State> {
         this.context.parent.camera &&
         this.context.camera &&
         this.context.camera.id &&
-        this.context.parent.camera.cameras[this.context.camera.id] &&
-        this.context.parent.camera.cameras[this.context.camera.id].limits
+        this.context.parent.camera.cameras[this.context.camera.id]
       ) {
-        const d =
+        let d: any =
           this.context.parent.camera.cameras[this.context.camera.id].limits;
+
+        if (!d) {
+          d = {
+            leftBottom: { coord: { x: 0, y: this.context.resulation?.height } },
+            leftTop: { coord: { x: 0, y: 0 } },
+            rightBottom: {
+              coord: {
+                x: this.context.resulation?.width,
+                y: this.context.resulation?.height,
+              },
+            },
+            rightTop: { coord: { x: this.context.resulation?.width, y: 0 } },
+          };
+          this.context.parent.camera.cameras[this.context.camera.id].limits = d;
+        }
+
+        if (d && d[value]) {
+          this.context.detectBoxes = [
+            {
+              left: d[value].coord.x,
+              top: d[value].coord.y,
+              width: 10,
+              height: 10,
+            },
+          ];
+          this.context.render({ detectBoxes: this.context.detectBoxes });
+        } else {
+          this.context.detectBoxes = [];
+        }
 
         if (this.context.parent?.camOptions.gotoPosition && d && d[value]) {
           await this.context.parent?.camOptions.gotoPosition(d[value].pos);

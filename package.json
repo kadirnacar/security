@@ -7,7 +7,8 @@
     "server": "npx nx serve server --watch=true",
     "server-build": "npx nx build server",
     "viewer": "npx nx serve viewer",
-    "viewer-build": "npx nx build viewer"
+    "viewer-build": "npx nx build viewer",
+    "docker":"cd alpr && docker run -d -p 8888:8888 openalpr-web"
   },
   "private": true,
   "devDependencies": {

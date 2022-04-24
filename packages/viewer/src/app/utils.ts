@@ -1,5 +1,6 @@
-import { Camera, IYoloBox } from '@security/models';
+import { Camera, IResulation, IYoloBox } from '@security/models';
 import React from 'react';
+import { PursuitController } from './views/Home/PursuitController';
 
 export function generateGuid() {
   var result, i, j;
@@ -21,8 +22,11 @@ export interface ICamComtext {
   camOptions: any;
   parent?: ICamComtext;
   limitPosition?: any;
+  pursuit?: PursuitController;
   playerMode?: 'target' | 'points' | 'detect';
   detectBoxes?: IYoloBox[];
+  resulation?: IResulation;
+  onDrawEnd?: (box) => void;
 }
 
 export const CamContext = React.createContext<ICamComtext>({

@@ -108,13 +108,13 @@ export class CameraService {
     }
 
     try {
-      OnvifManager.add('discovery');
-      OnvifManager.discovery.startProbe().then((deviceList) => {
-        console.log(deviceList);
-        // 'deviceList' contains all ONVIF devices that have responded.ç
-        // If it is empty, then no ONVIF devices
-        // responded back to the broadcast.
-      });
+      // OnvifManager.add('discovery');
+      // OnvifManager.discovery.startProbe().then((deviceList) => {
+      //   console.log(deviceList);
+      //   // 'deviceList' contains all ONVIF devices that have responded.ç
+      //   // If it is empty, then no ONVIF devices
+      //   // responded back to the broadcast.
+      // });
       const cam = await OnvifManager.connect(
         cameraModel.url,
         cameraModel.port,
@@ -139,9 +139,28 @@ export class CameraService {
     return camItem;
   }
 
-  public static async getSnapshot(id: string) {
+  public static async getSnapshot(id: string): Promise<any> {
     return new Promise((resolve) => {
       const camItem = this.getCamera(id);
+      camItem.camera.add('snapshot');
+      camItem.camera.snapshot
+        .getSnapshot()
+        .then((results) => {
+          let mimeType = results.mimeType;
+          let rawImage = results.image;
+          let prefix = 'data:' + mimeType + ';base64,';
+          let base64Image = Buffer.from(rawImage, 'binary').toString('base64');
+          let image = prefix + base64Image;
+          resolve({ rawImage, mimeType });
+          // 'image' is now ready to be displayed on a web page
+          // ...
+        })
+        .catch((err) => {
+          console.log(err);
+          resolve(null);
+        });
+
+      // camItem.camera.
       // if (camItem && camItem.nodeCam) {
       //   camItem.nodeCam
       //     .fetchSnapshot()
@@ -153,7 +172,6 @@ export class CameraService {
       //       resolve(null);
       //     });
       // } else {
-      resolve(null);
       // }
     });
   }

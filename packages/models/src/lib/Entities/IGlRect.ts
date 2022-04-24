@@ -1,12 +1,12 @@
 export interface IYoloBox {
-  bottom: number;
-  class: string;
-  height: number;
-  left: number;
-  right: number;
-  score: number;
-  top: number;
-  width: number;
+  bottom?: number;
+  class?: string;
+  height?: number;
+  left?: number;
+  right?: number;
+  score?: number;
+  top?: number;
+  width?: number;
 }
 export interface IGlRect {
   id: string;

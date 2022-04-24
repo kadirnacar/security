@@ -31,6 +31,7 @@ interface State {
   selectCamId?: string;
   activePursuit?: string;
   activeCamera?: Camera;
+  detectBoxes?:any;
   camOptions: any;
 }
 
@@ -160,10 +161,15 @@ export class Pursuit extends Component<Props, State> {
                                       this.props.Data?.Camera.List.find(
                                         (x) => x.id == camId
                                       );
-                                    this.setState({
-                                      activePursuit: camId,
-                                      activeCamera: camera,
-                                    });
+                                    this.setState(
+                                      { activePursuit: undefined },
+                                      () => {
+                                        this.setState({
+                                          activePursuit: camId,
+                                          activeCamera: camera,
+                                        });
+                                      }
+                                    );
                                   }}
                                 >
                                   <ListItemIcon>
@@ -199,6 +205,7 @@ export class Pursuit extends Component<Props, State> {
                                 camOptions: this.state.camOptions,
                                 parent: this.context,
                                 playerMode: 'points',
+                                detectBoxes: this.state.detectBoxes,
                                 render: (state) => {
                                   this.setState(state);
                                 },
