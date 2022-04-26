@@ -2,6 +2,10 @@ import { Services } from '@security/database';
 import { Request, Response, Router } from 'express';
 import { CameraService } from '../services/CameraService';
 import * as FormData from 'form-data';
+import * as fs from 'fs';
+import path = require('path');
+import { Camera } from '@security/models';
+import * as moment from 'moment';
 export class CameraRouter {
   router: Router;
 
@@ -88,28 +92,65 @@ export class CameraRouter {
   public async getSnapshot(req: Request, res: Response, next) {
     try {
       const id = req.params['id'];
-      const dataRepo = await CameraService.getSnapshot(id);
+      const dataRepo = Services.Camera;
+      const data: Camera = await dataRepo.get(id);
+      const snapshot = await CameraService.getSnapshot(id);
       // console.log(dataRepo, dataRepo.rawImage.length);
 
       // res.contentType(dataRepo.mimeType);
       //     res.end(dataRepo.rawImage);
 
+      const imageFolder = path.resolve(__dirname, 'photos');
+      let imageFileName = path.resolve(
+        imageFolder,
+        `${moment().format('dd-MM-yyyy-HH-mm')}_${data.position.x}_${data.position.y}_${
+          data.position.z
+        }}.jpeg`
+      );
+
+      if (!fs.existsSync(imageFolder)) {
+        fs.mkdirSync(imageFolder);
+      }
+
       var form = new FormData();
 
-      form.append('image', dataRepo.rawImage, {
+      form.append('image', snapshot.rawImage, {
         filename: 'snapshot.jpg', // ... or:
         // filepath: 'photos/toys/unicycle.jpg',
         contentType: 'image/jpeg',
-        knownLength: dataRepo.rawImage.length,
+        knownLength: snapshot.rawImage.length,
       });
-
+      let isProcess = false;
       form.submit('http://localhost:8888/alpr', function (err, res2) {
         if (err) throw err;
+        isProcess = true;
         res2.on('data', function (chunk) {
+          let jsonResult: any = {};
+
+          try {
+            jsonResult = JSON.parse(chunk.toString());
+          } catch {}
+
+          imageFileName = path.resolve(
+            imageFolder,
+            `${moment().format('dd-MM-yyyy-HH-mm')}_${
+              jsonResult && jsonResult.results && jsonResult.results.length > 0
+                ? jsonResult.results[0].plate
+                : 'PlakaYok'
+            }_${data.position.x}_${data.position.y}_${data.position.z}.jpeg`
+          );
+          fs.writeFileSync(imageFileName, snapshot.rawImage);
           res.contentType('application/json');
           res.end(chunk);
         });
       });
+
+      setTimeout(() => {
+        if (!isProcess) {
+          fs.writeFileSync(imageFileName, snapshot.rawImage);
+          res.end();
+        }
+      }, 4000);
     } catch (err) {
       next(err);
     }

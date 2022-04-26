@@ -190,7 +190,7 @@ export class PursuitController {
 
               let yPos = this.getBetween(
                 minTop +
-                  (Math.abs(box.item.top + box.item.height / 2 - minTopCoord) *
+                  (Math.abs(box.item.top + box.item.height / 3 - minTopCoord) *
                     yLength) /
                     coordYLength,
                 ptzLimits.y.min,
@@ -200,8 +200,14 @@ export class PursuitController {
               const d = await (
                 await CameraService.getSnapshot(this.ptzCamera.id || '')
               ).value;
+
+              if (d && d.results && d.results.length > 0) {
+              }
+
               console.log(
-                d && d.results && d.results.length > 0 ? d.results: 'Plaka okunamadı'
+                d && d.results && d.results.length > 0
+                  ? d.results
+                  : 'Plaka okunamadı'
               );
 
               //   console.log(
