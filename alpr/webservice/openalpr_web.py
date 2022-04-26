@@ -18,7 +18,7 @@ class MainHandler(tornado.web.RequestHandler):
 
         fileinfo = self.request.files['image'][0]
         jpeg_bytes = fileinfo['body']
-
+        
         if len(jpeg_bytes) <= 0:
             return False
 

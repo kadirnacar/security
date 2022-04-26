@@ -50,8 +50,8 @@ export class CameraService extends ServiceBase {
   public static async getSnapshot(id: string): Promise<Result<any>> {
     const result = await this.requestJson(
       {
-        url: `/api/camera/disconnect/${id}`,
-        method: 'POST',
+        url: `/api/camera/snapshot/${id}`,
+        method: 'GET',
       },
       true
     );

@@ -52,7 +52,8 @@ export class PursuitController {
     if (camKey) {
       if (this.boxes[camKey].length > 0) {
         this.lastCameraIndex++;
-        return { camId: camKey, item: this.boxes[camKey][0] };
+        const i = Math.floor(Math.random() * this.boxes[camKey].length);
+        return { camId: camKey, item: this.boxes[camKey][i] };
       }
     }
 
@@ -196,8 +197,12 @@ export class PursuitController {
                 ptzLimits.y.max
               );
 
-              const d = box.item.width / (camRel.resulation?.width || 1);
-              console.log(d, yPos, box, minTopCoord, coordYLength, ptzLimits);
+              const d = await (
+                await CameraService.getSnapshot(this.ptzCamera.id || '')
+              ).value;
+              console.log(
+                d && d.results && d.results.length > 0 ? d.results: 'Plaka okunamadı'
+              );
 
               //   console.log(
               //     xPos,
@@ -215,7 +220,7 @@ export class PursuitController {
               await this.goToPosition({
                 x: xPos.toFixed(2),
                 y: yPos.toFixed(2),
-                z: (-1 * yPos).toFixed(2),
+                z: (-1 * (yPos - 0.02)).toFixed(2),
               });
             }
             // await this.goToPosition(refBox);
