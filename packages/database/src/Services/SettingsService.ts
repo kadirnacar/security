@@ -11,6 +11,7 @@ export class SettingsService extends LowdbBase {
       framePerSecond: 0.5,
       updateDate: new Date(),
       imageResizeDivider: 2,
+      pursuitTimeout: 3000,
     });
   }
 }

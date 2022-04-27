@@ -152,7 +152,19 @@ class SettingsForm extends Component<Props, State> {
               value={this.state.settings?.imageResizeDivider || 2}
               onChange={this.handleChange}
               inputProps={{ inputMode: 'numeric', min: 1, step: 1 }}
-              name="scoreThreshold"
+              name="imageResizeDivider"
+              type="number"
+              variant="outlined"
+            />
+
+            <TextField
+              fullWidth
+              label="Yakalama Süre Aralığı"
+              margin="normal"
+              value={this.state.settings?.pursuitTimeout || 3000}
+              onChange={this.handleChange}
+              inputProps={{ inputMode: 'numeric', min: 1000, step: 500 }}
+              name="pursuitTimeout"
               type="number"
               variant="outlined"
             />

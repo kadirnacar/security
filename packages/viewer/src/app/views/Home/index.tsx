@@ -3,6 +3,7 @@ import {
   Card,
   CardContent,
   CardHeader,
+  colors,
   CssBaseline,
   Divider,
   Grid,
@@ -29,6 +30,7 @@ interface HomeState {
 interface Props {
   DataActions?: DataActions<Camera>;
   Data?: DataState;
+  classes: any;
 }
 
 const Tags = {
@@ -53,8 +55,8 @@ class Home extends Component<Props, HomeState> {
 
     const ptzCam = this.props.Data?.Camera.List.find((x) => x.isPtz);
     const staticCams = this.props.Data?.Camera.List.filter((x) => !x.isPtz);
-
-    const pursuit = new PursuitController(ptzCam);
+    const settings = this.props.Data?.Settings.CurrentItem;
+    const pursuit = new PursuitController(ptzCam, settings?.pursuitTimeout);
 
     this.setState({
       staticCameras: staticCams || [],
@@ -73,7 +75,7 @@ class Home extends Component<Props, HomeState> {
     return (
       <>
         <CssBaseline />
-        <Card className={this.props['classes'].root}>
+        <Card className={this.props.classes.root}>
           <CardHeader title="Kameralar"></CardHeader>
         </Card>
         <CamContext.Provider
@@ -95,12 +97,17 @@ class Home extends Component<Props, HomeState> {
               <CardContent
                 style={{ maxHeight: 600, height: 600, position: 'relative' }}
               >
-                <CameraView
-                  hideControls={true}
-                  showPtz={true}
-                  activateDetection={false}
-                  settings={this.props.Data?.Settings.CurrentItem}
-                />
+                <Grid container spacing={1} style={{ height: '100%' }}>
+                  <Grid item xs={4} className={this.props.classes.list}></Grid>
+                  <Grid item xs={8}>
+                    <CameraView
+                      hideControls={true}
+                      showPtz={true}
+                      activateDetection={false}
+                      settings={this.props.Data?.Settings.CurrentItem}
+                    />
+                  </Grid>
+                </Grid>
               </CardContent>
             </Card>
           </Box>
@@ -160,13 +167,17 @@ class Home extends Component<Props, HomeState> {
   }
 }
 
-const styles = (theme: Theme) =>
-  createStyles({
+const styles = (theme: Theme) => {
+  return createStyles({
     root: {
       width: '100%',
     },
+    list: {
+      background: theme.palette.grey[800],
+      borderRadius: 10,
+    },
   });
-
+};
 const mapStateToProps = (state: ApplicationState) => state;
 
 const mapDispatchToProps = (dispatch) => {

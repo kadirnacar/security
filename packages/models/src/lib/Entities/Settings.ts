@@ -7,4 +7,5 @@ export interface Settings {
   framePerSecond?: number;
   updateDate?: Date;
   imageResizeDivider?: number;
+  pursuitTimeout?: number;
 }

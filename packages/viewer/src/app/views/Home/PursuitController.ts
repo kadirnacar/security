@@ -4,8 +4,9 @@ import { CameraService } from '../../services/CameraService';
 import { dataURItoBlob } from '../../utils';
 
 export class PursuitController {
-  constructor(ptzCamera?: Camera) {
+  constructor(ptzCamera?: Camera, interval?: number) {
     this.ptzCamera = ptzCamera;
+    this.interval = interval || 3000;
     this.boxes = {};
     this.setTimer();
   }
