@@ -4,8 +4,10 @@ import { CameraService } from '../services/CameraService';
 import * as FormData from 'form-data';
 import * as fs from 'fs';
 import path = require('path');
-import { Camera } from '@security/models';
+import { Camera, Capture, Settings } from '@security/models';
 import * as moment from 'moment';
+import * as sharp from 'sharp';
+
 export class CameraRouter {
   router: Router;
 
@@ -92,67 +94,94 @@ export class CameraRouter {
   public async getSnapshot(req: Request, res: Response, next) {
     try {
       const id = req.params['id'];
+      const { box, image } = req.body;
       const dataRepo = Services.Camera;
       const data: Camera = await dataRepo.get(id);
-      const snapshot = await CameraService.getSnapshot(id);
-      // console.log(dataRepo, dataRepo.rawImage.length);
+      const settings: Settings = Services.Settings.all();
 
-      // res.contentType(dataRepo.mimeType);
-      //     res.end(dataRepo.rawImage);
+      let bufferSource = Buffer.from(image.split(',')[1], 'base64');
+      let form = new FormData();
 
       const imageFolder = path.resolve(__dirname, 'photos');
-      let imageFileName = path.resolve(
-        imageFolder,
-        `${moment().format('dd-MM-yyyy-HH-mm')}_${data.position.x}_${data.position.y}_${
-          data.position.z
-        }}.jpeg`
-      );
 
       if (!fs.existsSync(imageFolder)) {
         fs.mkdirSync(imageFolder);
       }
 
-      var form = new FormData();
+      const img = sharp(bufferSource);
+      const metadata = await img.metadata();
 
-      form.append('image', snapshot.rawImage, {
-        filename: 'snapshot.jpg', // ... or:
-        // filepath: 'photos/toys/unicycle.jpg',
-        contentType: 'image/jpeg',
-        knownLength: snapshot.rawImage.length,
+      await img
+        .resize(
+          metadata.width / (settings.imageResizeDivider || 2),
+          metadata.height / (settings.imageResizeDivider || 2)
+        )
+        .png({
+          progressive: true,
+          force: false,
+          quality: 80,
+          compressionLevel: 8,
+        });
+      // .toFile('output.webp', (err, info) => {});
+
+      form.append('image', bufferSource, {
+        filename: 'snapshot.png',
+        contentType: 'image/png',
+        knownLength: bufferSource.byteLength,
       });
+
       let isProcess = false;
       form.submit('http://localhost:8888/alpr', function (err, res2) {
-        if (err) throw err;
+        if (err) {
+          console.log(err);
+          return;
+        }
         isProcess = true;
-        res2.on('data', function (chunk) {
+        res2.on('data', async (chunk) => {
           let jsonResult: any = {};
 
           try {
             jsonResult = JSON.parse(chunk.toString());
           } catch {}
 
-          imageFileName = path.resolve(
-            imageFolder,
-            `${moment().format('dd-MM-yyyy-HH-mm')}_${
+          let imageFileName = `${box.camId}#${moment().format(
+            'DDMMYYYYHHmmss'
+          )}#${
+            jsonResult && jsonResult.results && jsonResult.results.length > 0
+              ? jsonResult.results[0].plate
+              : 'PlakaYok'
+          }#${data.position.x}_${data.position.y}_${data.position.z}.png`;
+
+          await img.toFile(path.resolve(imageFolder, imageFileName));
+
+          const captureRepo = Services.Capture;
+          const capture: Capture = {
+            box: box,
+            camId: box.camId,
+            imageFile: imageFileName,
+            pos: data.position,
+            ptzId: data.id,
+            date: new Date(),
+            plateResult:
               jsonResult && jsonResult.results && jsonResult.results.length > 0
-                ? jsonResult.results[0].plate
-                : 'PlakaYok'
-            }_${data.position.x}_${data.position.y}_${data.position.z}.jpeg`
-          );
-          fs.writeFileSync(imageFileName, snapshot.rawImage);
+                ? jsonResult
+                : undefined,
+          };
+          const captureSavedData = captureRepo.save(capture, box.camId);
+
           res.contentType('application/json');
-          res.end(chunk);
+          res.send(captureSavedData);
         });
       });
 
       setTimeout(() => {
         if (!isProcess) {
-          fs.writeFileSync(imageFileName, snapshot.rawImage);
           res.end();
         }
-      }, 4000);
+      }, 2500);
     } catch (err) {
-      next(err);
+      console.log(err);
+      res.end();
     }
   }
 
@@ -161,7 +190,7 @@ export class CameraRouter {
     this.router.post('/disconnect/:id', this.disconnect.bind(this));
     this.router.post('/pos/:id', this.setPos.bind(this));
     this.router.get('/info/:id', this.getCamInfo.bind(this));
-    this.router.get('/snapshot/:id', this.getSnapshot.bind(this));
+    this.router.post('/snapshot/:id', this.getSnapshot.bind(this));
     this.router.post('/rtspgo/:id', this.rtspgo.bind(this));
   }
 }

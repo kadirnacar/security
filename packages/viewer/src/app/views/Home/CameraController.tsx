@@ -168,11 +168,7 @@ export default class CameraController extends Component<Props, State> {
     if (rightValue < 0 && leftValue >= 0) {
       return max - leftValue - (min - rightValue);
     }
-    // if (
-    //   (left < 0 && right < 0) ||
-    //   (left < 0 && right >= 0) ||
-    //   (left >= 0 && right >= 0)
-    // )
+    
     else {
       return rightValue - leftValue;
     }
@@ -266,49 +262,40 @@ export default class CameraController extends Component<Props, State> {
         }
 
         this.recursiveInterval = async () => {
-          // this.recursiveInterval = setInterval(async () => {
           if (this.context.parent?.camOptions.gotoPosition && location) {
-            if (this.context.parent?.camOptions.takePhoto) {
-              const box = this.context.parent.camOptions.takePhoto();
-              if (box) {
-                const boxes =
-                  this.context.parent.camera?.cameras[
-                    this.context.camera?.id || ''
-                  ].boxes;
+            const boxes =
+              this.context.parent.camera?.cameras[this.context.camera?.id || '']
+                .boxes;
 
-                const diffX = this.calculateDiff(
-                  minLeft,
-                  location.x,
-                  ptzLimits.x.min,
-                  ptzLimits.x.max
-                );
+            const diffX = this.calculateDiff(
+              minLeft,
+              location.x,
+              ptzLimits.x.min,
+              ptzLimits.x.max
+            );
 
-                const x = parseFloat(
-                  (minLeftCoord + (diffX * coordXLength) / xLength).toFixed(2)
-                );
-                const y = parseFloat(
-                  (
-                    minTopCoord +
-                    ((location.y - minTop) * coordYLength) / yLength
-                  ).toFixed(2)
-                );
+            const x = parseFloat(
+              (minLeftCoord + (diffX * coordXLength) / xLength).toFixed(2)
+            );
+            const y = parseFloat(
+              (
+                minTopCoord +
+                ((location.y - minTop) * coordYLength) / yLength
+              ).toFixed(2)
+            );
 
-                boxes?.push({
-                  pos: {
-                    x: Number(location.x).toFixed(2),
-                    y: Number(location.y).toFixed(2),
-                    z: Number(location.z).toFixed(2),
-                  },
-                  coord: {
-                    // x: x + (Math.pow(y, 2) / x) * -0.1,
-                    // y: y + (Math.pow(x, 2) / y) * -0.16,
-                    x,
-                    y,
-                  },
-                });
-                this.context.parent.render({});
-              }
-            }
+            boxes?.push({
+              pos: {
+                x: Number(location.x).toFixed(2),
+                y: Number(location.y).toFixed(2),
+                z: Number(location.z).toFixed(2),
+              },
+              coord: {
+                x,
+                y,
+              },
+            });
+            this.context.parent.render({});
 
             if (location) {
               let cuurentValue: number = 0;
@@ -440,23 +427,6 @@ export default class CameraController extends Component<Props, State> {
             {this.context.parent ? <Tab label={<BorderOuter />} /> : null}
           </Tabs>
         </Box>
-        {!this.context.parent ? (
-          <TabPanel value={this.state.activeTab} index={0}>
-            <IconButton
-              title="Çek"
-              onClick={() => {
-                if (this.context.camOptions.takePhoto) {
-                  const box = this.context.camOptions.takePhoto();
-                  if (box) {
-                  }
-                }
-              }}
-            >
-              <Screenshot />
-            </IconButton>
-            <Box></Box>
-          </TabPanel>
-        ) : null}
         {this.context.parent ? (
           <TabPanel value={this.state.activeTab} index={0}>
             <Box></Box>

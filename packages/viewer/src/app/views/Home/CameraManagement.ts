@@ -248,7 +248,6 @@ export class CameraManagement {
   }
 
   takePhoto() {
-    console.log('take Photo');
     if (this.canvas && this.video) {
       let canvas = document.createElement('canvas');
 
@@ -458,7 +457,6 @@ export class CameraManagement {
         this.yoloDetect.predict(this.video, {}).then((boxes) => {
           this.context.detectBoxes = [];
           this.context.detectBoxes?.push(...boxes);
-          console.log(boxes);
           if (this.context.pursuit) {
             if (this.drawingBox) {
               boxes.push({

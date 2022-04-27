@@ -6,4 +6,5 @@ export interface Settings {
   classNames?: string[];
   framePerSecond?: number;
   updateDate?: Date;
+  imageResizeDivider?: number;
 }

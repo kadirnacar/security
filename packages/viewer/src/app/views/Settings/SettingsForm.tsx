@@ -144,6 +144,18 @@ class SettingsForm extends Component<Props, State> {
               type="number"
               variant="outlined"
             />
+
+            <TextField
+              fullWidth
+              label="Resim Küçültme Katsayısı"
+              margin="normal"
+              value={this.state.settings?.imageResizeDivider || 2}
+              onChange={this.handleChange}
+              inputProps={{ inputMode: 'numeric', min: 1, step: 1 }}
+              name="scoreThreshold"
+              type="number"
+              variant="outlined"
+            />
           </CardContent>
         </Card>
       </Box>

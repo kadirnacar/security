@@ -1,6 +1,7 @@
 import { Camera, IGlRect } from '@security/models';
 import { CamPoint } from 'packages/models/src/lib/Entities/Camera';
 import { CameraService } from '../../services/CameraService';
+import { dataURItoBlob } from '../../utils';
 
 export class PursuitController {
   constructor(ptzCamera?: Camera) {
@@ -10,7 +11,9 @@ export class PursuitController {
   }
 
   public ptzCamera?: Camera;
+  public getShapshotCanvas?: (camId: string) => HTMLCanvasElement | undefined;
   private boxes: { [key: string]: any[] } = {};
+  private currentBox: any = null;
   private intervalProcess?: any;
   private interval = 3000;
   private maxBoxesDistance = 4;
@@ -94,12 +97,69 @@ export class PursuitController {
 
   private async pursuitAction() {
     if (this.ptzCamera) {
-      const box = this.getBox();
-      if (box && this.ptzCamera.cameras[box.camId]) {
-        const camRel = this.ptzCamera.cameras[box.camId];
+      if (this.currentBox && this.getShapshotCanvas) {
+        const canvas = this.getShapshotCanvas(this.ptzCamera.id || '');
+        console.log(canvas);
+        if (canvas) {
+          const d = await (
+            await CameraService.getSnapshot(
+              this.ptzCamera.id || '',
+              canvas?.toDataURL(),
+              this.currentBox
+            )
+          ).value;
+          console.log(d);
+          //   let isProcess = false;
+          //   form.submit('http://localhost:8888/alpr', function (err, res2) {
+          //     if (err) return;
+          //     isProcess = true;
+          //     res2.on('data', function (chunk) {
+          //       let jsonResult: any = {};
+
+          //       try {
+          //         jsonResult = JSON.parse(chunk.toString());
+          //       } catch {}
+
+          //       imageFileName = path.resolve(
+          //         imageFolder,
+          //         `${moment().format('dd-MM-yyyy-HH-mm')}_${
+          //           jsonResult &&
+          //           jsonResult.results &&
+          //           jsonResult.results.length > 0
+          //             ? jsonResult.results[0].plate
+          //             : 'PlakaYok'
+          //         }_${data.position.x}_${data.position.y}_${data.position.z}.jpeg`
+          //       );
+          //       fs.writeFileSync(imageFileName, snapshot.rawImage);
+          //       res.contentType('application/json');
+          //       res.end(chunk);
+          //     });
+          //   });
+
+          // const d = await (
+          //   await CameraService.getSnapshot(
+          //     this.ptzCamera.id || '',
+          //     canvas?.toDataURL(),
+          //     this.currentBox
+          //   )
+          // ).value;
+
+          // if (d && d.results && d.results.length > 0) {
+          // }
+
+          // console.log(
+          //   d && d.results && d.results.length > 0
+          //     ? d.results
+          //     : 'Plaka okunamadı'
+          // );
+        }
+      }
+      this.currentBox = this.getBox();
+      if (this.currentBox && this.ptzCamera.cameras[this.currentBox.camId]) {
+        const camRel = this.ptzCamera.cameras[this.currentBox.camId];
         const pointsDistances = this.getNearestPoint(camRel.boxes, {
-          x: box.item.left,
-          y: box.item.top,
+          x: this.currentBox.item.left,
+          y: this.currentBox.item.top,
         })
           .sort((a, b) => {
             if (a.dist > b.dist) {
@@ -181,7 +241,11 @@ export class PursuitController {
 
               let xPos = this.getBetween(
                 minLeft +
-                  (Math.abs(box.item.left + box.item.width / 2 - minLeftCoord) *
+                  (Math.abs(
+                    this.currentBox.item.left +
+                      this.currentBox.item.width / 2 -
+                      minLeftCoord
+                  ) *
                     xLength) /
                     coordXLength,
                 ptzLimits.x.min,
@@ -190,49 +254,25 @@ export class PursuitController {
 
               let yPos = this.getBetween(
                 minTop +
-                  (Math.abs(box.item.top + box.item.height / 3 - minTopCoord) *
+                  (Math.abs(
+                    this.currentBox.item.top +
+                      this.currentBox.item.height / 3 -
+                      minTopCoord
+                  ) *
                     yLength) /
                     coordYLength,
                 ptzLimits.y.min,
                 ptzLimits.y.max
               );
 
-              const d = await (
-                await CameraService.getSnapshot(this.ptzCamera.id || '')
-              ).value;
-
-              if (d && d.results && d.results.length > 0) {
-              }
-
-              console.log(
-                d && d.results && d.results.length > 0
-                  ? d.results
-                  : 'Plaka okunamadı'
-              );
-
-              //   console.log(
-              //     xPos,
-              //     yPos,
-              //     refBox,
-              //     minX,
-              //     maxX,
-              //     minY,
-              //     maxY,
-              //     xLength,
-              //     yLength,
-              //     coordXLength,
-              //     coordYLength
-              //   );
               await this.goToPosition({
                 x: xPos.toFixed(2),
                 y: yPos.toFixed(2),
                 z: (-1 * (yPos - 0.02)).toFixed(2),
               });
             }
-            // await this.goToPosition(refBox);
           }
         }
-        // console.log('run', box, pointsDistances);
       }
     }
   }

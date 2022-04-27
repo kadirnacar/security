@@ -10,6 +10,7 @@ export class SettingsService extends LowdbBase {
       classNames: ['person', 'car', 'motorbike', 'bus', 'truck'],
       framePerSecond: 0.5,
       updateDate: new Date(),
+      imageResizeDivider: 2,
     });
   }
 }

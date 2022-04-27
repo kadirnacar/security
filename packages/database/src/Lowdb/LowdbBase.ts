@@ -128,6 +128,7 @@ export class LowdbBase {
   public save(model: any, parentId?: string) {
     var db = this.getDb(parentId);
     var data = this.multi ? db?.find({ id: model.id }) : db;
+
     let savedData = JSON.parse(
       JSON.stringify(model, (key, value) => {
         if (this.ignoredProperties.includes(key)) {
@@ -145,11 +146,12 @@ export class LowdbBase {
       savedData.id = this.generateGuid();
     }
 
-    if (data) {
+    if (data && model.id) {
       data.merge(savedData).write();
     } else {
       db.push(savedData).write();
     }
+    return savedData;
   }
 
   public delete(id: string, parentId?: string) {

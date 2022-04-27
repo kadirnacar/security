@@ -9,4 +9,5 @@ export {
   IYoloBox,
 } from './Entities/IGlRect';
 export { Settings } from './Entities/Settings';
+export { Capture } from './Entities/Capture';
 export { Users } from './Entities/User';

@@ -51,6 +51,14 @@ export default class VideoPlayer extends Component<Props, State> {
       this.context.camOptions.takePhoto = this.cameraManagement.takePhoto.bind(
         this.cameraManagement
       );
+      if (this.context.camera.isPtz && this.context.pursuit) {
+        this.context.pursuit.getShapshotCanvas = (camId) => {
+          if (camId == this.context.camera?.id) {
+            return this.canvas.current || undefined;
+          }
+          return undefined;
+        };
+      }
 
       // this.cameraManagement.onSearchRect =
       //   this.handleCameraManagementSearchRect.bind(this);

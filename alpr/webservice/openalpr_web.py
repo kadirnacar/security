@@ -11,15 +11,22 @@ alpr.set_top_n(5)
 
 
 class MainHandler(tornado.web.RequestHandler):
+    def set_default_headers(self):
+        self.set_header("Access-Control-Allow-Origin", "*")
+        self.set_header("Access-Control-Allow-Headers", "*")
+        self.set_header('Access-Control-Allow-Methods', '*')
+
     def post(self):
         print('Printing request files')
         if 'image' not in self.request.files:
+            print('not find image in formdata')
             self.finish('Image parameter not provided')
 
         fileinfo = self.request.files['image'][0]
         jpeg_bytes = fileinfo['body']
-        
+       
         if len(jpeg_bytes) <= 0:
+            print('zero image')
             return False
 
         results = alpr.recognize_array(jpeg_bytes)
