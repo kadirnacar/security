@@ -4,8 +4,8 @@ import * as path from 'path';
 import { Utils } from '../utils';
 import * as crypto from 'crypto';
 
-const password = 'bncaskdbvasbvlaslslasfhj';
-const key = crypto.scryptSync(password, 'GfG', 32);
+const randomCameraId = 'bncaskdbvasbvlaslslasfhj';
+const key = crypto.scryptSync(randomCameraId, 'GfG', 32);
 const iv = crypto.randomBytes(16);
 
 const serializer = {
