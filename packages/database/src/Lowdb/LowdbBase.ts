@@ -2,6 +2,11 @@ import * as lowdb from 'lowdb';
 import * as FileSync from 'lowdb/adapters/FileSync';
 import * as path from 'path';
 import { Utils } from '../utils';
+import * as crypto from 'crypto';
+
+const password = 'bncaskdbvasbvlaslslasfhj';
+const key = crypto.scryptSync(password, 'GfG', 32);
+const iv = crypto.randomBytes(16);
 
 const serializer = {
   serialize: (array: any[]) => {
@@ -9,7 +14,42 @@ const serializer = {
       if (value !== null && value !== '' && value !== undefined) return value;
     });
   },
-  deserialize: (string: string) => JSON.parse(string),
+  deserialize: function (string: string) {
+    return JSON.parse(string);
+  },
+};
+
+function encrypt(text) {
+  let cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(key), iv);
+  let encrypted = cipher.update(text);
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  return { dateCrypt: iv.toString('hex'), encryptedData: encrypted.toString('hex') };
+}
+
+// Decrypting text
+function decrypt(text) {
+  let iv = Buffer.from(text.dateCrypt, 'hex');
+  let encryptedText = Buffer.from(text.encryptedData, 'hex');
+  let decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(key), iv);
+  let decrypted = decipher.update(encryptedText);
+  decrypted = Buffer.concat([decrypted, decipher.final()]);
+  return decrypted.toString();
+}
+
+const cryptSerializer = {
+  serialize: function (array: any[]) {
+    return JSON.stringify(
+      encrypt(
+        JSON.stringify(array, (key, value) => {
+          if (value !== null && value !== '' && value !== undefined)
+            return value;
+        })
+      )
+    );
+  },
+  deserialize: function (string: string) {
+    return JSON.parse(decrypt(JSON.parse(string)));
+  },
 };
 
 export class LowdbBase {
@@ -18,13 +58,15 @@ export class LowdbBase {
     parentEntityName?: string[],
     multi = true,
     defaultSchema: any = {},
-    ignoredProperties: any[] = []
+    ignoredProperties: any[] = [],
+    crypted: boolean = false
   ) {
     this.entityName = entityName;
     this.parentEntityName = parentEntityName || [];
     this.multi = multi;
     this.defaultSchema = defaultSchema;
     this.ignoredProperties = ignoredProperties;
+    this.crypted = crypted;
     if (!this.parentEntityName || this.parentEntityName.length == 0) {
       this.init();
     }
@@ -37,6 +79,7 @@ export class LowdbBase {
   private dbAdapter: any = {};
   private db: any = {};
   private ignoredProperties: string[] = [];
+  private crypted: boolean = false;
 
   private generateGuid() {
     var result, i, j;
@@ -56,7 +99,7 @@ export class LowdbBase {
     if (!Utils.checkFileExists(filePath)) Utils.mkDirByPathSync(filePath);
     this.dbAdapter = new FileSync(
       path.resolve(filePath, 'index.json'),
-      serializer
+      this.crypted ? cryptSerializer : serializer
     );
     this.db = lowdb(this.dbAdapter);
     if (!this.db.has(this.entityName).value()) {
@@ -78,14 +121,16 @@ export class LowdbBase {
           parentId,
           this.entityName
         );
+
         if (!Utils.checkFileExists(filePath)) Utils.mkDirByPathSync(filePath);
-        // this.dbAdapter[parentId] = new File(path.resolve(filePath, "index.json"), serializer);
+
         this.dbAdapter[parentId] = new FileSync(
           path.resolve(filePath, 'index.json'),
-          serializer
+          this.crypted ? cryptSerializer : serializer
         );
 
         this.db[parentId] = lowdb(this.dbAdapter[parentId]);
+
         if (!this.db[parentId].has(this.entityName).value()) {
           let defaultSchema: any = {};
           defaultSchema[this.entityName] = this.multi ? [] : this.defaultSchema;

@@ -2,6 +2,6 @@ import { LowdbBase } from '..';
 
 export class CameraService extends LowdbBase {
   constructor() {
-    super('Camera', [], true, {}, []);
+    super('Camera', [], true, {}, [], true);
   }
 }
