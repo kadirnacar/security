@@ -1,5 +1,5 @@
 import { ICamPosition, IGlRect } from '@security/models';
-import cv from 'opencv.js';
+// import cv from 'opencv.js';
 import REGL from 'regl';
 import yolo from 'tfjs-yolo';
 import { generateGuid, ICamComtext } from '../../utils';
@@ -480,80 +480,80 @@ export class CameraManagement {
     this.yoloAnimate = requestAnimationFrame(this.yoloAnimationFrame);
   }
 
-  searchImage(searchCanvas: IGlRect) {
-    if (this.video && searchCanvas && this.canvas) {
-      let orjCanvas = document.createElement('canvas');
-      orjCanvas.width = this.canvas.width;
-      orjCanvas.height = this.canvas.height;
-      let ctx = orjCanvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(
-          this.video,
-          0,
-          0,
-          orjCanvas.width,
-          orjCanvas.height,
-          0,
-          0,
-          orjCanvas.width,
-          orjCanvas.height
-        );
-      }
-      let src: any = cv.imread(orjCanvas);
+  // searchImage(searchCanvas: IGlRect) {
+  //   if (this.video && searchCanvas && this.canvas) {
+  //     let orjCanvas = document.createElement('canvas');
+  //     orjCanvas.width = this.canvas.width;
+  //     orjCanvas.height = this.canvas.height;
+  //     let ctx = orjCanvas.getContext('2d');
+  //     if (ctx) {
+  //       ctx.drawImage(
+  //         this.video,
+  //         0,
+  //         0,
+  //         orjCanvas.width,
+  //         orjCanvas.height,
+  //         0,
+  //         0,
+  //         orjCanvas.width,
+  //         orjCanvas.height
+  //       );
+  //     }
+  //     let src: any = cv.imread(orjCanvas);
 
-      let templ = cv.imread(searchCanvas.image);
+  //     let templ = cv.imread(searchCanvas.image);
 
-      var dst = new cv.Mat();
-      let mask = new cv.Mat();
+  //     var dst = new cv.Mat();
+  //     let mask = new cv.Mat();
 
-      cv.matchTemplate(src, templ, dst, cv.TM_CCOEFF_NORMED, mask);
-      cv.normalize(dst, dst, 0, 1, cv.NORM_MINMAX, -1, new cv.Mat());
+  //     cv.matchTemplate(src, templ, dst, cv.TM_CCOEFF_NORMED, mask);
+  //     cv.normalize(dst, dst, 0, 1, cv.NORM_MINMAX, -1, new cv.Mat());
 
-      let result = cv.minMaxLoc(dst, mask);
-      let maxPoint = result.maxLoc;
+  //     let result = cv.minMaxLoc(dst, mask);
+  //     let maxPoint = result.maxLoc;
 
-      let point = new cv.Point(
-        maxPoint.x + templ.cols,
-        maxPoint.y + templ.rows
-      );
+  //     let point = new cv.Point(
+  //       maxPoint.x + templ.cols,
+  //       maxPoint.y + templ.rows
+  //     );
 
-      src.delete();
-      templ.delete();
-      mask.delete();
+  //     src.delete();
+  //     templ.delete();
+  //     mask.delete();
 
-      if (
-        this.context.parent?.camera &&
-        this.context.camera &&
-        this.context.parent.camera.cameras[this.context.camera?.id || '']
-      ) {
-        const cameras: any[] = [];
-        const camRel = cameras.find((x) => x.id == searchCanvas.id);
-        if (!camRel) {
-          cameras.push({
-            ...searchCanvas,
-            camPos: searchCanvas.camPos
-              ? { ...searchCanvas.camPos }
-              : undefined,
-            right: point.x,
-            left: maxPoint.x,
-            top: maxPoint.y,
-            bottom: point.y,
-            resulation: {
-              width: this.canvas.width,
-              height: this.canvas.height,
-            },
-          });
-        } else {
-          camRel.right = point.x;
-          camRel.left = maxPoint.x;
-          camRel.top = maxPoint.y;
-          camRel.bottom = point.y;
-        }
-      }
+  //     if (
+  //       this.context.parent?.camera &&
+  //       this.context.camera &&
+  //       this.context.parent.camera.cameras[this.context.camera?.id || '']
+  //     ) {
+  //       const cameras: any[] = [];
+  //       const camRel = cameras.find((x) => x.id == searchCanvas.id);
+  //       if (!camRel) {
+  //         cameras.push({
+  //           ...searchCanvas,
+  //           camPos: searchCanvas.camPos
+  //             ? { ...searchCanvas.camPos }
+  //             : undefined,
+  //           right: point.x,
+  //           left: maxPoint.x,
+  //           top: maxPoint.y,
+  //           bottom: point.y,
+  //           resulation: {
+  //             width: this.canvas.width,
+  //             height: this.canvas.height,
+  //           },
+  //         });
+  //       } else {
+  //         camRel.right = point.x;
+  //         camRel.left = maxPoint.x;
+  //         camRel.top = maxPoint.y;
+  //         camRel.bottom = point.y;
+  //       }
+  //     }
 
-      this.context.parent?.render({ camera: this.context.parent.camera });
-    }
-  }
+  //     this.context.parent?.render({ camera: this.context.parent.camera });
+  //   }
+  // }
 }
 
 let vert = `

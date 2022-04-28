@@ -1,3 +1,4 @@
+var WebpackObfuscator = require('webpack-obfuscator');
 module.exports = (config, context) => {
   if (config.resolve) {
     if (config.resolve.fallback) {
@@ -23,5 +24,6 @@ module.exports = (config, context) => {
       },
     };
   }
+  
   return config;
 };

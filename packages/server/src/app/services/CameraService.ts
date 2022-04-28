@@ -1,9 +1,9 @@
 import { Camera as CameraModel } from '@security/models';
 import { ChildProcess, spawn } from 'child_process';
 import { URL } from 'url';
-import * as OnvifManager from '../../onvif-nvt/onvif-nvt';
-import Camera = require('../../onvif-nvt/camera');
-import EventEmitter = require('events');
+import  connect from '../../onvif-nvt/onvif-nvt';
+import Camera from '../../onvif-nvt/camera';
+import * as EventEmitter from 'events';
 export interface IServiceCamera {
   model: CameraModel;
   camera: Camera;
@@ -115,7 +115,7 @@ export class CameraService {
       //   // If it is empty, then no ONVIF devices
       //   // responded back to the broadcast.
       // });
-      const cam = await OnvifManager.connect(
+      const cam = await connect.connect(
         cameraModel.url,
         cameraModel.port,
         cameraModel.username,

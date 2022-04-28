@@ -10,14 +10,24 @@
         "outputPath": "dist/packages/server",
         "main": "packages/server/src/main.ts",
         "tsConfig": "packages/server/tsconfig.app.json",
-        "assets": ["packages/server/src/assets"]
+        "assets": [
+          "packages/server/src/main.js",
+          "packages/server/src/model",
+          "packages/server/src/rtspgo",
+          "packages/server/src/data"
+        ],
+        "webpackConfig": "packages/server/webpack.config.js"
       },
       "configurations": {
         "production": {
+          "webpackConfig": "packages/server/webpack.config.prod.js",
           "optimization": true,
-          "externalDependencies": "none",
-          "extractLicenses": true,
           "inspect": false,
+          "sourceMap": false,
+          "vendorChunk": true,
+          "subresourceIntegrity": true,
+          "buildLibsFromSource": true,
+          "generatePackageJson": true,
           "fileReplacements": [
             {
               "replace": "packages/server/src/environments/environment.ts",

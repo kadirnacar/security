@@ -2,10 +2,11 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
-    "module": "commonjs",
+    "module": "ES2015",
     "types": ["node", "express"],
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "importHelpers": false,
   },
-  "exclude": [],
+  "exclude": ["src/main.js"],
   "include": ["**/*.ts"]
 }

@@ -5,15 +5,22 @@
 
 import * as bodyParser from 'body-parser';
 import * as express from 'express';
-import path = require('path');
+import * as path from 'path';
+import * as tslib from 'tslib';
+import * as xml2js from 'xml2js';
+import * as urlParse from 'url-parse';
+import * as prettyData from 'pretty-data';
+import * as request from 'request';
 import { CameraRouter } from './app/routers/camera';
 import { DataRouter } from './app/routers/data';
-import { CameraService } from './app/services/CameraService';
 
 const app = express();
 const dataRouter = new DataRouter();
 const cameraRouter = new CameraRouter();
-
+xml2js.defaults['0.1'];
+urlParse;
+prettyData;
+request;
 function corsPrefetch(req: Request, res: express.Response, next: Function) {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH');
@@ -28,8 +35,10 @@ function corsPrefetch(req: Request, res: express.Response, next: Function) {
   next();
 }
 app.use(express.static(path.join(__dirname, 'assets')));
-app.use(express.static(path.join(__dirname, 'model')));
+// app.use(express.static(path.join(__dirname, 'model')));
 app.use(express.static(__dirname + '/web'));
+app.use(express.static(__dirname + '/model'));
+app.use(express.static(__dirname + '/photos'));
 app.use(corsPrefetch as any);
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -40,6 +49,9 @@ app.get('/', function (req, res) {
 
 app.use('/api', dataRouter.router);
 app.use('/api/camera', cameraRouter.router);
+
+app.use('/model', express.static(__dirname + '/model'));
+app.use('/photos', express.static(__dirname + '/photos'));
 
 const port = process.env.port || 3333;
 const server = app.listen(port, () => {

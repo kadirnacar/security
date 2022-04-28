@@ -3,7 +3,7 @@ import { Request, Response, Router } from 'express';
 import { CameraService } from '../services/CameraService';
 import * as FormData from 'form-data';
 import * as fs from 'fs';
-import path = require('path');
+import * as path from 'path';
 import { Camera, Capture, Settings } from '@security/models';
 import * as moment from 'moment';
 import * as sharp from 'sharp';
@@ -102,7 +102,7 @@ export class CameraRouter {
       let bufferSource = Buffer.from(image.split(',')[1], 'base64');
       let form = new FormData();
 
-      const imageFolder = path.resolve(__dirname, 'photos');
+      const imageFolder = path.resolve(process.cwd(), 'photos');
 
       if (!fs.existsSync(imageFolder)) {
         fs.mkdirSync(imageFolder);

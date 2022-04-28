@@ -8,7 +8,7 @@
       "outputs": ["{options.outputPath}"],
       "options": {
         "compiler": "babel",
-        "outputPath": "dist/packages/viewer",
+        "outputPath": "dist/packages/server/web",
         "index": "packages/viewer/src/index.html",
         "baseHref": "/",
         "main": "packages/viewer/src/main.tsx",
@@ -30,12 +30,15 @@
               "with": "packages/viewer/src/environments/environment.prod.ts"
             }
           ],
-          "optimization": true,
           "outputHashing": "all",
-          "sourceMap": false,
           "namedChunks": false,
-          "extractLicenses": true,
-          "vendorChunk": true
+          "optimization": true,
+          "inspect": false,
+          "sourceMap": false,
+          "vendorChunk": true,
+          "subresourceIntegrity": true,
+          "buildLibsFromSource": true,
+          "generatePackageJson": false
         }
       }
     },
