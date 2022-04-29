@@ -49,6 +49,7 @@ export interface ICamComtext {
   parent?: ICamComtext;
   limitPosition?: any;
   pursuit?: PursuitController;
+  pursuitItems?: any[];
   playerMode?: 'target' | 'points' | 'detect';
   detectBoxes?: IYoloBox[];
   resulation?: IResulation;
@@ -58,4 +59,5 @@ export interface ICamComtext {
 export const CamContext = React.createContext<ICamComtext>({
   render: () => {},
   camOptions: {},
+  pursuitItems: [],
 });

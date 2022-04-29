@@ -1,9 +1,10 @@
 import { Camera as CameraModel } from '@security/models';
 import { ChildProcess, spawn } from 'child_process';
 import { URL } from 'url';
-import  connect from '../../onvif-nvt/onvif-nvt';
+import connect from '../../onvif-nvt/onvif-nvt';
 import Camera from '../../onvif-nvt/camera';
 import * as EventEmitter from 'events';
+import path from 'path';
 export interface IServiceCamera {
   model: CameraModel;
   camera: Camera;
@@ -31,9 +32,8 @@ export class CameraService {
     if (camItem) {
       const rtspUrl = new URL(camItem.camera.defaultProfile.StreamUri.Uri);
       const connectionUrl = `rtsp://${camItem.model.username}:${camItem.model.password}@${camItem.model.url}:${camItem.model.rtspPort}${rtspUrl.pathname}${rtspUrl.search}`;
-
       const goProcess = spawn('go', ['run', '.', id, sdp, connectionUrl], {
-        cwd: './rtspgo',
+        cwd: path.resolve(__dirname, 'rtspgo'),
       });
 
       goProcess.stdout.on('data', async (chunk) => {

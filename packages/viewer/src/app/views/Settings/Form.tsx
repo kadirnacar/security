@@ -54,7 +54,7 @@ class Form extends Component<Props & WithRouter, State, typeof CamContext> {
   }
 
   async componentDidMount() {
-    await this.props.DataActions?.getList('Camera', true);
+    await this.props.DataActions?.getList('Camera', undefined, true);
     await this.props.DataActions?.getItem('Settings');
     if (
       this.props.params &&

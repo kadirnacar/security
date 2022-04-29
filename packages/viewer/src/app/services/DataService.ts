@@ -178,11 +178,12 @@ export class DataService extends ServiceBase {
   }
   public static async getList<T>(
     entity: string,
+    parentId?: string,
     options?: DataOptions<T>
   ): Promise<Result<T[]>> {
     const result = await this.requestJson<T[]>(
       {
-        url: `/api/${entity}/list`,
+        url: `/api/${entity}/list${parentId ? `/${parentId}` : ''}`,
         method: 'POST',
         data: { ...options },
       },

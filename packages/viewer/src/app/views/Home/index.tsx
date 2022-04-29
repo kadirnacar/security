@@ -21,11 +21,12 @@ import { ApplicationState } from '../../store';
 import { CamContext } from '../../utils';
 import CameraView from './CameraView';
 import { PursuitController } from './PursuitController';
-
+import { AutoSizer, List } from 'react-virtualized';
 interface HomeState {
   ptzCamera?: Camera;
   staticCameras: Camera[];
   pursuit?: PursuitController;
+  pursuitItems: any[];
 }
 interface Props {
   DataActions?: DataActions<Camera>;
@@ -44,6 +45,7 @@ class Home extends Component<Props, HomeState> {
     this.imageDiv = React.createRef<any>();
     this.state = {
       staticCameras: [],
+      pursuitItems: [],
     };
   }
 
@@ -54,10 +56,19 @@ class Home extends Component<Props, HomeState> {
     await this.props.DataActions?.getItem('Settings');
 
     const ptzCam = this.props.Data?.Camera.List.find((x) => x.isPtz);
+
+    if (ptzCam) {
+      await this.props.DataActions?.getList('Capture', ptzCam.id);
+    }
+
     const staticCams = this.props.Data?.Camera.List.filter((x) => !x.isPtz);
     const settings = this.props.Data?.Settings.CurrentItem;
     const pursuit = new PursuitController(ptzCam, settings?.pursuitTimeout);
-
+    pursuit.onPursuit = (item) => {
+      const { pursuitItems } = this.state;
+      pursuitItems.push(item);
+      this.setState({ pursuitItems });
+    };
     this.setState({
       staticCameras: staticCams || [],
       ptzCamera: ptzCam,
@@ -85,6 +96,7 @@ class Home extends Component<Props, HomeState> {
             detectBoxes: [],
             playerMode: 'detect',
             pursuit: this.state.pursuit,
+            pursuitItems: this.state.pursuitItems,
             render: (state) => {
               this.setState({});
             },
@@ -98,7 +110,42 @@ class Home extends Component<Props, HomeState> {
                 style={{ maxHeight: 600, height: 600, position: 'relative' }}
               >
                 <Grid container spacing={1} style={{ height: '100%' }}>
-                  <Grid item xs={4} className={this.props.classes.list}></Grid>
+                  <Grid item xs={4} className={this.props.classes.list}>
+                    <AutoSizer>
+                      {({ width, height }) => (
+                        <List
+                          width={width}
+                          height={height}
+                          rowCount={this.state.pursuitItems.length}
+                          rowHeight={60}
+                          rowRenderer={(row) => {
+                            return (
+                              <div key={row.key} style={row.style}>
+                                {JSON.stringify(
+                                  this.state.pursuitItems[row.index]
+                                )}
+                              </div>
+                            );
+                          }}
+                        />
+                        // <List
+                        //   ref="List"
+                        //   height={listHeight}
+                        //   overscanRowCount={overscanRowCount}
+                        //   noRowsRenderer={this._noRowsRenderer}
+                        //   rowCount={rowCount}
+                        //   rowHeight={
+                        //     useDynamicRowHeight
+                        //       ? this._getRowHeight
+                        //       : listRowHeight
+                        //   }
+                        //   rowRenderer={this._rowRenderer}
+                        //   scrollToIndex={scrollToIndex}
+                        //   width={width}
+                        // />
+                      )}
+                    </AutoSizer>
+                  </Grid>
                   <Grid item xs={8}>
                     <CameraView
                       hideControls={true}

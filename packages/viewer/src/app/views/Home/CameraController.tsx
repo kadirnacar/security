@@ -1,22 +1,13 @@
 import {
   AutoAwesomeMotion,
   BorderOuter,
-  Close,
-  FindInPage,
-  MoveToInbox,
-  Photo,
   PhotoCamera,
-  Screenshot,
   Visibility,
 } from '@mui/icons-material';
 import {
   Box,
   Button,
-  ButtonGroup,
   Grid,
-  IconButton,
-  ImageList,
-  ImageListItem,
   List,
   ListItemButton,
   ListItemText,
@@ -28,9 +19,9 @@ import {
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
-import { ICamPosition, ICoord, IRectLimits } from '@security/models';
+import { ICamPosition, IRectLimits } from '@security/models';
 import React, { Component } from 'react';
-import { CamContext, generateGuid } from '../../utils';
+import { CamContext } from '../../utils';
 
 type Props = {
   selectedBoxIndex?: number;
@@ -167,9 +158,7 @@ export default class CameraController extends Component<Props, State> {
     const rightValue = this.getBetween(right, min, max);
     if (rightValue < 0 && leftValue >= 0) {
       return max - leftValue - (min - rightValue);
-    }
-    
-    else {
+    } else {
       return rightValue - leftValue;
     }
   }

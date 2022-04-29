@@ -45,12 +45,21 @@ export class DataActions<T> {
         });
       });
     };
-  getList = (entity: string, cache = false, options?: DataOptions<T>) =>
+  getList = (
+    entity: string,
+    parentId?: string,
+    cache = false,
+    options?: DataOptions<T>
+  ) =>
     async function (dispatch, getState: () => ApplicationState) {
       await batch(async function () {
         await dispatch({ type: Actions.RequestListData, entityName: entity });
         const getData = async function () {
-          const result = await DataService.getList<T>(entity, options);
+          const result = await DataService.getList<T>(
+            entity,
+            parentId,
+            options
+          );
           await dispatch({
             type: Actions.ReceiveListData,
             entityName: entity,

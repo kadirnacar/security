@@ -102,7 +102,7 @@ export class CameraRouter {
       let bufferSource = Buffer.from(image.split(',')[1], 'base64');
       let form = new FormData();
 
-      const imageFolder = path.resolve(process.cwd(), 'photos');
+      const imageFolder = path.resolve(__dirname, 'photos');
 
       if (!fs.existsSync(imageFolder)) {
         fs.mkdirSync(imageFolder);
@@ -167,7 +167,8 @@ export class CameraRouter {
                 ? jsonResult
                 : undefined,
           };
-          const captureSavedData = captureRepo.save(capture, box.camId);
+          const captureSavedData = captureRepo.save(capture, data.id);
+          // const captureSavedData = captureRepo.save(capture, box.camId);
 
           res.contentType('application/json');
           res.send(captureSavedData);

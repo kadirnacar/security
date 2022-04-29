@@ -29,6 +29,10 @@ const unloadedState: DataState = {
     List: [],
     operationLoading: false,
   },
+  Capture: {
+    List: [],
+    operationLoading: false,
+  },
 };
 
 export type KnownAction =

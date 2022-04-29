@@ -26,8 +26,10 @@ export class DataRouter {
   public async getList(req: Request, res: Response, next) {
     try {
       const entity = req.params.entity;
+      const parentId = req.params['id'];
+      console.log(parentId);
       const dataRepo = Services[entity];
-      const data = await dataRepo.all();
+      const data = await dataRepo.all(parentId);
       res.status(200).send(data);
     } catch (err) {
       next(err);
@@ -95,7 +97,7 @@ export class DataRouter {
   }
 
   async init() {
-    this.router.post('/:entity/list', this.getList.bind(this));
+    this.router.post('/:entity/list/:id?', this.getList.bind(this));
     this.router.post('/:entity/item', this.getItem.bind(this));
     this.router.post('/:entity/item/:id', this.getById.bind(this));
     this.router.delete('/:entity/:id', this.deleteItem.bind(this));

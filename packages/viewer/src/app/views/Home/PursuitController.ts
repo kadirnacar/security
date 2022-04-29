@@ -1,7 +1,7 @@
 import { Camera, IGlRect } from '@security/models';
 import { CamPoint } from 'packages/models/src/lib/Entities/Camera';
 import { CameraService } from '../../services/CameraService';
-import { dataURItoBlob } from '../../utils';
+import { dataURItoBlob, ICamComtext } from '../../utils';
 
 export class PursuitController {
   constructor(ptzCamera?: Camera, interval?: number) {
@@ -18,6 +18,7 @@ export class PursuitController {
   private intervalProcess?: any;
   private interval = 3000;
   private maxBoxesDistance = 4;
+  public onPursuit?: (item) => void;
 
   public stop() {
     if (this.intervalProcess) {
@@ -100,16 +101,18 @@ export class PursuitController {
     if (this.ptzCamera) {
       if (this.currentBox && this.getShapshotCanvas) {
         const canvas = this.getShapshotCanvas(this.ptzCamera.id || '');
-        console.log(canvas);
         if (canvas) {
+          const imageData = canvas?.toDataURL();
           const d = await (
             await CameraService.getSnapshot(
               this.ptzCamera.id || '',
-              canvas?.toDataURL(),
+              imageData,
               this.currentBox
             )
           ).value;
-          console.log(d);
+          if (this.onPursuit) {
+            this.onPursuit(d);
+          }
           //   let isProcess = false;
           //   form.submit('http://localhost:8888/alpr', function (err, res2) {
           //     if (err) return;
@@ -147,15 +150,10 @@ export class PursuitController {
 
           // if (d && d.results && d.results.length > 0) {
           // }
-
-          // console.log(
-          //   d && d.results && d.results.length > 0
-          //     ? d.results
-          //     : 'Plaka okunamadı'
-          // );
         }
       }
       this.currentBox = this.getBox();
+
       if (this.currentBox && this.ptzCamera.cameras[this.currentBox.camId]) {
         const camRel = this.ptzCamera.cameras[this.currentBox.camId];
         const pointsDistances = this.getNearestPoint(camRel.boxes, {
