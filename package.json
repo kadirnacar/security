@@ -56,12 +56,15 @@
     "@mui/material": "^5.5.2",
     "@mui/styles": "^5.5.1",
     "@mui/x-data-grid": "^5.6.1",
+    "@mui/x-date-pickers": "^5.0.0-alpha.2",
+    "@mui/x-date-pickers-pro": "^5.0.0-alpha.2",
     "@tensorflow/tfjs": "^3.14.0",
     "axios": "^0.26.1",
     "body-parser": "^1.19.2",
     "clsx": "^1.1.1",
     "core-js": "^3.21.1",
     "crypto": "^1.0.1",
+    "date-fns": "^2.28.0",
     "express": "4.17.3",
     "form-data": "^4.0.0",
     "golang": "^0.1.5-stable",
@@ -93,8 +96,8 @@
     "tslib": "^2.3.1",
     "url-parse": "^1.5.1",
     "uuidv4": "^6.2.13",
-    "xml2js": "^0.4.23",
-    "ws": "^8.5.0"
+    "ws": "^8.5.0",
+    "xml2js": "^0.4.23"
   },
   "pkg": {
     "scripts": "dist/packages/server/**/*.js",

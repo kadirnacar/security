@@ -5,6 +5,7 @@ import 'react-grid-layout/css/styles.css';
 import { Provider } from 'react-redux';
 import 'react-resizable/css/styles.css';
 import { BrowserRouter } from 'react-router-dom';
+import 'react-virtualized/styles.css';
 import Main from './app/container/main';
 import { loadState } from './app/store/localStorage';
 import { StoreHelper } from './app/store/StoreHelper';

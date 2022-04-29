@@ -1,7 +1,17 @@
-import { AppBar, IconButton, Theme, Toolbar, Typography } from '@mui/material';
+import {
+  AppBar,
+  Box,
+  Button,
+  CardMedia,
+  IconButton,
+  Theme,
+  Toolbar,
+  Typography,
+} from '@mui/material';
 import { withStyles, createStyles } from '@mui/styles';
 import { Brightness4, Brightness7, Menu } from '@mui/icons-material';
 import React, { Component } from 'react';
+import { WithRouter, withRouter } from '../../withRouter';
 
 type Props = {
   handleDrawerToggle: () => void;
@@ -12,7 +22,7 @@ type Props = {
 
 type State = {};
 
-class Header extends Component<Props, State> {
+class Header extends Component<Props & WithRouter, State> {
   constructor(props) {
     super(props);
 
@@ -23,17 +33,57 @@ class Header extends Component<Props, State> {
     return (
       <AppBar position="fixed" className={this.props.classes.appbar}>
         <Toolbar>
-          <IconButton
+          {/* <IconButton
             color="inherit"
             aria-label="open drawer"
             onClick={this.props.handleDrawerToggle}
             edge="start"
           >
             <Menu />
-          </IconButton>
-          <Typography variant="h6" noWrap>
-            Kartal
+          </IconButton> */}
+          <Typography
+            variant="h6"
+            noWrap
+            component="div"
+            sx={{ mr: 2, display: { xs: 'none', md: 'flex' } }}
+          >
+            <CardMedia
+              component="img"
+              height="65"
+              image="/assets/logo.png"
+              alt="green iguana"
+              onClick={(ev) => {
+                console.log(window.event);
+                if (this.props.navigate && ev.shiftKey) this.props.navigate('/settings')
+              }}
+            />
           </Typography>
+          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
+            <Button
+              onClick={() => {
+                if (this.props.navigate) this.props.navigate('/');
+              }}
+              sx={{ my: 2, color: 'white', display: 'block' }}
+            >
+              Takip
+            </Button>
+            <Button
+              onClick={() => {
+                if (this.props.navigate) this.props.navigate('/report');
+              }}
+              sx={{ my: 2, color: 'white', display: 'block' }}
+            >
+              Olay Geçmişi
+            </Button>
+            {/* <Button
+              onClick={() => {
+                if (this.props.navigate) this.props.navigate('/settings');
+              }}
+              sx={{ my: 2, color: 'white', display: 'block' }}
+            >
+              Ayarlar
+            </Button> */}
+          </Box>
           <div className={this.props.classes.spacer} />
           <IconButton
             color="inherit"
@@ -68,4 +118,4 @@ const styles = (theme: Theme) =>
     },
   });
 
-export default withStyles<any>(styles)(Header);
+export default withStyles<any>(styles)(withRouter(Header));

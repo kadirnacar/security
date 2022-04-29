@@ -186,6 +186,44 @@ export class CameraRouter {
     }
   }
 
+  public async getCaptureImage(req: Request, res: Response, next) {
+    try {
+      const id = req.params['id'];
+      const height = req.params['height'];
+      const parentId = req.params['parentId'];
+      const dataRepo = Services.Capture;
+      const data = await dataRepo.get(id, parentId);
+      const imageFolder = path.resolve(__dirname, 'photos', data.imageFile);
+      const h = parseFloat(height);
+      const ratio = 1920 / 1080;
+
+      if (fs.existsSync(imageFolder)) {
+        const img = sharp(imageFolder);
+        const metadata = await img.metadata();
+
+        await img
+          .resize(
+            parseInt(isNaN(h) ? metadata.width : h * ratio),
+            parseInt(isNaN(h) ? metadata.height : h)
+          )
+          .pipe(res);
+      } else {
+        const img = sharp(path.resolve(__dirname, 'assets', 'no-image.svg'));
+        const metadata = await img.metadata();
+
+        img
+          .resize(
+            parseInt(isNaN(h) ? metadata.width : h * ratio),
+            parseInt(isNaN(h) ? metadata.height : h)
+          )
+          .pipe(res);
+      }
+      // res.end();
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async init() {
     this.router.post('/connect/:id', this.connect.bind(this));
     this.router.post('/disconnect/:id', this.disconnect.bind(this));
@@ -193,5 +231,9 @@ export class CameraRouter {
     this.router.get('/info/:id', this.getCamInfo.bind(this));
     this.router.post('/snapshot/:id', this.getSnapshot.bind(this));
     this.router.post('/rtspgo/:id', this.rtspgo.bind(this));
+    this.router.get(
+      '/capture/image/:parentId/:id/:height?',
+      this.getCaptureImage.bind(this)
+    );
   }
 }

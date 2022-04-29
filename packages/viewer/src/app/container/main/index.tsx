@@ -5,8 +5,8 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Route, Routes } from 'react-router-dom';
 import Header from '../../components/Header';
-import Sidebar from '../../components/Sidebar';
 import Home from '../../views/Home';
+import Report from '../../views/Report';
 import Settings from '../../views/Settings';
 import SettingsForm from '../../views/Settings/Form';
 
@@ -87,10 +87,6 @@ class Main extends Component<Props, State> {
           toggleDarkMode={this.toggleDarkMode}
           darkMode={this.state.darkMode}
         />
-        <Sidebar
-          handleDrawerClose={this.handleDrawerClose}
-          open={this.state.open}
-        />
         <main
           className={clsx(this.props.classes.content, {
             [this.props.classes.contentShift]: this.state.open,
@@ -101,6 +97,7 @@ class Main extends Component<Props, State> {
             <Route path="/" element={<Home />} />
             <Route path="/settings/*" element={<Settings />} />
             <Route path="/camera/:id" element={<SettingsForm />} />
+            <Route path="/report" element={<Report />} />
           </Routes>
         </main>
       </div>
