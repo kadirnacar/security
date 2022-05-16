@@ -132,47 +132,58 @@ export class CameraRouter {
 
       let isProcess = false;
       form.submit('http://localhost:8888/alpr', function (err, res2) {
-        if (err) {
-          console.log(err);
-          return;
-        }
-        isProcess = true;
-        res2.on('data', async (chunk) => {
-          let jsonResult: any = {};
+        try {
+          if (err) {
+            console.log(err);
+            return;
+          }
+          isProcess = true;
+          res2.on('data', async (chunk) => {
+            try {
+              if (!data.id) {
+                return;
+              }
+              let jsonResult: any = {};
 
-          try {
-            jsonResult = JSON.parse(chunk.toString());
-          } catch {}
+              try {
+                jsonResult = JSON.parse(chunk.toString());
+              } catch {}
 
-          let imageFileName = `${box.camId}#${moment().format(
-            'DDMMYYYYHHmmss'
-          )}#${
-            jsonResult && jsonResult.results && jsonResult.results.length > 0
-              ? jsonResult.results[0].plate
-              : 'PlakaYok'
-          }#${data.position.x}_${data.position.y}_${data.position.z}.png`;
+              let imageFileName = `${box.camId}#${moment().format(
+                'DDMMYYYYHHmmss'
+              )}#${
+                jsonResult &&
+                jsonResult.results &&
+                jsonResult.results.length > 0
+                  ? jsonResult.results[0].plate
+                  : 'PlakaYok'
+              }#${data.position.x}_${data.position.y}_${data.position.z}.png`;
 
-          await img.toFile(path.resolve(imageFolder, imageFileName));
+              await img.toFile(path.resolve(imageFolder, imageFileName));
 
-          const captureRepo = Services.Capture;
-          const capture: Capture = {
-            box: box,
-            camId: box.camId,
-            imageFile: imageFileName,
-            pos: data.position,
-            ptzId: data.id,
-            date: new Date(),
-            plateResult:
-              jsonResult && jsonResult.results && jsonResult.results.length > 0
-                ? jsonResult
-                : undefined,
-          };
-          const captureSavedData = captureRepo.save(capture, data.id);
-          // const captureSavedData = captureRepo.save(capture, box.camId);
+              const captureRepo = Services.Capture;
+              const capture: Capture = {
+                box: box,
+                camId: box.camId,
+                imageFile: imageFileName,
+                pos: data.position,
+                ptzId: data.id,
+                date: new Date(),
+                plateResult:
+                  jsonResult &&
+                  jsonResult.results &&
+                  jsonResult.results.length > 0
+                    ? jsonResult
+                    : undefined,
+              };
+              const captureSavedData = captureRepo.save(capture, data.id);
+              // const captureSavedData = captureRepo.save(capture, box.camId);
 
-          res.contentType('application/json');
-          res.send(captureSavedData);
-        });
+              res.contentType('application/json');
+              res.send(captureSavedData);
+            } catch {}
+          });
+        } catch {}
       });
 
       setTimeout(() => {
@@ -182,7 +193,7 @@ export class CameraRouter {
       }, 2500);
     } catch (err) {
       console.log(err);
-      res.end();
+      next(err);
     }
   }
 
@@ -191,11 +202,25 @@ export class CameraRouter {
       const id = req.params['id'];
       const height = req.params['height'];
       const parentId = req.params['parentId'];
+      const h = parseFloat(height);
+      const ratio = 1920 / 1080;
+
+      if (!id || !parentId || id == 'undefined' || parentId == 'undefined') {
+        const img = sharp(path.resolve(__dirname, 'assets', 'no-image.svg'));
+        const metadata = await img.metadata();
+
+        img
+          .resize(
+            parseInt(isNaN(h) ? metadata.width : h * ratio),
+            parseInt(isNaN(h) ? metadata.height : h)
+          )
+          .pipe(res);
+        return;
+      }
+
       const dataRepo = Services.Capture;
       const data = await dataRepo.get(id, parentId);
       const imageFolder = path.resolve(__dirname, 'photos', data.imageFile);
-      const h = parseFloat(height);
-      const ratio = 1920 / 1080;
 
       if (fs.existsSync(imageFolder)) {
         const img = sharp(imageFolder);
@@ -220,7 +245,7 @@ export class CameraRouter {
       }
       // res.end();
     } catch (err) {
-      next(err);
+      res.end();
     }
   }
 

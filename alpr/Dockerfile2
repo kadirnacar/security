@@ -1,0 +1,11 @@
+FROM python:2
+
+RUN apt-get -y update && \
+    apt-get -y install libopencv-dev libtesseract-dev git cmake build-essential libleptonica-dev liblog4cplus-dev libcurl3-dev beanstalkd && \
+    pip install tornado
+
+ADD webservice /webservice
+
+ADD openalpr /storage/projects/alpr
+
+CMD ln -s /dev/null /dev/raw1394; stdbuf -oL python /webservice/openalpr_web.py

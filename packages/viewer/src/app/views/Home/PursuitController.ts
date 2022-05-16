@@ -57,7 +57,11 @@ export class PursuitController {
     if (camKey) {
       if (this.boxes[camKey].length > 0) {
         this.lastCameraIndex++;
-        const i = Math.floor(Math.random() * this.boxes[camKey].length);
+        let i = Math.floor(Math.random() * this.boxes[camKey].length);
+        const b = this.boxes[camKey][i];
+        if (b.class && (b.calss !== 'person' || b.class !== 'car')) {
+          i = Math.floor(Math.random() * this.boxes[camKey].length);
+        }
         return { camId: camKey, item: this.boxes[camKey][i] };
       }
     }
@@ -242,7 +246,7 @@ export class PursuitController {
                 minLeft +
                   (Math.abs(
                     this.currentBox.item.left +
-                      this.currentBox.item.width / 2 -
+                      this.currentBox.item.width / 1.5 -
                       minLeftCoord
                   ) *
                     xLength) /
@@ -250,14 +254,13 @@ export class PursuitController {
                 ptzLimits.x.min,
                 ptzLimits.x.max
               );
-
+              console.log(this.currentBox, minY);
+              const m =
+                this.currentBox.item.height /
+                (this.currentBox.item.class == 'person' ? 3 : 1.5);
               let yPos = this.getBetween(
                 minTop +
-                  (Math.abs(
-                    this.currentBox.item.top +
-                      this.currentBox.item.height / 3 -
-                      minTopCoord
-                  ) *
+                  (Math.abs(this.currentBox.item.top + m - minTopCoord) *
                     yLength) /
                     coordYLength,
                 ptzLimits.y.min,
