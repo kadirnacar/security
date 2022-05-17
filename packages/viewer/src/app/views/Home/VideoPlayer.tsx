@@ -81,9 +81,8 @@ export default class VideoPlayer extends Component<Props, State> {
     if (this.cameraManagement) {
       if (this.props.activateDetection) {
         this.cameraManagement.initDetection();
+        this.cameraManagement.setContext(this.context);
       }
-
-      this.cameraManagement.setContext(this.context);
     }
   }
 

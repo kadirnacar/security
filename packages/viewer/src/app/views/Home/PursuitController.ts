@@ -27,11 +27,13 @@ export class PursuitController {
   }
 
   setBoxes(camId: string, boxes: any[]) {
+    const classType = this.lastCarIndex % 3 == 0 ? 'person' : 'car';
     if (camId && this.boxes[camId]) {
-      this.boxes[camId] = boxes;
+      this.boxes[camId] = boxes.filter((x) => x.class == classType);
     } else if (camId) {
-      this.boxes[camId] = boxes;
+      this.boxes[camId] = boxes.filter((x) => x.class == classType);
     }
+    // console.log(this.lastCarIndex % 2, classType, this.boxes[camId]);
   }
 
   private setTimer() {
@@ -46,23 +48,26 @@ export class PursuitController {
   }
 
   private lastCameraIndex = 0;
+  private lastCarIndex = 0;
 
   private getBox() {
+    this.lastCarIndex++;
     const cams = Object.keys(this.boxes);
-    if (this.lastCameraIndex >= cams.length) {
-      this.lastCameraIndex = 0;
-    }
-    const camKey = cams[this.lastCameraIndex];
-
+    // if (this.lastCameraIndex >= cams.length) {
+    //   this.lastCameraIndex = 0;
+    // }
+    const camKey = cams[this.lastCameraIndex % cams.length];
+    this.lastCameraIndex++;
+    console.log(
+      camKey,
+      this.lastCameraIndex,
+      this.lastCameraIndex % cams.length
+    );
     if (camKey) {
       if (this.boxes[camKey].length > 0) {
-        this.lastCameraIndex++;
         let i = Math.floor(Math.random() * this.boxes[camKey].length);
-        const b = this.boxes[camKey][i];
-        if (b.class && (b.calss !== 'person' || b.class !== 'car')) {
-          i = Math.floor(Math.random() * this.boxes[camKey].length);
-        }
-        return { camId: camKey, item: this.boxes[camKey][i] };
+        const item = this.boxes[camKey][i];
+        return { camId: camKey, item: item };
       }
     }
 

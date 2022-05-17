@@ -102,7 +102,7 @@ class Home extends Component<Props, HomeState> {
             playerMode: 'detect',
             pursuit: this.state.pursuit,
             render: (state) => {
-              this.setState({});
+              // this.setState({});
             },
           }}
         >
@@ -202,7 +202,7 @@ class Home extends Component<Props, HomeState> {
                         playerMode: 'detect',
                         pursuit: this.state.pursuit,
                         render: (state) => {
-                          this.setState({});
+                          // this.setState({});
                         },
                       }}
                     >
