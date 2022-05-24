@@ -47,6 +47,12 @@ export default class PtzController extends Component<Props, State> {
 
   async gotoPosition(velocity: ICamPosition) {
     if (velocity && this.context.camera && this.context.camera.id) {
+      const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
+      velocity.z = clamp(
+        velocity.z,
+        this.state.zoomLimits.min,
+        this.state.zoomLimits.max
+      );
       await CameraService.pos(this.context.camera?.id, velocity, {
         x: this.state.speed,
         y: this.state.speed,

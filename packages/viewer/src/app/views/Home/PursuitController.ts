@@ -58,11 +58,7 @@ export class PursuitController {
     // }
     const camKey = cams[this.lastCameraIndex % cams.length];
     this.lastCameraIndex++;
-    console.log(
-      camKey,
-      this.lastCameraIndex,
-      this.lastCameraIndex % cams.length
-    );
+
     if (camKey) {
       if (this.boxes[camKey].length > 0) {
         let i = Math.floor(Math.random() * this.boxes[camKey].length);
@@ -196,9 +192,9 @@ export class PursuitController {
             })[0];
             const minY = pointsDistances.sort((a, b) => {
               if (a.item.coord.y > b.item.coord.y) {
-                return 1;
-              } else if (a.item.coord.y < b.item.coord.y) {
                 return -1;
+              } else if (a.item.coord.y < b.item.coord.y) {
+                return 1;
               }
               return 0;
             })[0];
@@ -213,9 +209,9 @@ export class PursuitController {
             })[0];
             const maxY = pointsDistances.sort((a, b) => {
               if (a.item.coord.y > b.item.coord.y) {
-                return -1;
-              } else if (a.item.coord.y < b.item.coord.y) {
                 return 1;
+              } else if (a.item.coord.y < b.item.coord.y) {
+                return -1;
               }
               return 0;
             })[0];
@@ -259,7 +255,6 @@ export class PursuitController {
                 ptzLimits.x.min,
                 ptzLimits.x.max
               );
-              console.log(this.currentBox, minY);
               const m =
                 this.currentBox.item.height /
                 (this.currentBox.item.class == 'person' ? 3 : 1.5);
@@ -275,7 +270,7 @@ export class PursuitController {
               await this.goToPosition({
                 x: xPos.toFixed(2),
                 y: yPos.toFixed(2),
-                z: (-1 * (yPos - 0.02)).toFixed(2),
+                z: (yPos - 0.02).toFixed(2),
               });
             }
           }

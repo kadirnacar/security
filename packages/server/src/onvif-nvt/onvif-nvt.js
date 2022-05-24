@@ -58,7 +58,7 @@ var OnvifManager = /** @class */ (function () {
                 _this.cameras[cacheKey] = camera;
                 resolve(camera);
             })["catch"](function (error) {
-                console.error(error);
+                // console.error(error);
                 reject(error);
             });
         });

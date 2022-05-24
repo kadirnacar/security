@@ -207,7 +207,7 @@ export class Pursuit extends Component<Props, State> {
                                 playerMode: 'points',
                                 detectBoxes: this.state.detectBoxes,
                                 render: (state) => {
-                                  // this.setState(state);
+                                  this.setState(state);
                                 },
                               }}
                             >

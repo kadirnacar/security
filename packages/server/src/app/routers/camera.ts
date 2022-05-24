@@ -134,7 +134,7 @@ export class CameraRouter {
       form.submit('http://localhost:8888/alpr', function (err, res2) {
         try {
           if (err) {
-            console.log(err);
+            console.log('getSnapshot:form.submit', err);
             return;
           }
           isProcess = true;
@@ -192,7 +192,7 @@ export class CameraRouter {
         }
       }, 2500);
     } catch (err) {
-      console.log(err);
+      console.log('getSnapshot', err);
       next(err);
     }
   }

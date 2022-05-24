@@ -27,7 +27,6 @@ export class DataRouter {
     try {
       const entity = req.params.entity;
       const parentId = req.params['id'];
-      console.log(parentId);
       const dataRepo = Services[entity];
       const data = await dataRepo.all(parentId);
       res.status(200).send(data);

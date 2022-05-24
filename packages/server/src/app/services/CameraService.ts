@@ -69,6 +69,10 @@ export class CameraService {
         } else if (msg.includes('WebRTC Client Offline')) {
           goProcess.kill();
           await this.endProcess(goProcess);
+        } else if (msg.includes('noVideo')) {
+          // goProcess.kill();
+          // await this.endProcess(goProcess);
+          // this.rtspgo(id, sdp, res);
         }
       });
     } else {
@@ -106,6 +110,9 @@ export class CameraService {
       '3516d3-EKS-2I36D-IR-AI/00000170',
       '3519a1-EKS-8I2BIR/00000482',
       '3519a1-EKS-8I2BIR/00000606',
+      '88/DS-2CD5B86G0-IZSUHK20210823AAWRG36527177',
+      '88/DS-2CD5B86G0-IZSUHK20210823AAWRG36527635',
+      '88/DS-2DF8242IX-AEL20210608CCWRT3G16243193',
     ];
     if (connectedIndex && connectedIndex > -1) {
       this.cameraModels.splice(connectedIndex, 1);
@@ -169,7 +176,7 @@ export class CameraService {
           // ...
         })
         .catch((err) => {
-          console.log(err);
+          console.log('getSnapshot', err);
           resolve(null);
         });
 

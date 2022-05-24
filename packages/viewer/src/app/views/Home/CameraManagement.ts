@@ -155,7 +155,13 @@ export class CameraManagement {
       const mousePosX = (ev.clientX - box.left) * ratioX;
       const mousePosY = (ev.clientY - box.top) * ratioY;
       this.isDrawing = true;
-      this.drawingBox = { x: mousePosX, y: mousePosY, width: 5, height: 5 };
+      this.drawingBox = {
+        x: mousePosX,
+        y: mousePosY,
+        width: 5,
+        height: 5,
+        class: 'car',
+      };
     }
   }
 
@@ -164,15 +170,16 @@ export class CameraManagement {
       this.isDragging = false;
     } else if (this.isDrawing) {
       this.isDrawing = false;
-      if (this.context.onDrawEnd) {
-        this.context.onDrawEnd(this.drawingBox);
-      }
+      // if (this.context.onDrawEnd) {
+      //   this.context.onDrawEnd(this.drawingBox);
+      // }
       if (this.context.pursuit) {
         this.context.pursuit.setBoxes(this.context.camera?.id || '', [
           {
             left: this.drawingBox.x,
             top: this.drawingBox.y,
             ...this.drawingBox,
+            class: 'car',
           },
         ]);
       }

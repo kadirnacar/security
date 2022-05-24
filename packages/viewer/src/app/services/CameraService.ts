@@ -73,7 +73,15 @@ export class CameraService extends ServiceBase {
       {
         url: `/api/camera/pos/${id}`,
         method: 'POST',
-        data: { velocity: { ...velocity }, action: action, speed },
+        data: {
+          velocity: {
+            x: parseFloat((velocity?.x || 0).toString()).toFixed(2),
+            y: parseFloat((velocity?.y || 0).toString()).toFixed(2),
+            z: parseFloat((velocity?.z || 0).toString()).toFixed(2),
+          },
+          action: action,
+          speed,
+        },
       },
       true
     );

@@ -206,7 +206,7 @@ export default class CameraController extends Component<Props, State> {
           },
         };
         const zoomLimits = {
-          min: isNaN(minZoom) ? -1 : minZoom,
+          min: isNaN(minZoom) ? 0 : minZoom,
           max: isNaN(maxZoom) ? 1 : maxZoom,
         };
 
@@ -307,22 +307,20 @@ export default class CameraController extends Component<Props, State> {
                   (maxRight >= 0 && location.x >= 0)) &&
                 location.x > maxRight
               ) {
-                // console.log(cuurentValue, maxRight);
                 location.x = minLeft;
                 cuurentValue = 0;
                 try {
                   cuurentValue = parseFloat(location.y);
                 } catch {}
                 movement =
-                  (isNaN(cuurentValue) ? 0 : cuurentValue) + autoPhoto.yStep;
+                  (isNaN(cuurentValue) ? 0 : cuurentValue) - autoPhoto.yStep;
 
                 location.y = this.getBetween(
                   movement,
                   ptzLimits.y.min,
                   ptzLimits.y.max
                 );
-
-                if (movement >= maxBottom) {
+                if (movement <= maxBottom) {
                   // clearInterval(this.recursiveInterval);
                   this.recursiveInterval = undefined;
                   this.setState({});
@@ -362,8 +360,8 @@ export default class CameraController extends Component<Props, State> {
         this.context.camera.id &&
         this.context.parent.camera.cameras[this.context.camera.id]
       ) {
-        let d: any =
-          this.context.parent.camera.cameras[this.context.camera.id].limits;
+        let cam = this.context.parent.camera.cameras[this.context.camera.id];
+        let d: any = cam.limits;
 
         if (!d) {
           d = {
@@ -381,6 +379,7 @@ export default class CameraController extends Component<Props, State> {
         }
 
         if (d && d[value]) {
+          // d[value].pos = { ...this.context.parent.camera.position };
           this.context.detectBoxes = [
             {
               left: d[value].coord.x,
@@ -393,7 +392,6 @@ export default class CameraController extends Component<Props, State> {
         } else {
           this.context.detectBoxes = [];
         }
-
         if (this.context.parent?.camOptions.gotoPosition && d && d[value]) {
           await this.context.parent?.camOptions.gotoPosition(d[value].pos);
         }
@@ -535,7 +533,7 @@ export default class CameraController extends Component<Props, State> {
                   }}
                   value={this.state.autoPhoto.xStep}
                   variant="standard"
-                  inputProps={{ min: 0.05, max: 0.5, step: 0.05 }}
+                  inputProps={{ min: 0.01, max: 0.5, step: 0.01 }}
                   onChange={(event) => {
                     const { autoPhoto } = this.state;
                     autoPhoto.xStep = parseFloat(event.target.value);
@@ -553,13 +551,10 @@ export default class CameraController extends Component<Props, State> {
                   }}
                   value={this.state.autoPhoto.yStep}
                   variant="standard"
-                  inputProps={{ min: 0.05, max: 0.5, step: 0.05 }}
+                  inputProps={{ min: 0.01, max: 0.5, step: 0.01 }}
                   onChange={(event) => {
                     const { autoPhoto } = this.state;
-                    console.log(
-                      autoPhoto.yStep,
-                      parseFloat(event.target.value)
-                    );
+
                     autoPhoto.yStep = parseFloat(event.target.value);
 
                     this.setState({ autoPhoto });

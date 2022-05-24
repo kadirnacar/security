@@ -53,7 +53,6 @@ class Header extends Component<Props & WithRouter, State> {
               image="/assets/logo.png"
               alt="green iguana"
               onClick={(ev) => {
-                console.log(window.event);
                 if (this.props.navigate && ev.shiftKey) this.props.navigate('/settings')
               }}
             />
