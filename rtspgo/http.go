@@ -54,7 +54,7 @@ func HTTPAPIServerStreamWebRTC(suuid string, data string) {
 			select {
 			case <-noVideo.C:
 				log.Println("noVideo 22")
-				return
+				continue
 			case pck := <-ch:
 				if pck.IsKeyFrame || AudioOnly {
 					noVideo.Reset(10 * time.Second)
