@@ -249,8 +249,26 @@ export class CameraRouter {
     }
   }
 
+  public async clearBoxes(req: Request, res: Response, next) {
+    try {
+      const id = req.params['id'];
+      const subid = req.params['subid'];
+      const dataRepo = Services.Camera;
+      const data: Camera = await dataRepo.get(id);
+      if (data && data.cameras && data.cameras[subid]) {
+        data.cameras[subid].boxes = [];
+        await dataRepo.save(data);
+      }
+
+      res.status(200).send({});
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async init() {
     this.router.post('/connect/:id', this.connect.bind(this));
+    this.router.post('/clearboxes/:id/:subid', this.clearBoxes.bind(this));
     this.router.post('/disconnect/:id', this.disconnect.bind(this));
     this.router.post('/pos/:id', this.setPos.bind(this));
     this.router.get('/info/:id', this.getCamInfo.bind(this));

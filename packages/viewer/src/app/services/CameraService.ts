@@ -63,6 +63,18 @@ export class CameraService extends ServiceBase {
     return result;
   }
 
+  public static async clearBoxes(id: string, subid: any): Promise<Result<any>> {
+    const result = await this.requestJson(
+      {
+        url: `/api/camera/clearboxes/${id}/${subid}`,
+        method: 'POST',
+        data: {},
+      },
+      true
+    );
+    return result;
+  }
+
   public static async pos(
     id: string,
     velocity?: ICamPosition,

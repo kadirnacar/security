@@ -42,6 +42,7 @@ export function dataURItoBlob(dataURI) {
 }
 
 export interface ICamComtext {
+  clearBoxAction?: (id, subid) => void;
   render: (state) => void;
   camera?: Camera;
   selectedPointIndex?: number;

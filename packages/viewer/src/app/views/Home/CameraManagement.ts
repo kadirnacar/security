@@ -1,3 +1,4 @@
+import { Keyboard } from '@mui/icons-material';
 import { ICamPosition, IGlRect } from '@security/models';
 // import cv from 'opencv.js';
 import REGL from 'regl';
@@ -70,6 +71,20 @@ export class CameraManagement {
       'pointermove',
       this.handleCanvasPointerMove.bind(this)
     );
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Delete') {
+        if (this.drawingBox) {
+          this.drawingBox = null;
+        }
+        if (this.pointOverIndex > -1 && this.context.parent?.camera) {
+          this.context.parent?.camera.cameras[
+            this.context.camera?.id || ''
+          ].boxes.splice(this.pointOverIndex, 1);
+          this.pointOverIndex = -1;
+          this.context.parent.selectedPointIndex = -1;
+        }
+      }
+    });
   }
 
   setContext(context) {
@@ -132,6 +147,8 @@ export class CameraManagement {
     return result;
   }
   async handleCanvasPointerDown(ev) {
+    const boxElement = (ev.target as HTMLElement).getBoundingClientRect();
+    this.drawingBox = null;
     if (this.canvas && this.pointOverIndex > -1 && this.context.parent) {
       this.isDragging = true;
       this.context.parent.selectedPointIndex = this.pointOverIndex;
@@ -140,20 +157,23 @@ export class CameraManagement {
           .boxes[this.pointOverIndex];
 
       if (box) {
-        if (this.context.parent?.camOptions.gotoPosition)
+        // console.log(box.coord, mousePosX, mousePosY);
+        if (this.context.parent?.camOptions.gotoPosition) {
+          const zVal = 0.08; //this.canvas.height / 2 > Number(box.coord.y) ? 0.05 : Number(box.pos.y);
           await this.context.parent?.camOptions.gotoPosition({
             x: Number(box.pos.x).toFixed(2),
             y: Number(box.pos.y).toFixed(2),
-            z: Number(box.pos.z).toFixed(2),
+            z: (Number(box.pos.y) - zVal).toFixed(2),
+            // z: Number(box.pos.z).toFixed(2),
           });
+        }
       }
       // this.context.render({});
     } else {
-      const box = (ev.target as HTMLElement).getBoundingClientRect();
-      const ratioX = this.canvas.width / box.width;
-      const ratioY = this.canvas.height / box.height;
-      const mousePosX = (ev.clientX - box.left) * ratioX;
-      const mousePosY = (ev.clientY - box.top) * ratioY;
+      const ratioX = this.canvas.width / boxElement.width;
+      const ratioY = this.canvas.height / boxElement.height;
+      const mousePosX = (ev.clientX - boxElement.left) * ratioX;
+      const mousePosY = (ev.clientY - boxElement.top) * ratioY;
       this.isDrawing = true;
       this.drawingBox = {
         x: mousePosX,
@@ -223,11 +243,11 @@ export class CameraManagement {
         !this.isDrawing
       ) {
         this.pointOverIndex = this.isMouseOverToPoint(mousePosX, mousePosY);
-        if (this.pointOverIndex > -1) {
-          ev.target.style.cursor = 'move';
-        } else {
-          ev.target.style.cursor = 'initial';
-        }
+        // if (this.pointOverIndex > -1) {
+        //   ev.target.style.cursor = 'crosshair 0 0, auto';
+        // } else {
+        //   ev.target.style.cursor = 'initial';
+        // }
       } else if (
         this.context.playerMode == 'points' &&
         this.pointOverIndex > -1 &&
@@ -360,7 +380,6 @@ export class CameraManagement {
         if (this.context.playerMode == 'target') {
           this.ctx.strokeStyle = 'red';
           this.ctx.lineWidth = 5;
-
           // draw a red line
           this.ctx.beginPath();
           this.ctx.moveTo(0, 0);
@@ -412,17 +431,42 @@ export class CameraManagement {
               // this.ctx.fillStyle = 'red';
               // this.ctx.fill();
               this.ctx.lineWidth = 16;
+            } else {
+              this.ctx.arc(
+                element.coord.x,
+                element.coord.y,
+                10,
+                0,
+                2 * Math.PI,
+                true
+              );
             }
 
             this.ctx.strokeStyle = 'red';
             this.ctx.stroke();
             this.ctx.closePath();
+
+            if (this.context.parent.selectedPointIndex !== index) {
+              this.ctx.beginPath();
+              this.ctx.arc(
+                element.coord.x,
+                element.coord.y,
+                10,
+                0,
+                2 * Math.PI,
+                true
+              );
+              this.ctx.stroke();
+              this.ctx.closePath();
+            }
           }
         }
         if (
           // this.context.playerMode == 'detect' &&
           this.context.detectBoxes
         ) {
+   
+
           for (
             let index = 0;
             index < this.context.detectBoxes.length;
@@ -437,6 +481,22 @@ export class CameraManagement {
               element.top || 0,
               element.width || 0,
               element.height || 0
+            );
+            this.ctx.stroke();
+            this.ctx.closePath();
+          }
+
+
+
+          if (this.context.pursuit?.currentBox) {
+            this.ctx.beginPath();
+            this.ctx.lineWidth = 20;
+            this.ctx.strokeStyle = 'green';
+            this.ctx.strokeRect(
+              this.context.pursuit?.currentBox.item.left || 0,
+              this.context.pursuit?.currentBox.item.top || 0,
+              this.context.pursuit?.currentBox.item.width || 0,
+              this.context.pursuit?.currentBox.item.height || 0
             );
             this.ctx.stroke();
             this.ctx.closePath();
@@ -466,6 +526,7 @@ export class CameraManagement {
           this.context.detectBoxes?.push(...boxes);
           if (this.context.pursuit) {
             if (this.drawingBox) {
+              boxes = [];
               boxes.push({
                 left: this.drawingBox.x,
                 top: this.drawingBox.y,

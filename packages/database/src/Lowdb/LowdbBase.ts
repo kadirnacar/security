@@ -38,17 +38,22 @@ function decrypt(text) {
 
 const cryptSerializer = {
   serialize: function (array: any[]) {
-    return JSON.stringify(
-      encrypt(
-        JSON.stringify(array, (key, value) => {
-          if (value !== null && value !== '' && value !== undefined)
-            return value;
-        })
-      )
-    );
+    return JSON.stringify(array, (key, value) => {
+      if (value !== null && value !== '' && value !== undefined) return value;
+    });
+    // return JSON.stringify(
+    //   encrypt(
+    //     JSON.stringify(array, (key, value) => {
+    //       if (value !== null && value !== '' && value !== undefined)
+    //         return value;
+    //     })
+    //   )
+    // );
   },
   deserialize: function (string: string) {
-    return JSON.parse(decrypt(JSON.parse(string)));
+    return JSON.parse(string);
+
+    // return JSON.parse(decrypt(JSON.parse(string)));
   },
 };
 

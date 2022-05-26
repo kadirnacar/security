@@ -1,4 +1,4 @@
-import { ExpandMore, Save } from '@mui/icons-material';
+import { ClearAll, ExpandMore, Save } from '@mui/icons-material';
 import {
   Box,
   Card,
@@ -20,6 +20,7 @@ import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { DataActions } from '../../reducers/Data/actions';
 import { DataState } from '../../reducers/Data/state';
+import { CameraService } from '../../services/CameraService';
 import { ApplicationState } from '../../store';
 import { CamContext } from '../../utils';
 import { WithRouter, withRouter } from '../../withRouter';
@@ -96,6 +97,7 @@ class Form extends Component<Props & WithRouter, State, typeof CamContext> {
       //   });
       // });
     }
+
     if (this.state.camera?.id) {
       await this.props.DataActions?.updateItem('Camera', camera);
     } else {
@@ -114,6 +116,11 @@ class Form extends Component<Props & WithRouter, State, typeof CamContext> {
           render: (state) => {
             this.setState(state);
           },
+          clearBoxAction: async (id, subid) => {
+            await CameraService.clearBoxes(id, subid);
+            await this.props.DataActions?.getById('Camera', id);
+            // await this.props.DataActions?.getList('Camera');
+          },
         }}
       >
         <CssBaseline />
@@ -121,9 +128,11 @@ class Form extends Component<Props & WithRouter, State, typeof CamContext> {
           <CardHeader
             title="Kameralar"
             action={
-              <IconButton title="Kaydet" onClick={this.handleSave}>
-                <Save />
-              </IconButton>
+              <>
+                <IconButton title="Kaydet" onClick={this.handleSave}>
+                  <Save />
+                </IconButton>
+              </>
             }
           ></CardHeader>
         </Card>

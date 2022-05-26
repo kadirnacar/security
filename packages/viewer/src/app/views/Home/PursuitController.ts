@@ -14,7 +14,7 @@ export class PursuitController {
   public ptzCamera?: Camera;
   public getShapshotCanvas?: (camId: string) => HTMLCanvasElement | undefined;
   private boxes: { [key: string]: any[] } = {};
-  private currentBox: any = null;
+  public currentBox: any = null;
   private intervalProcess?: any;
   private interval = 3000;
   private maxBoxesDistance = 4;
@@ -247,7 +247,7 @@ export class PursuitController {
                 minLeft +
                   (Math.abs(
                     this.currentBox.item.left +
-                      this.currentBox.item.width / 1.5 -
+                      this.currentBox.item.width / 2 -
                       minLeftCoord
                   ) *
                     xLength) /
@@ -257,7 +257,7 @@ export class PursuitController {
               );
               const m =
                 this.currentBox.item.height /
-                (this.currentBox.item.class == 'person' ? 3 : 1.5);
+                (this.currentBox.item.class == 'person' ? 3 : 2);
               let yPos = this.getBetween(
                 minTop +
                   (Math.abs(this.currentBox.item.top + m - minTopCoord) *
@@ -266,11 +266,13 @@ export class PursuitController {
                 ptzLimits.y.min,
                 ptzLimits.y.max
               );
+              const clamp = (num, min, max) =>
+                Math.min(Math.max(num, min), max);
 
               await this.goToPosition({
                 x: xPos.toFixed(2),
                 y: yPos.toFixed(2),
-                z: (yPos - 0.02).toFixed(2),
+                z: clamp(Number(yPos) - 0.2, 0, 1).toFixed(2),
               });
             }
           }

@@ -21,6 +21,7 @@ import {
 } from '@mui/material';
 import { ICamPosition, IRectLimits } from '@security/models';
 import React, { Component } from 'react';
+import { CameraService } from '../../services/CameraService';
 import { CamContext } from '../../utils';
 
 type Props = {
@@ -165,18 +166,26 @@ export default class CameraController extends Component<Props, State> {
 
   async recursiveParentTakePhoto() {
     const { autoPhoto } = this.state;
-
     if (!this.recursiveInterval) {
       let rangeLimits: IRectLimits | undefined;
       let location: ICamPosition = { x: 0, y: 0, z: 0 };
       if (
-        this.context.parent?.camera &&
+        this.context.parent &&
+        this.context.parent.camera &&
         this.context.camera &&
         this.context.camera.id &&
         this.context.parent.camera.cameras[this.context.camera.id] &&
         this.context.parent.camera.cameras[this.context.camera.id].limits
       ) {
-        this.context.parent.camera.cameras[this.context.camera?.id].boxes = [];
+        console.log(this.context);
+        if (this.context.parent.clearBoxAction) {
+          await this.context.parent.clearBoxAction(
+            this.context.parent.camera.id,
+            this.context.camera.id
+          );
+        }
+
+        this.context.parent.camera.cameras[this.context.camera.id].boxes = [];
 
         rangeLimits =
           this.context.parent.camera.cameras[this.context.camera.id].limits;
@@ -249,9 +258,12 @@ export default class CameraController extends Component<Props, State> {
             z: Number(location.z).toFixed(2),
           });
         }
-
-        this.recursiveInterval = async () => {
-          if (this.context.parent?.camOptions.gotoPosition && location) {
+        this.recursiveInterval = () => {
+          if (
+            this.context.parent?.camOptions.gotoPosition &&
+            location &&
+            this.context.parent.camera
+          ) {
             const boxes =
               this.context.parent.camera?.cameras[this.context.camera?.id || '']
                 .boxes;
@@ -284,8 +296,14 @@ export default class CameraController extends Component<Props, State> {
                 y,
               },
             });
-            this.context.parent.render({});
 
+            this.context.parent.render({
+              camera: { ...this.context.parent.camera },
+            });
+            // console.log(boxes);
+            // this.context.parent.camera.cameras[
+            //   this.context.camera?.id || ''
+            // ].boxes = boxes || [];
             if (location) {
               let cuurentValue: number = 0;
 
@@ -301,7 +319,6 @@ export default class CameraController extends Component<Props, State> {
                 ptzLimits.x.min,
                 ptzLimits.x.max
               );
-
               if (
                 ((maxRight < 0 && location.x < 0) ||
                   (maxRight >= 0 && location.x >= 0)) &&
@@ -349,7 +366,6 @@ export default class CameraController extends Component<Props, State> {
   }
   async handleSetPosition(evt, value) {
     this.setState({ activePosition: value });
-
     if (this.context.parent) {
       this.context.parent.limitPosition = value;
 
@@ -362,22 +378,34 @@ export default class CameraController extends Component<Props, State> {
       ) {
         let cam = this.context.parent.camera.cameras[this.context.camera.id];
         let d: any = cam.limits;
-
+        let resolution =
+          this.context.camera.camInfo.defaultProfile.VideoEncoderConfiguration
+            .Resolution;
         if (!d) {
           d = {
-            leftBottom: { coord: { x: 0, y: this.context.resulation?.height } },
+            leftBottom: {
+              coord: {
+                x: 0,
+                y: Number(resolution.Height),
+              },
+            },
             leftTop: { coord: { x: 0, y: 0 } },
             rightBottom: {
               coord: {
-                x: this.context.resulation?.width,
-                y: this.context.resulation?.height,
+                x: Number(resolution.Width),
+                y: Number(resolution.Height),
               },
             },
-            rightTop: { coord: { x: this.context.resulation?.width, y: 0 } },
+            rightTop: {
+              coord: {
+                x: Number(resolution.Width),
+                y: 0,
+              },
+            },
           };
           this.context.parent.camera.cameras[this.context.camera.id].limits = d;
         }
-
+        console.log(d);
         if (d && d[value]) {
           // d[value].pos = { ...this.context.parent.camera.position };
           this.context.detectBoxes = [
