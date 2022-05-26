@@ -63,7 +63,14 @@ export class PursuitController {
       if (this.boxes[camKey].length > 0) {
         let i = Math.floor(Math.random() * this.boxes[camKey].length);
         const item = this.boxes[camKey][i];
-        return { camId: camKey, item: item };
+        return {
+          camId: camKey,
+          item: {
+            ...item,
+            left: item.left + item.width / 2,
+            top: item.top + item.height / 2,
+          },
+        };
       }
     }
 
@@ -177,104 +184,92 @@ export class PursuitController {
           .slice(0, this.maxBoxesDistance);
 
         if (pointsDistances.length > 0) {
-          const refBox = camRel.boxes.filter((x, i) =>
-            pointsDistances.find((y) => y.item && y.index == i)
-          );
-
-          if (refBox) {
-            const minX = pointsDistances.sort((a, b) => {
-              if (a.item.coord.x > b.item.coord.x) {
-                return 1;
-              } else if (a.item.coord.x < b.item.coord.x) {
-                return -1;
-              }
-              return 0;
-            })[0];
-            const minY = pointsDistances.sort((a, b) => {
-              if (a.item.coord.y > b.item.coord.y) {
-                return -1;
-              } else if (a.item.coord.y < b.item.coord.y) {
-                return 1;
-              }
-              return 0;
-            })[0];
-
-            const maxX = pointsDistances.sort((a, b) => {
-              if (a.item.coord.x > b.item.coord.x) {
-                return -1;
-              } else if (a.item.coord.x < b.item.coord.x) {
-                return 1;
-              }
-              return 0;
-            })[0];
-            const maxY = pointsDistances.sort((a, b) => {
-              if (a.item.coord.y > b.item.coord.y) {
-                return 1;
-              } else if (a.item.coord.y < b.item.coord.y) {
-                return -1;
-              }
-              return 0;
-            })[0];
-
-            const ptzLimits = this.getCametaPtzLimits();
-
-            if (ptzLimits) {
-              let minLeft = this.getFloat(minX.item.pos.x);
-              let minLeftCoord = this.getFloat(minX.item.coord.x);
-              let maxRight = this.getFloat(maxX.item.pos.x);
-              let maxRightCoord = this.getFloat(maxX.item.coord.x);
-              let xLength = this.calculateDiff(
-                minLeft,
-                maxRight,
-                ptzLimits.x.min,
-                ptzLimits.x.max
-              );
-              let coordXLength = maxRightCoord - minLeftCoord;
-
-              let minTop = this.getFloat(minY.item.pos.y);
-              let minTopCoord = this.getFloat(minY.item.coord.y);
-              let maxBottom = this.getFloat(maxY.item.pos.y);
-              let maxBottomCoord = this.getFloat(maxY.item.coord.y);
-              let yLength = this.calculateDiff(
-                minTop,
-                maxBottom,
-                ptzLimits.y.min,
-                ptzLimits.y.max
-              );
-              let coordYLength = maxBottomCoord - minTopCoord;
-
-              let xPos = this.getBetween(
-                minLeft +
-                  (Math.abs(
-                    this.currentBox.item.left +
-                      this.currentBox.item.width / 2 -
-                      minLeftCoord
-                  ) *
-                    xLength) /
-                    coordXLength,
-                ptzLimits.x.min,
-                ptzLimits.x.max
-              );
-              const m =
-                this.currentBox.item.height /
-                (this.currentBox.item.class == 'person' ? 3 : 2);
-              let yPos = this.getBetween(
-                minTop +
-                  (Math.abs(this.currentBox.item.top + m - minTopCoord) *
-                    yLength) /
-                    coordYLength,
-                ptzLimits.y.min,
-                ptzLimits.y.max
-              );
-              const clamp = (num, min, max) =>
-                Math.min(Math.max(num, min), max);
-
-              await this.goToPosition({
-                x: xPos.toFixed(2),
-                y: yPos.toFixed(2),
-                z: clamp(Number(yPos) - 0.2, 0, 1).toFixed(2),
-              });
+          const minX = pointsDistances.sort((a, b) => {
+            if (a.item.coord.x > b.item.coord.x) {
+              return 1;
+            } else if (a.item.coord.x < b.item.coord.x) {
+              return -1;
             }
+            return 0;
+          })[0];
+          const minY = pointsDistances.sort((a, b) => {
+            if (a.item.coord.y > b.item.coord.y) {
+              return 1;
+            } else if (a.item.coord.y < b.item.coord.y) {
+              return -1;
+            }
+            return 0;
+          })[0];
+
+          const maxX = pointsDistances.sort((a, b) => {
+            if (a.item.coord.x > b.item.coord.x) {
+              return -1;
+            } else if (a.item.coord.x < b.item.coord.x) {
+              return 1;
+            }
+            return 0;
+          })[0];
+          const maxY = pointsDistances.sort((a, b) => {
+            if (a.item.coord.y > b.item.coord.y) {
+              return -1;
+            } else if (a.item.coord.y < b.item.coord.y) {
+              return 1;
+            }
+            return 0;
+          })[0];
+          const ptzLimits = this.getCametaPtzLimits();
+
+          if (ptzLimits) {
+            let minLeft = this.getFloat(minX.item.pos.x);
+            let minLeftCoord = this.getFloat(minX.item.coord.x);
+            let maxRight = this.getFloat(maxX.item.pos.x);
+            let maxRightCoord = this.getFloat(maxX.item.coord.x);
+            let xLength = this.calculateDiff(
+              minLeft,
+              maxRight,
+              ptzLimits.x.min,
+              ptzLimits.x.max
+            );
+            let coordXLength = maxRightCoord - minLeftCoord;
+
+            let minTop = this.getFloat(minY.item.pos.y);
+            let minTopCoord = this.getFloat(minY.item.coord.y);
+            let maxBottom = this.getFloat(maxY.item.pos.y);
+            let maxBottomCoord = this.getFloat(maxY.item.coord.y);
+            let yLength = this.calculateDiff(
+              minTop,
+              maxBottom,
+              ptzLimits.y.min,
+              ptzLimits.y.max
+            );
+            let coordYLength = maxBottomCoord - minTopCoord;
+
+            let xPos = this.getBetween(
+              minLeft +
+                (Math.abs(this.currentBox.item.left - minLeftCoord) * xLength) /
+                  coordXLength,
+              ptzLimits.x.min,
+              ptzLimits.x.max
+            );
+            const m = 0;
+            // this.currentBox.item.height /
+            // (this.currentBox.item.class == 'person' ? 3 : 2);
+            let yPos = this.getBetween(
+              minTop +
+                (Math.abs(this.currentBox.item.top - minTopCoord) * yLength) /
+                  coordYLength,
+              ptzLimits.y.min,
+              ptzLimits.y.max
+            );
+            const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
+
+            const zoom = clamp(Number(yPos) / 2, 0, 1).toFixed(2);
+
+            await this.goToPosition({
+              x: xPos.toFixed(2),
+              y: yPos.toFixed(2),
+              z: zoom,
+            });
           }
         }
       }

@@ -177,7 +177,6 @@ export default class CameraController extends Component<Props, State> {
         this.context.parent.camera.cameras[this.context.camera.id] &&
         this.context.parent.camera.cameras[this.context.camera.id].limits
       ) {
-        console.log(this.context);
         if (this.context.parent.clearBoxAction) {
           await this.context.parent.clearBoxAction(
             this.context.parent.camera.id,
@@ -405,7 +404,6 @@ export default class CameraController extends Component<Props, State> {
           };
           this.context.parent.camera.cameras[this.context.camera.id].limits = d;
         }
-        console.log(d);
         if (d && d[value]) {
           // d[value].pos = { ...this.context.parent.camera.position };
           this.context.detectBoxes = [

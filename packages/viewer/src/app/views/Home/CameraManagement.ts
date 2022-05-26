@@ -43,7 +43,7 @@ export class CameraManagement {
   last = 0;
   speed = 0.5;
   activateDetection = false;
-  pointSize = 30;
+  pointSize = 10;
 
   async initDetection() {
     this.activateDetection = true;
@@ -159,11 +159,13 @@ export class CameraManagement {
       if (box) {
         // console.log(box.coord, mousePosX, mousePosY);
         if (this.context.parent?.camOptions.gotoPosition) {
-          const zVal = 0.08; //this.canvas.height / 2 > Number(box.coord.y) ? 0.05 : Number(box.pos.y);
+          const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
+
+          const zoom = clamp(Number(box.pos.y) / 2, 0, 1).toFixed(2);
           await this.context.parent?.camOptions.gotoPosition({
             x: Number(box.pos.x).toFixed(2),
             y: Number(box.pos.y).toFixed(2),
-            z: (Number(box.pos.y) - zVal).toFixed(2),
+            z: zoom,
             // z: Number(box.pos.z).toFixed(2),
           });
         }
@@ -368,6 +370,8 @@ export class CameraManagement {
     let timeInSecond = timeStamp / 1000;
     if (timeInSecond - this.last2 >= this.speed2) {
       if (this.ctx && this.video) {
+        const ratio = this.video.videoWidth / 1280;
+        this.pointSize = this.pointSize * ratio;
         this.ctx.clearRect(0, 0, this.video.videoWidth, this.video.videoHeight);
         this.ctx.drawImage(
           this.video,
@@ -379,7 +383,7 @@ export class CameraManagement {
 
         if (this.context.playerMode == 'target') {
           this.ctx.strokeStyle = 'red';
-          this.ctx.lineWidth = 5;
+          this.ctx.lineWidth = 1 * ratio;
           // draw a red line
           this.ctx.beginPath();
           this.ctx.moveTo(0, 0);
@@ -392,7 +396,7 @@ export class CameraManagement {
 
         if (this.drawingBox) {
           this.ctx.beginPath();
-          this.ctx.lineWidth = 6;
+          this.ctx.lineWidth = 2 * ratio;
           this.ctx.strokeStyle = 'red';
           this.ctx.strokeRect(
             this.drawingBox.x,
@@ -417,56 +421,54 @@ export class CameraManagement {
 
             this.ctx.beginPath();
             this.ctx.arc(
-              element.coord.x,
-              element.coord.y,
+              element.coord.x * ratio,
+              element.coord.y * ratio,
               this.pointSize,
               0,
               2 * Math.PI,
               false
             );
 
-            this.ctx.lineWidth = 6;
+            this.ctx.lineWidth = 2 * ratio;
 
             if (this.context.parent.selectedPointIndex == index) {
               // this.ctx.fillStyle = 'red';
               // this.ctx.fill();
-              this.ctx.lineWidth = 16;
+              this.ctx.lineWidth = 8 * ratio;
             } else {
-              this.ctx.arc(
-                element.coord.x,
-                element.coord.y,
-                10,
-                0,
-                2 * Math.PI,
-                true
-              );
+              // this.ctx.arc(
+              //   element.coord.x,
+              //   element.coord.y,
+              //   10,
+              //   0,
+              //   2 * Math.PI,
+              //   true
+              // );
             }
 
             this.ctx.strokeStyle = 'red';
             this.ctx.stroke();
             this.ctx.closePath();
 
-            if (this.context.parent.selectedPointIndex !== index) {
-              this.ctx.beginPath();
-              this.ctx.arc(
-                element.coord.x,
-                element.coord.y,
-                10,
-                0,
-                2 * Math.PI,
-                true
-              );
-              this.ctx.stroke();
-              this.ctx.closePath();
-            }
+            // if (this.context.parent.selectedPointIndex !== index) {
+            //   this.ctx.beginPath();
+            //   this.ctx.arc(
+            //     element.coord.x,
+            //     element.coord.y,
+            //     10,
+            //     0,
+            //     2 * Math.PI,
+            //     true
+            //   );
+            //   this.ctx.stroke();
+            //   this.ctx.closePath();
+            // }
           }
         }
         if (
           // this.context.playerMode == 'detect' &&
           this.context.detectBoxes
         ) {
-   
-
           for (
             let index = 0;
             index < this.context.detectBoxes.length;
@@ -474,7 +476,7 @@ export class CameraManagement {
           ) {
             const element = this.context.detectBoxes[index];
             this.ctx.beginPath();
-            this.ctx.lineWidth = 6;
+            this.ctx.lineWidth = 6 * ratio;
             this.ctx.strokeStyle = 'red';
             this.ctx.strokeRect(
               element.left || 0,
@@ -486,18 +488,24 @@ export class CameraManagement {
             this.ctx.closePath();
           }
 
-
-
-          if (this.context.pursuit?.currentBox) {
+          if (this.context.pursuit?.currentBox && !this.context.camera?.isPtz) {
             this.ctx.beginPath();
-            this.ctx.lineWidth = 20;
+            this.ctx.lineWidth = 5 * ratio;
             this.ctx.strokeStyle = 'green';
-            this.ctx.strokeRect(
+            this.ctx.arc(
               this.context.pursuit?.currentBox.item.left || 0,
               this.context.pursuit?.currentBox.item.top || 0,
-              this.context.pursuit?.currentBox.item.width || 0,
-              this.context.pursuit?.currentBox.item.height || 0
+              10,
+              0,
+              2 * Math.PI,
+              true
             );
+            // this.ctx.strokeRect(
+            //   this.context.pursuit?.currentBox.item.left || 0,
+            //   this.context.pursuit?.currentBox.item.top || 0,
+            //   this.context.pursuit?.currentBox.item.width || 0,
+            //   this.context.pursuit?.currentBox.item.height || 0
+            // );
             this.ctx.stroke();
             this.ctx.closePath();
           }
