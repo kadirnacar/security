@@ -358,6 +358,9 @@ export class CameraManagement {
       this.ctx = this.canvas.getContext('2d');
       this.drawAnimate = requestAnimationFrame(this.drawVideoToCanvas);
       this.yoloAnimate = requestAnimationFrame(this.yoloAnimationFrame);
+      if (this.context.camera?.isPtz && this.context.pursuit) {
+        this.context.pursuit.setPtzPursuit(this.video);
+      }
     }
   }
 

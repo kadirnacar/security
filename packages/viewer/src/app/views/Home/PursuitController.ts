@@ -1,7 +1,7 @@
-import { Camera, IGlRect } from '@security/models';
+import { Camera } from '@security/models';
 import { CamPoint } from 'packages/models/src/lib/Entities/Camera';
+import yolo from 'tfjs-yolo';
 import { CameraService } from '../../services/CameraService';
-import { dataURItoBlob, ICamComtext } from '../../utils';
 
 export class PursuitController {
   constructor(ptzCamera?: Camera, interval?: number) {
@@ -9,6 +9,7 @@ export class PursuitController {
     this.interval = interval || 3000;
     this.boxes = {};
     this.setTimer();
+    this.yoloAnimationFrame = this.yoloAnimationFrame.bind(this);
   }
 
   public ptzCamera?: Camera;
@@ -18,12 +19,110 @@ export class PursuitController {
   private intervalProcess?: any;
   private interval = 3000;
   private maxBoxesDistance = 4;
+  private videoELement?: HTMLVideoElement;
   public onPursuit?: (item) => void;
+  yoloDetect?;
+  last = 0;
+  speed = 0.5;
+  isPredict = false;
+  lastbox: any;
 
   public stop() {
     if (this.intervalProcess) {
       clearInterval(this.intervalProcess);
     }
+  }
+
+  async setPtzPursuit(element) {
+    this.videoELement = element;
+    if (!this.yoloDetect) {
+      this.yoloDetect = await yolo.v3('model/v3/model.json');
+      requestAnimationFrame(this.yoloAnimationFrame);
+    }
+  }
+
+  async yoloAnimationFrame(timeStamp) {
+    let timeInSecond = timeStamp / 1000;
+    if (timeInSecond - this.last >= this.speed && !this.isPredict) {
+      if (this.videoELement && this.yoloDetect) {
+        this.isPredict = true;
+
+        const boxes = await this.yoloDetect.predict(this.videoELement, {});
+
+        if (this.currentBox && boxes.length > 0) {
+          const box = boxes.sort((a, b) => {
+            if (a.score > b.score) {
+              return -1;
+            } else if (a.score < b.score) {
+              return 1;
+            } else return 0;
+          })[0];
+
+          if (!this.lastbox) {
+            this.lastbox = box;
+          } else {
+            const cams = Object.keys(this.boxes);
+            if (cams) {
+              const camKey = cams[this.lastCameraIndex % cams.length];
+              const resolution = this.ptzCamera?.cameras[camKey].resulation;
+
+              if (resolution) {
+                // const stepX = box.width / resolution?.width;
+                // const stepY = box.height / resolution?.height;
+                const stepX = 0.001;
+                const stepY = 0.001;
+                const centerLastX = this.lastbox.left + this.lastbox.width / 2;
+                const centerLastY = this.lastbox.top + this.lastbox.height / 2;
+
+                const boxCenterX = box.left + box.width / 2;
+                const boxCenterY = box.top + box.height / 2;
+                const diffX = centerLastX - boxCenterX;
+                const diffY = centerLastY - boxCenterY;
+                const ptzLimits = this.getCametaPtzLimits();
+
+                if (ptzLimits) {
+                  const newX = (
+                    Number(this.ptzCamera?.position?.x) +
+                    Math.abs(diffX) * stepX * (diffX / Math.abs(diffX))
+                  ).toFixed(2);
+
+                  const newY = (
+                    Number(this.ptzCamera?.position?.y) +
+                    Math.abs(diffY) * stepY * (diffY / Math.abs(diffY))
+                  ).toFixed(2);
+                  console.log(
+                    newX,
+                    newY,
+                    diffX,
+                    Math.abs(diffX) * stepX * (diffX / Math.abs(diffX)),
+                    Math.abs(diffY) * stepY * (diffY / Math.abs(diffY))
+                  );
+
+                  if (
+                    this.ptzCamera?.position?.x != newX ||
+                    this.ptzCamera.position.y != newY
+                  ) {
+                    // await this.goToPosition({
+                    //   x: newX,
+                    //   y: newY,
+                    //   z: this.ptzCamera?.position?.z,
+                    // });
+                  }
+                }
+              }
+            }
+          }
+          // console.log(
+          //   box.score,
+          //   boxes.map((x) => x.score),
+          //   this.ptzCamera?.position
+          // );
+        }
+        this.isPredict = false;
+      }
+      this.last = timeInSecond;
+    }
+    requestAnimationFrame(this.yoloAnimationFrame);
   }
 
   setBoxes(camId: string, boxes: any[]) {
@@ -58,6 +157,7 @@ export class PursuitController {
     // }
     const camKey = cams[this.lastCameraIndex % cams.length];
     this.lastCameraIndex++;
+    this.lastbox = null;
 
     if (camKey) {
       if (this.boxes[camKey].length > 0) {
@@ -110,6 +210,7 @@ export class PursuitController {
   }
 
   private async pursuitAction() {
+    this.lastbox = null;
     if (this.ptzCamera) {
       if (this.currentBox && this.getShapshotCanvas) {
         const canvas = this.getShapshotCanvas(this.ptzCamera.id || '');
@@ -278,6 +379,7 @@ export class PursuitController {
 
   private async goToPosition(velocity: { x: any; y: any; z: any }) {
     if (this.ptzCamera) {
+      this.ptzCamera.position = velocity;
       await CameraService.pos(this.ptzCamera.id || '', velocity, {
         x: 1,
         y: 1,
