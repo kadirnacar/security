@@ -15,8 +15,7 @@
           "packages/server/src/model",
           "packages/server/src/rtspgo",
           "packages/server/src/assets",
-          "packages/server/src/alpr",
-          "packages/server/src/data"
+          "packages/server/src/alpr"
         ],
         "webpackConfig": "packages/server/webpack.config.js"
       },

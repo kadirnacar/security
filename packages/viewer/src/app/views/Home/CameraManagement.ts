@@ -165,7 +165,7 @@ export class CameraManagement {
           await this.context.parent?.camOptions.gotoPosition({
             x: Number(box.pos.x).toFixed(2),
             y: Number(box.pos.y).toFixed(2),
-            z: zoom,
+            z: '0.00', //zoom,
             // z: Number(box.pos.z).toFixed(2),
           });
         }
@@ -373,7 +373,7 @@ export class CameraManagement {
     let timeInSecond = timeStamp / 1000;
     if (timeInSecond - this.last2 >= this.speed2) {
       if (this.ctx && this.video) {
-        const ratio = this.video.videoWidth / 1280;
+        const ratio = 1; //this.video.videoWidth / 1280;
         this.pointSize = this.pointSize * ratio;
         this.ctx.clearRect(0, 0, this.video.videoWidth, this.video.videoHeight);
         this.ctx.drawImage(

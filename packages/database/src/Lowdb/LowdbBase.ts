@@ -23,7 +23,10 @@ function encrypt(text) {
   let cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(key), iv);
   let encrypted = cipher.update(text);
   encrypted = Buffer.concat([encrypted, cipher.final()]);
-  return { dateCrypt: iv.toString('hex'), encryptedData: encrypted.toString('hex') };
+  return {
+    dateCrypt: iv.toString('hex'),
+    encryptedData: encrypted.toString('hex'),
+  };
 }
 
 // Decrypting text
@@ -38,22 +41,22 @@ function decrypt(text) {
 
 const cryptSerializer = {
   serialize: function (array: any[]) {
-    return JSON.stringify(array, (key, value) => {
-      if (value !== null && value !== '' && value !== undefined) return value;
-    });
-    // return JSON.stringify(
-    //   encrypt(
-    //     JSON.stringify(array, (key, value) => {
-    //       if (value !== null && value !== '' && value !== undefined)
-    //         return value;
-    //     })
-    //   )
-    // );
+    // return JSON.stringify(array, (key, value) => {
+    //   if (value !== null && value !== '' && value !== undefined) return value;
+    // });
+    return JSON.stringify(
+      encrypt(
+        JSON.stringify(array, (key, value) => {
+          if (value !== null && value !== '' && value !== undefined)
+            return value;
+        })
+      )
+    );
   },
   deserialize: function (string: string) {
-    return JSON.parse(string);
+    // return JSON.parse(string);
 
-    // return JSON.parse(decrypt(JSON.parse(string)));
+    return JSON.parse(decrypt(JSON.parse(string)));
   },
 };
 
@@ -196,8 +199,14 @@ export class LowdbBase {
       savedData.id = this.generateGuid();
     }
 
-    if (data && model.id) {
-      data.merge(savedData).write();
+    if (data) {
+      if (this.multi && model.id) {
+        data.merge(savedData).write();
+      } else if (this.multi) {
+        db.push(savedData).write();
+      } else {
+        data.merge(savedData).write();
+      }
     } else {
       db.push(savedData).write();
     }

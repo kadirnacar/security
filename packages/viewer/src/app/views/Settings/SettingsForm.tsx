@@ -44,7 +44,11 @@ class SettingsForm extends Component<Props, State> {
     if (!settings) {
       settings = {};
     }
-    settings[event.target.name] = event.target.value;
+    if (event.target.type)
+      settings[event.target.name] =
+        event.target.type == 'number'
+          ? Number(event.target.value)
+          : event.target.value;
     this.setState({ settings });
   };
 
@@ -65,7 +69,7 @@ class SettingsForm extends Component<Props, State> {
       await this.props.DataActions?.updateItem('Settings', settings);
     }
 
-    await this.props.DataActions?.getItem('Settings');
+    // await this.props.DataActions?.getItem('Settings');
     this.setState({ settings: this.props.Data?.Settings.CurrentItem });
   }
 
@@ -163,7 +167,7 @@ class SettingsForm extends Component<Props, State> {
               margin="normal"
               value={this.state.settings?.pursuitTimeout || 3000}
               onChange={this.handleChange}
-              inputProps={{ inputMode: 'numeric', min: 1000, step: 500 }}
+              inputProps={{ inputMode: 'numeric', min: 300, step: 100 }}
               name="pursuitTimeout"
               type="number"
               variant="outlined"

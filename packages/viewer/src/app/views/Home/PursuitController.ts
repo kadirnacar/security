@@ -10,6 +10,7 @@ export class PursuitController {
     this.boxes = {};
     this.setTimer();
     this.yoloAnimationFrame = this.yoloAnimationFrame.bind(this);
+    this.pursuitAction = this.pursuitAction.bind(this);
   }
 
   public ptzCamera?: Camera;
@@ -35,10 +36,10 @@ export class PursuitController {
 
   async setPtzPursuit(element) {
     this.videoELement = element;
-    if (!this.yoloDetect) {
-      this.yoloDetect = await yolo.v3('model/v3/model.json');
-      requestAnimationFrame(this.yoloAnimationFrame);
-    }
+    // if (!this.yoloDetect) {
+    //   this.yoloDetect = await yolo.v3('model/v3/model.json');
+    //   requestAnimationFrame(this.yoloAnimationFrame);
+    // }
   }
 
   async yoloAnimationFrame(timeStamp) {
@@ -139,11 +140,11 @@ export class PursuitController {
     if (this.intervalProcess) {
       clearInterval(this.intervalProcess);
     }
-
-    this.intervalProcess = setInterval(
-      this.pursuitAction.bind(this),
-      this.interval
-    );
+    this.pursuitAction();
+    // this.intervalProcess = setInterval(
+    //   this.pursuitAction.bind(this),
+    //   this.interval
+    // );
   }
 
   private lastCameraIndex = 0;
@@ -208,10 +209,12 @@ export class PursuitController {
     } catch {}
     return isNaN(cuurentValue) ? 0 : cuurentValue;
   }
-
+  isAction = false;
   private async pursuitAction() {
     this.lastbox = null;
-    if (this.ptzCamera) {
+    console.log(this.isAction);
+    if (this.ptzCamera && this.isAction == false) {
+      this.isAction = true;
       if (this.currentBox && this.getShapshotCanvas) {
         const canvas = this.getShapshotCanvas(this.ptzCamera.id || '');
         if (canvas) {
@@ -371,10 +374,16 @@ export class PursuitController {
               y: yPos.toFixed(2),
               z: zoom,
             });
+
+            this.isAction = false;
           }
         }
       }
+      this.isAction = false;
     }
+    setTimeout(async () => {
+      await this.pursuitAction();
+    },this.interval);
   }
 
   private async goToPosition(velocity: { x: any; y: any; z: any }) {

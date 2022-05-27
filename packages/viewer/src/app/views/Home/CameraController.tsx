@@ -387,19 +387,25 @@ export default class CameraController extends Component<Props, State> {
                 x: 0,
                 y: Number(resolution.Height),
               },
+              pos: { x: '0.00', y: '0.00', z: '0.00' },
             },
-            leftTop: { coord: { x: 0, y: 0 } },
+            leftTop: {
+              coord: { x: 0, y: 0 },
+              pos: { x: '0.00', y: '0.00', z: '0.00' },
+            },
             rightBottom: {
               coord: {
                 x: Number(resolution.Width),
                 y: Number(resolution.Height),
               },
+              pos: { x: '0.00', y: '0.00', z: '0.00' },
             },
             rightTop: {
               coord: {
                 x: Number(resolution.Width),
                 y: 0,
               },
+              pos: { x: '0.00', y: '0.00', z: '0.00' },
             },
           };
           this.context.parent.camera.cameras[this.context.camera.id].limits = d;

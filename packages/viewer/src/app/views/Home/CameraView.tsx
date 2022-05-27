@@ -140,16 +140,16 @@ class CameraView extends Component<Props, State, typeof CamContext> {
                 <CameraController
                   selectedBoxIndex={this.context.camOptions.selectedBoxIndex}
                   onClickImage={async (item, index) => {
-                    this.context.camOptions.selectedBoxIndex = index;
-                    if (this.context.camOptions.gotoPosition) {
-                      await this.context.camOptions.gotoPosition(item.camPos);
-                    }
-                    if (this.context.parent?.camOptions.gotoPosition) {
-                      await this.context.parent?.camOptions.gotoPosition(
-                        item.camPos
-                      );
-                    }
-                    this.context.render({});
+                    // this.context.camOptions.selectedBoxIndex = index;
+                    // if (this.context.camOptions.gotoPosition) {
+                    //   await this.context.camOptions.gotoPosition(item.camPos);
+                    // }
+                    // if (this.context.parent?.camOptions.gotoPosition) {
+                    //   await this.context.parent?.camOptions.gotoPosition(
+                    //     item.camPos
+                    //   );
+                    // }
+                    // this.context.render({});
                     // this.context.render({
                     //   camOptions: this.context.camOptions,
                     // });
