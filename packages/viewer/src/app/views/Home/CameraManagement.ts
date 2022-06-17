@@ -491,14 +491,15 @@ export class CameraManagement {
             this.ctx.closePath();
           }
 
-          if (this.context.pursuit?.currentBox && !this.context.camera?.isPtz) {
+          if (this.context.pursuit?.currentBox && !this.context.camera?.isPtz && this.context.camera?.id == this.context.pursuit.currentBox.camId) {
             this.ctx.beginPath();
-            this.ctx.lineWidth = 5 * ratio;
-            this.ctx.strokeStyle = 'green';
+            this.ctx.lineWidth = 50 * ratio;
+            this.ctx.strokeStyle = 'red';
+          
             this.ctx.arc(
               this.context.pursuit?.currentBox.item.left || 0,
               this.context.pursuit?.currentBox.item.top || 0,
-              10,
+              20,
               0,
               2 * Math.PI,
               true
